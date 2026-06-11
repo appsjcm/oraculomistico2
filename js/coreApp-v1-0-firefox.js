@@ -51,6 +51,15 @@ function cleanInterpretation(value = '') {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+function cleanClosedReading(value = '') {
+  return cleanInterpretation(value)
+    .replace(/¿[^?\n]*\?/g, '')
+    .replace(/(^|[\n.!])\s*(?:qué|que|cómo|como|cuál|cual|cuándo|cuando|dónde|donde|por qué|por que|quieres|puedes|podrías|podrias|te gustaría|te gustaria)[^?\n]*\?/gim, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n[ \t]+\n/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 function sample(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function clampText(text, max = 280) { text = String(text || ''); return text.length > max ? text.slice(0, max - 1) + '…' : text; }
 function todayKey() { return new Date().toISOString().slice(0, 10); }
@@ -481,6 +490,21 @@ ${text}`);
 }
 
 async function connectPuter() {
+  if (window.AndroidTTS) {
+    openModal({
+      icon: '🤖',
+      title: 'IA en Android',
+      subtitle: 'Google no permite iniciar sesión dentro del visor interno del APK.',
+      body: `<div class="result-card">
+        <h3>Conexión segura</h3>
+        <p>Abre la versión web en el navegador del teléfono para conectar Puter IA. El APK seguirá funcionando con lecturas simbólicas, voz TTS de Android, avatar, PDFs y biblioteca local.</p>
+        <p class="notice">La sesión web y los datos locales del APK permanecen separados.</p>
+      </div>`,
+      actions: `<button class="btn primary" data-act="open-web-ai" type="button">Abrir versión web</button>
+        <button class="btn" data-close-modal type="button">Ahora no</button>`
+    });
+    return false;
+  }
   try {
     if (!window.puter?.auth) { toast('Puter todavía no está cargado.'); return false; }
     await window.puter.auth.signIn();
@@ -2590,11 +2614,12 @@ function handleAction(action) {
       const isGrabovoi = lastReading.type === 'Grabovoi';
       setAIReadingPanel(`<div class="channeling"><span class="orb-pulse">🔮</span><div><h3>${isGrabovoi ? 'Analizando el código Grabovoi...' : `${getUserName() ? getUserName() + ', e' : 'E'}l oráculo está canalizando...`}</h3><p>${isGrabovoi ? 'La ampliación se centrará únicamente en la secuencia, su práctica y sus límites.' : 'Estoy profundizando la lectura con IA. Puedes dejar esta pantalla abierta.'}</p></div></div>`, 'loading');
       const prompt = isGrabovoi
-        ? `Analiza exclusivamente esta ficha de un código Grabovoi. No hables del usuario, su personalidad, energía ni destino. Explica: finalidad declarada, estructura y bloques de la secuencia, lectura simbólica de los dígitos sin inventar propiedades, una práctica de concentración paso a paso, duración prudente, formas de escribir o visualizar el número y consejos para registrar la práctica. No prometas resultados. Si trata salud, deja claro que no diagnostica, trata ni cura y que no sustituye atención médica. Responde en español claro y organizado:\n\n${base}`
-        : `Amplía esta lectura de forma simbólica, clara, positiva y segura. No hagas promesas absolutas. No des consejos médicos, legales ni financieros. Responde en español con tono místico, claro y útil:
+        ? `Analiza exclusivamente esta ficha de un código Grabovoi. No hables del usuario, su personalidad, energía ni destino. Explica: finalidad declarada, estructura y bloques de la secuencia, lectura simbólica de los dígitos sin inventar propiedades, una práctica de concentración paso a paso, duración prudente, formas de escribir o visualizar el número y consejos para registrar la práctica. No prometas resultados. Si trata salud, deja claro que no diagnostica, trata ni cura y que no sustituye atención médica. Esta pantalla no es un chat: entrega una interpretación completa y cerrada, sin formular preguntas, sin pedir datos y sin invitar al usuario a responder. Responde en español claro y organizado:\n\n${base}`
+        : `Amplía esta lectura de forma simbólica, clara, positiva y segura. Esta pantalla no es un chat: entrega una interpretación completa, autónoma y cerrada. No formules ninguna pregunta al usuario, no pidas aclaraciones o datos adicionales, no ofrezcas continuar conversando y no termines con una interrogación. Interpreta únicamente la información disponible. Si es una tirada de una carta, explica el mensaje central, cómo se relaciona con la pregunta si existe, la advertencia o matiz y un paso práctico concreto. En tiradas de varias cartas, integra sus posiciones y concluye con un consejo final. No hagas promesas absolutas. No des consejos médicos, legales ni financieros. Responde en español con tono místico, claro y útil:
 
 ${base}`;
-      const ai = await askAI(prompt);
+      const rawAI = await askAI(prompt);
+      const ai = cleanClosedReading(rawAI);
       if (ai) {
         lastReading.ai = ai;
         setAIReadingPanel(`<h3>🤖 Interpretación IA</h3><p>${escapeHTML(ai).replace(/\n/g,'<br>')}</p><div class="actions mt"><button class="btn compact" data-act="speak-ai" type="button">🔊 Leer IA</button><button class="btn compact" data-act="stop-voice" type="button">⏹️ Parar</button><button class="btn compact" data-act="copy-reading" type="button">📋 Copiar todo</button><button class="btn compact" data-act="pdf-reading" type="button">📄 Incluir IA en PDF</button></div>`, 'success');
@@ -2609,6 +2634,7 @@ ${base}`;
     'test-voice': testVoiceSettings,
     'voice-library': showVoiceLibrary,
     'open-tts-settings': () => window.AndroidTTS?.openSettings?.(),
+    'open-web-ai': () => window.AndroidTTS?.openExternal?.('https://appsjcm.github.io/oraculomistico2/'),
     'refresh-voices': () => { toast('Revisando las voces instaladas...'); reloadDeviceVoices({ reopenLibrary:true }); },
     'export-diary': () => { const diary=storeGet(LS.diary,[]); downloadTextFile('biblioteca-mistica.txt', diary.map(d=>`${d.title}\n${new Date(d.date).toLocaleString()}\n${d.text}`).join('\n\n---\n\n')); },
     'clear-diary': () => { if(confirm('¿Vaciar la Biblioteca Mística?')){ storeSet(LS.diary,[]); showBiblioteca(); } },
@@ -2686,6 +2712,7 @@ async function registerSW() {
 
 function boot() {
   try {
+    document.body.classList.toggle('native-android', Boolean(window.AndroidTTS));
     migrateData();
     applyTheme();
     updateHome();
