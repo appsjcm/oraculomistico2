@@ -18,5 +18,9 @@ VERSIÓN DE LANZAMIENTO
 - En audio MP3, la animación sigue la posición temporal de la reproducción y respeta pausas.
 - El avatar muestra todas las cartas o runas de la lectura, hasta doce elementos.
 - Las lecturas de cuatro o cinco elementos usan dos filas; desde seis se activa una cuadrícula lateral compacta.
+- En Android, las listas nativas muestran sus opciones con texto legible.
+- El APK evita el inicio de Google dentro del visor interno y ofrece abrir la versión web en el navegador seguro.
+- Las interpretaciones IA de tiradas son cerradas y no hacen preguntas al usuario.
+- La tirada de una carta entrega mensaje central, matiz y paso práctico sin comportamiento de chat.
 
 Uso simbólico y de entretenimiento. No sustituye asesoramiento profesional.
