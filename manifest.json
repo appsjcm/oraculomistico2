@@ -1,0 +1,50 @@
+{
+  "name": "Oráculo Místico",
+  "short_name": "Oráculo",
+  "description": "Oráculo Místico v1.0: tarot, runas, luna, sueños, numerología, Grabovoi simbólico y biblioteca en una experiencia premium unificada.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "theme_color": "#080713",
+  "background_color": "#080713",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "categories": [
+    "lifestyle",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Abrir Oráculo",
+      "short_name": "Inicio",
+      "description": "Abrir la Home premium",
+      "url": "./",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "version": "1.0.0"
+}

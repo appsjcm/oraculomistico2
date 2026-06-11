@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080713">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Oráculo Místico v1.0</title>
+  <meta name="description" content="Oráculo Místico: PWA de entretenimiento con tarot, runas, luna, sueños, numerología, diario local, voz del dispositivo, PDF y Chat Ritual.">
+  <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, PWA, diario místico, lectura simbólica">
+  <meta property="og:title" content="Oráculo Místico v1.0">
+  <meta property="og:description" content="Tarot, runas, luna, sueños, diario, voz gratis y PDF premium en una PWA simbólica.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Oráculo Místico v1.0">
+  <meta name="twitter:description" content="App simbólica de tarot, runas, luna, sueños y diario místico.">
+  <link rel="manifest" href="manifest.json?v=1.0-system-tts">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-system-tts">
+  <script>
+    (() => {
+      const build = '1.0-firefox-cache-reset-3';
+      const key = 'oraculo.publicBuild';
+      try {
+        if (localStorage.getItem(key) === build) return;
+        Promise.all([
+          'caches' in window ? caches.keys().then(keys => Promise.all(keys.map(name => caches.delete(name)))) : Promise.resolve(),
+          'serviceWorker' in navigator ? navigator.serviceWorker.getRegistrations().then(items => Promise.all(items.map(item => item.unregister()))) : Promise.resolve()
+        ]).finally(() => {
+          localStorage.setItem(key, build);
+          const url = new URL(location.href);
+          url.searchParams.set('build', build);
+          location.replace(url.toString());
+        });
+      } catch {}
+    })();
+  </script>
+  <script defer src="https://js.puter.com/v2/"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-system-tts-3"></script>
+</head>
+<body>
+  <div class="cosmos" aria-hidden="true"></div>
+  <a class="skip-link" href="#home">Saltar al contenido</a>
+
+  <header class="topbar">
+    <button id="openGuideBtn" class="icon-pill" type="button">✨ Guía</button>
+    <div class="brand" aria-label="Oráculo Místico">
+      <span class="brand-orb">🔮</span>
+      <span><strong>Oráculo Místico</strong><small>v1.0</small></span>
+    </div>
+    <button id="gearBtn" class="gear" type="button" aria-label="Abrir ajustes">⚙️</button>
+  </header>
+
+  <main id="home" class="app-shell">
+    <section class="hero card-glass">
+      <div class="hero-kicker" id="userGreeting">Bienvenida al santuario</div>
+      <h1>Consulta tu energía con una experiencia clara y premium.</h1>
+      <p>Tarot, runas, luna, sueños, numerología y biblioteca mística unidos en una sola pantalla limpia.</p>
+      <div class="status-row">
+        <span id="iaStatusChip" class="chip">🤖 IA: modo simbólico</span>
+        <span id="intentionChip" class="chip">🧭 Intención: libre</span>
+        <span class="chip">📱 PWA lista</span>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" data-action="first-reading" type="button">✨ Primeras tiradas</button>
+        <button class="btn ghost" data-action="demo" type="button">🌟 Demo rápida</button>
+        <button class="btn ghost" data-action="connect-ai" type="button">🤖 Conectar IA</button>
+        <button class="btn ghost" data-action="control-center" type="button">🧭 Centro de control</button>
+        <button class="btn ghost" data-action="tutorial-app" type="button">🎓 Tutorial</button>
+        <button class="btn ghost" data-action="install-help" type="button">📲 Instalar</button>
+        <button class="btn ghost" data-action="preview-avatar" type="button">🪄 Avatar voz</button>
+        <button class="btn ghost" data-action="settings" type="button">⚙️ Ajustes</button>
+      </div>
+    </section>
+
+    <section class="home-grid" aria-label="Módulos principales">
+      <button class="module-card" data-module="map" type="button"><span>🗺️</span><strong>Mapa</strong><small>Todo de un vistazo</small></button>
+      <button class="module-card featured" data-module="chat" type="button"><span>🕯️</span><strong>Chat Ritual</strong><small>Tiradas privadas con voz e IA</small></button>
+      <button class="module-card" data-module="tarot" type="button"><span>🃏</span><strong>Tarot</strong><small>Carta, tiradas y biblioteca</small></button>
+      <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong>Runas</strong><small>Runa rápida y tiradas</small></button>
+      <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong>Luna</strong><small>Lectura lunar guiada</small></button>
+      <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong>Sueños</strong><small>Interpretación simbólica</small></button>
+      <button class="module-card" data-module="numerologia" type="button"><span>🔢</span><strong>Numerología</strong><small>Nombre, fecha y energía</small></button>
+      <button class="module-card" data-module="grabovoi" type="button"><span>📜</span><strong>Grabovoi</strong><small>Códigos en popup</small></button>
+      <button class="module-card" data-module="biblioteca" type="button"><span>📚</span><strong>Biblioteca</strong><small>Diario y guardados</small></button>
+      <button class="module-card" data-action="control-center" type="button"><span>🧭</span><strong>Centro</strong><small>Buscar, estado y privacidad</small></button>
+      <button class="module-card" data-action="preview-avatar" type="button"><span>🪄</span><strong>Avatar</strong><small>Oráculo animado con voz</small></button>
+      <button class="module-card" data-action="settings" type="button"><span>⚙️</span><strong>Ajustes</strong><small>Voz, avatar y visual</small></button>
+    </section>
+
+    <section class="daily card-glass">
+      <div>
+        <strong>🌟 Mensaje del día</strong>
+        <p id="dailyText">Pulsa para revelar carta, runa y luna del día, con IA, voz, guardar y PDF profesional.</p>
+      </div>
+      <button class="btn compact" data-action="daily" type="button">Revelar</button>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Experiencia simbólica y de entretenimiento. No sustituye asesoramiento profesional.</p>
+    <a href="privacy.html">Privacidad</a>
+    <span aria-hidden="true">·</span>
+    <a href="docs/manual_usuario_oraculo_mistico_v1_0.pdf" target="_blank" rel="noopener">Manual</a>
+  </footer>
+
+  <div id="modalRoot" class="modal-root" aria-live="polite"></div>
+  <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+</body>
+</html>
