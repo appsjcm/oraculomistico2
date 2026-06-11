@@ -30,6 +30,7 @@ let lastReading = null;
 let grabovoiEntries = [];
 let grabovoiGuide = { digitMeanings: {}, methods: [] };
 let oracleLipTimer = null;
+let oracleLipWordStart = -1;
 let voiceWakeLock = null;
 let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 let voiceSpeechSession = 0;
@@ -834,7 +835,7 @@ function getOracleMoodLabel(mood = 'calm') {
   return labels[mood] || 'Serenidad';
 }
 function getOracleReadingVisuals(reading = lastReading) {
-  const cardVisuals = resolveReadingAssets(reading).filter(asset => asset.kind === 'tarot' || asset.kind === 'runa').slice(0, 3).map(asset => ({
+  const cardVisuals = resolveReadingAssets(reading).filter(asset => asset.kind === 'tarot' || asset.kind === 'runa').slice(0, 12).map(asset => ({
     kind: asset.kind || 'lectura',
     name: asset.name || '',
     image: asset.image || '',
@@ -891,7 +892,7 @@ function buildOracleReadingVisualsHTML(visuals = []) {
       <p>${escapeHTML(clampText(visual.subtitle, 85))}</p>
     </div>`;
   }
-  return `<div class="oracle-reading-visuals count-${visuals.length}">${visuals.map(visual => `
+  return `<div class="oracle-reading-visuals count-${visuals.length} ${visuals.length > 3 ? 'many' : ''} ${visuals.length > 5 ? 'dense' : ''}">${visuals.map(visual => `
     <div class="oracle-reading-visual ${visual.reversed ? 'reversed' : ''}" title="${escapeHTML(visual.name)}">
       ${visual.image
         ? `<img src="${escapeHTML(visual.image)}" alt="${escapeHTML(visual.name)}" loading="eager" referrerpolicy="no-referrer">`
@@ -960,33 +961,106 @@ function showOracleVoiceAvatar(message = '') {
 function updateOracleVoiceAvatarSpeaking(speaking = true) {
   const host = ensureOracleAvatarHost();
   host.classList.toggle('speaking', !!speaking);
-  if (speaking) startOracleLipSync();
-  else stopOracleLipSync();
+  if (!speaking) stopOracleLipSync();
 }
 function setOracleMouthShape(shape = 'closed') {
   const frames = $$('.oracle-avatar-frame');
   if (!frames.length) return;
   frames.forEach(frame => frame.classList.toggle('active', frame.classList.contains(`frame-${shape}`)));
 }
-function startOracleLipSync() {
+function mouthShapeForCharacter(character = '') {
+  const clean = character.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/[ao]/.test(clean)) return 'wide';
+  if (/[e]/.test(clean)) return 'medium';
+  if (/[iu]/.test(clean)) return 'medium';
+  return 'closed';
+}
+function getSpokenWordAt(text = '', charIndex = 0) {
+  const source = String(text || '');
+  let start = Math.max(0, Math.min(Number(charIndex) || 0, source.length));
+  while (start > 0 && /[\p{L}\p{N}]/u.test(source[start - 1])) start -= 1;
+  let end = start;
+  while (end < source.length && /[\p{L}\p{N}]/u.test(source[end])) end += 1;
+  return { start, end, word:source.slice(start, end) };
+}
+function buildWordMouthSequence(word = '') {
+  const vowels = [...String(word)].filter(character => /[aeiouáéíóúü]/i.test(character));
+  if (!vowels.length) return ['closed', 'medium', 'closed'];
+  const sequence = ['closed'];
+  vowels.forEach(character => {
+    const shape = mouthShapeForCharacter(character);
+    if (sequence[sequence.length - 1] !== shape) sequence.push(shape);
+    sequence.push(shape === 'wide' ? 'medium' : 'closed');
+  });
+  sequence.push('closed');
+  return sequence;
+}
+function syncOracleMouthToText(text = '', charIndex = 0, rate = 0.92) {
+  const spoken = getSpokenWordAt(text, charIndex);
+  if (!spoken.word) {
+    stopOracleLipSync();
+    return;
+  }
+  if (spoken.start === oracleLipWordStart && oracleLipTimer) return;
   stopOracleLipSync(false);
+  oracleLipWordStart = spoken.start;
+  const sequence = buildWordMouthSequence(spoken.word);
+  const stepMs = Math.max(58, Math.min(125, (spoken.word.length * 58) / Math.max(sequence.length, 1) / Math.max(Number(rate) || 0.92, 0.55)));
   let index = 0;
-  const sequence = ['closed', 'medium', 'wide', 'medium'];
-  const pulse = () => {
-    index = (index + 1) % sequence.length;
-    setOracleMouthShape(sequence[index]);
-    oracleLipTimer = setTimeout(pulse, 105 + Math.floor(Math.random() * 75));
+  const advance = () => {
+    setOracleMouthShape(sequence[index] || 'closed');
+    index += 1;
+    if (index < sequence.length) oracleLipTimer = setTimeout(advance, stepMs);
+    else oracleLipTimer = setTimeout(() => {
+      setOracleMouthShape('closed');
+      oracleLipTimer = null;
+    }, 45);
   };
-  pulse();
+  advance();
+}
+function startOracleLipSync(text = 'oráculo', rate = 0.92) {
+  stopOracleLipSync(false);
+  const source = String(text || 'oráculo');
+  let charIndex = 0;
+  const advance = () => {
+    const character = source[charIndex % source.length] || ' ';
+    const isPause = /[\s.,;:!?]/.test(character);
+    setOracleMouthShape(isPause ? 'closed' : mouthShapeForCharacter(character));
+    charIndex += 1;
+    oracleLipTimer = setTimeout(advance, (isPause ? 145 : 82) / Math.max(Number(rate) || .92, .55));
+  };
+  advance();
+}
+function startRemoteAudioLipSync(audio, text = '') {
+  stopOracleLipSync(false);
+  const source = String(text || '');
+  const estimatedDuration = Math.max(1, (source.split(/\s+/).filter(Boolean).length / 2.35));
+  const tick = () => {
+    if (!audio || audio.ended) {
+      stopOracleLipSync();
+      return;
+    }
+    if (audio.paused) {
+      setOracleMouthShape('closed');
+    } else {
+      const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : estimatedDuration;
+      const progress = Math.max(0, Math.min(0.999, (audio.currentTime || 0) / duration));
+      const charIndex = Math.min(source.length - 1, Math.floor(progress * source.length));
+      const character = source[Math.max(0, charIndex)] || ' ';
+      setOracleMouthShape(/[\s.,;:!?]/.test(character) ? 'closed' : mouthShapeForCharacter(character));
+    }
+    oracleLipTimer = setTimeout(tick, 65);
+  };
+  tick();
 }
 function stopOracleLipSync(reset = true) {
   if (oracleLipTimer) clearTimeout(oracleLipTimer);
   oracleLipTimer = null;
+  oracleLipWordStart = -1;
   if (reset) setOracleMouthShape('closed');
 }
-function pulseOracleMouth(charIndex = 0) {
-  const shapes = ['medium', 'wide', 'medium', 'closed'];
-  setOracleMouthShape(shapes[Math.abs(Number(charIndex) || 0) % shapes.length]);
+function pulseOracleMouth(charIndex = 0, text = activeSpeech.text, rate = getVoicePrefs().rate) {
+  syncOracleMouthToText(text, charIndex, rate);
 }
 function hideOracleVoiceAvatar() {
   stopOracleLipSync();
@@ -1000,7 +1074,7 @@ function previewOracleAvatar() {
   const mode = resolveOracleSpeechMode('El oráculo comparte un mensaje de prueba.', prefs);
   const previewText = mode === 'whisper' ? 'El oráculo comparte un susurro de prueba para ti.' : 'El oráculo está canalizando un mensaje de prueba para ti.';
   showOracleVoiceAvatar(previewText);
-  startOracleLipSync();
+  startOracleLipSync(previewText, prefs.rate);
   setTimeout(()=>hideOracleVoiceAvatar(), 3800);
 }
 function previewOracleAvatarEmotions() {
@@ -1014,7 +1088,7 @@ function previewOracleAvatarEmotions() {
   let i = 0;
   const run = () => {
     showOracleVoiceAvatar(samples[i]);
-    startOracleLipSync();
+    startOracleLipSync(samples[i], getVoicePrefs().rate);
     i += 1;
     if (i < samples.length) setTimeout(run, 1600);
     else setTimeout(()=>hideOracleVoiceAvatar(), 2200);
@@ -1069,7 +1143,6 @@ function speakWithDevice(clean, options = {}) {
     const voice = getPreferredVoice(prefs);
     activeSpeech = { text:options.fullText || clean, charIndex:Number(options.offset || 0), active:true, interrupted:false };
     showOracleVoiceAvatar(clean);
-    startOracleLipSync();
     requestVoiceWakeLock();
     const started = window.AndroidTTS.speak(clean, voice?.voiceURI || '', Number(prefs.rate || 0.92), Number(prefs.pitch || 1));
     if (started) return true;
@@ -1096,12 +1169,12 @@ function speakWithDevice(clean, options = {}) {
   }
   utter.onstart = () => {
     if (sessionId !== voiceSpeechSession) return;
-    requestVoiceWakeLock(); showOracleVoiceAvatar(clean); startOracleLipSync();
+    requestVoiceWakeLock(); showOracleVoiceAvatar(clean); setOracleMouthShape('closed');
   };
   utter.onboundary = event => {
     if (sessionId !== voiceSpeechSession) return;
     activeSpeech.charIndex = offset + Number(event?.charIndex || 0);
-    pulseOracleMouth(activeSpeech.charIndex);
+    pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, prefs.rate);
   };
   utter.onresume = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(true); };
   utter.onpause = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(false); };
@@ -1126,11 +1199,12 @@ function speakWithDevice(clean, options = {}) {
 }
 window.onNativeTTSStart = () => {
   updateOracleVoiceAvatarSpeaking(true);
+  setOracleMouthShape('closed');
   requestVoiceWakeLock();
 };
 window.onNativeTTSRange = charIndex => {
   activeSpeech.charIndex = Number(charIndex || 0);
-  pulseOracleMouth(activeSpeech.charIndex);
+  pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, getVoicePrefs().rate);
 };
 window.onNativeTTSDone = () => {
   resetActiveSpeech();
@@ -1192,15 +1266,20 @@ async function speakWithPuter(clean) {
   if (!window.puter?.ai?.txt2speech) return false;
   try {
     showOracleVoiceAvatar(clean);
-    startOracleLipSync();
     requestVoiceWakeLock();
     const audio = await generatePuterSpeech(clean);
     if (!audio) throw new Error('Audio IA no disponible');
     remoteSpeechAudio = audio;
     try { audio.currentTime = 0; } catch {}
     setMediaSessionForReading();
-    audio.onplay = () => updateOracleVoiceAvatarSpeaking(true);
-    audio.onpause = () => updateOracleVoiceAvatarSpeaking(false);
+    audio.onplay = () => {
+      updateOracleVoiceAvatarSpeaking(true);
+      startRemoteAudioLipSync(audio, clean);
+    };
+    audio.onpause = () => {
+      updateOracleVoiceAvatarSpeaking(false);
+      setOracleMouthShape('closed');
+    };
     audio.onended = () => { remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
     audio.onerror = () => { remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
     await audio.play();

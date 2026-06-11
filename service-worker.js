@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-launch-system-tts-firefox-3';
+const CACHE_NAME = 'oraculo-v1-0-public-launch-avatar-all-6';
 const APP_SHELL = [
   './',
   './index.html',

@@ -14,5 +14,9 @@ VERSIÓN DE LANZAMIENTO
 - El modo predeterminado usa el TTS del sistema sin Puter.
 - El selector puede mostrar todas las voces e idiomas que el navegador exponga.
 - La voz elegida se conserva mediante nombre, identificador e idioma.
+- La boca del avatar sigue palabras y vocales del TTS en lugar de moverse al azar.
+- En audio MP3, la animación sigue la posición temporal de la reproducción y respeta pausas.
+- El avatar muestra todas las cartas o runas de la lectura, hasta doce elementos.
+- Las lecturas de cuatro o cinco elementos usan dos filas; desde seis se activa una cuadrícula lateral compacta.
 
 Uso simbólico y de entretenimiento. No sustituye asesoramiento profesional.
