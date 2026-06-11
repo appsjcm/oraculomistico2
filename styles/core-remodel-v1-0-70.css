@@ -429,7 +429,7 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 
 /* v1.0.80 three-frame photographic lip sync */
 .oracle-avatar-frames{position:absolute;inset:0;overflow:hidden}
-.oracle-avatar-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%;transform:scale(1.04);opacity:0;filter:saturate(.92) contrast(1.04) brightness(.9);transition:opacity 42ms linear}
+.oracle-avatar-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%;transform:scale(1.04);opacity:0;filter:saturate(.92) contrast(1.04) brightness(.9);transition:opacity 55ms ease-out}
 .oracle-avatar-frame.active{opacity:1}
 .oracle-avatar-window.mood-love .oracle-avatar-frame{filter:saturate(1.04) sepia(.06) hue-rotate(320deg) brightness(.94)}
 .oracle-avatar-window.mood-warning .oracle-avatar-frame{filter:saturate(.88) sepia(.16) contrast(1.1) brightness(.84)}
@@ -482,6 +482,15 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 
 /* v1.0.81 avatar reading visuals beside the portrait */
 .oracle-avatar-copy .oracle-reading-visuals{position:static;display:flex;align-items:flex-end;gap:7px;max-width:100%;margin:3px 0 1px}
+.oracle-avatar-copy .oracle-reading-visuals.many{display:grid;grid-template-columns:repeat(3,46px);align-items:end;justify-content:start;gap:5px 7px}
+.oracle-avatar-copy .oracle-reading-visuals.many .oracle-reading-visual{transform:none}
+.oracle-avatar-copy .oracle-reading-visuals.many .oracle-reading-visual:nth-child(2),
+.oracle-avatar-copy .oracle-reading-visuals.many .oracle-reading-visual:nth-child(3){transform:none}
+.oracle-avatar-copy .oracle-reading-visuals.count-4{grid-template-columns:repeat(2,46px)}
+.oracle-avatar-copy .oracle-reading-visuals.count-5{grid-template-columns:repeat(3,46px)}
+.oracle-avatar-copy .oracle-reading-visuals.dense{grid-template-columns:repeat(4,34px);gap:4px}
+.oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual{width:34px;height:48px}
+.oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual small{font-size:4.5px}
 .oracle-avatar-copy .oracle-reading-visual{width:46px;height:64px;transform:none}
 .oracle-avatar-copy .oracle-reading-visual:nth-child(2){transform:translateY(-3px)}
 .oracle-avatar-copy .oracle-reading-visual:nth-child(3){transform:none}
@@ -489,10 +498,26 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 .oracle-avatar-window.has-reading-visuals .oracle-avatar-copy{align-content:center}
 .oracle-avatar-window.has-reading-visuals .oracle-avatar-stage>.oracle-reading-visuals{display:none}
 .oracle-avatar-host.size-small .oracle-avatar-copy .oracle-reading-visual{width:35px;height:49px}
+.oracle-avatar-host.size-small .oracle-avatar-copy .oracle-reading-visuals.many{grid-template-columns:repeat(3,35px);gap:4px}
+.oracle-avatar-host.size-small .oracle-avatar-copy .oracle-reading-visuals.count-4{grid-template-columns:repeat(2,35px)}
+.oracle-avatar-host.size-small .oracle-avatar-copy .oracle-reading-visuals.dense{grid-template-columns:repeat(4,27px);gap:3px}
+.oracle-avatar-host.size-small .oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual{width:27px;height:38px}
 .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visual{width:58px;height:81px}
+.oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.many{grid-template-columns:repeat(3,58px);gap:7px}
+.oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.count-4{grid-template-columns:repeat(2,58px)}
+.oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.dense{grid-template-columns:repeat(4,45px);gap:5px}
+.oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual{width:45px;height:63px}
 @media(max-width:620px){
   .oracle-avatar-copy .oracle-reading-visual{width:42px;height:58px}
+  .oracle-avatar-copy .oracle-reading-visuals.many{grid-template-columns:repeat(3,42px);gap:4px}
+  .oracle-avatar-copy .oracle-reading-visuals.count-4{grid-template-columns:repeat(2,42px)}
+  .oracle-avatar-copy .oracle-reading-visuals.dense{grid-template-columns:repeat(4,31px);gap:3px}
+  .oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual{width:31px;height:43px}
   .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visual{width:50px;height:70px}
+  .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.many{grid-template-columns:repeat(3,50px)}
+  .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.count-4{grid-template-columns:repeat(2,50px)}
+  .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.dense{grid-template-columns:repeat(4,37px)}
+  .oracle-avatar-host.size-large .oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual{width:37px;height:52px}
 }
 
 /* Avatar interpretation highlights */
