@@ -1,0 +1,18 @@
+ORÁCULO MÍSTICO v1.0
+
+VERSIÓN DE LANZAMIENTO
+
+- Interfaz pública limpia, sin accesos de pruebas ni publicación.
+- Ajustes reorganizados en apartados plegables.
+- Chat Grabovoi: primero consulta el manual incluido.
+- Si no existe coincidencia, puede buscar fuentes públicas mediante Puter IA.
+- Los resultados externos se identifican claramente y muestran sus fuentes.
+- La aplicación no inventa una secuencia cuando no encuentra fuentes verificables.
+- Se mantienen voz, avatar animado, cartas y runas reales, PDFs especiales y modo privado.
+- Voz automática: usa audio OpenAI natural mediante Puter cuando está conectado y vuelve a la voz del dispositivo si no está disponible.
+- Las lecturas pueden guardarse como MP3 para escucharlas fuera de la app y con la pantalla apagada.
+- El modo predeterminado usa el TTS del sistema sin Puter.
+- El selector puede mostrar todas las voces e idiomas que el navegador exponga.
+- La voz elegida se conserva mediante nombre, identificador e idioma.
+
+Uso simbólico y de entretenimiento. No sustituye asesoramiento profesional.
