@@ -1,7 +1,7 @@
 {
   "name": "Oráculo Místico",
   "short_name": "Oráculo",
-  "description": "Oráculo Místico v1.0: tarot, runas, luna, sueños, numerología, Grabovoi simbólico y biblioteca en una experiencia premium unificada.",
+  "description": "Tarot, runas, luna, sueños, numerología completa, sinastría, voz y biblioteca mística.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -35,7 +35,7 @@
     {
       "name": "Abrir Oráculo",
       "short_name": "Inicio",
-      "description": "Abrir la Home premium",
+      "description": "Abrir la pantalla principal",
       "url": "./",
       "icons": [
         {

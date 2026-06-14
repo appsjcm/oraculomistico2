@@ -1,4 +1,5 @@
 import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES } from './data.js';
+import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
 
 document.documentElement.dataset.oraculoModule = 'loaded';
 
@@ -36,6 +37,7 @@ let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false }
 let voiceSpeechSession = 0;
 let remoteSpeechAudio = null;
 let lastGeneratedSpeech = null;
+let cachedWebVoices = [];
 
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
@@ -61,6 +63,10 @@ function cleanClosedReading(value = '') {
     .trim();
 }
 function sample(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+const REVERSED_RATE_OPTIONS = [0.2, 0.3, 0.5];
+function chooseReversedRate() { return sample(REVERSED_RATE_OPTIONS); }
+function isReversed(rate) { return Math.random() < Math.min(0.5, Math.max(0, Number(rate) || 0)); }
+function reversalRateNotice(rate) { return `<p class="notice reversal-rate-note">${escapeHTML(t('reversalRate', { rate:Math.round(rate * 100) }))}</p>`; }
 function clampText(text, max = 280) { text = String(text || ''); return text.length > max ? text.slice(0, max - 1) + '…' : text; }
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 function storeGet(key, fallback = null) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
@@ -82,11 +88,12 @@ function openModal({ icon = '🔮', title = 'Oráculo', subtitle = '', body = ''
     <section class="modal-panel" role="dialog" aria-modal="true" aria-label="${escapeHTML(title)}">
       <header class="modal-head">
         <div class="modal-title"><span class="emoji">${icon}</span><div><h2>${escapeHTML(title)}</h2>${subtitle ? `<p>${escapeHTML(subtitle)}</p>` : ''}</div></div>
-        <button class="modal-close" data-close-modal type="button" aria-label="Cerrar">✕</button>
+        <button class="modal-close" data-close-modal type="button" aria-label="${escapeHTML(t('closed'))}">✕</button>
       </header>
       <div class="modal-body">${body}</div>
       ${actions ? `<footer class="modal-actions">${actions}</footer>` : ''}
     </section>`;
+  applyAppTranslations(root);
   root.addEventListener('click', modalClickHandler, { once: true });
   document.addEventListener('keydown', escHandler, { once: true });
   setTimeout(() => $('.modal-close')?.focus(), 10);
@@ -491,14 +498,16 @@ ${text}`);
 
 async function connectPuter() {
   if (window.AndroidTTS) {
+    const nativePlatform = window.AndroidTTS.platform?.() || 'android';
+    const isIOSApp = nativePlatform === 'ios';
     openModal({
       icon: '🤖',
-      title: 'IA en Android',
-      subtitle: 'Google no permite iniciar sesión dentro del visor interno del APK.',
+      title: isIOSApp ? 'IA en iPhone' : 'IA en Android',
+      subtitle: `Google no permite iniciar sesión dentro del visor interno de la app ${isIOSApp ? 'iPhone' : 'Android'}.`,
       body: `<div class="result-card">
         <h3>Conexión segura</h3>
-        <p>Abre la versión web en el navegador del teléfono para conectar Puter IA. El APK seguirá funcionando con lecturas simbólicas, voz TTS de Android, avatar, PDFs y biblioteca local.</p>
-        <p class="notice">La sesión web y los datos locales del APK permanecen separados.</p>
+        <p>Abre la versión web en el navegador del teléfono para conectar Puter IA. La app seguirá funcionando con lecturas simbólicas, voz TTS del sistema, avatar, PDFs y biblioteca local.</p>
+        <p class="notice">La sesión web y los datos locales de la app permanecen separados.</p>
       </div>`,
       actions: `<button class="btn primary" data-act="open-web-ai" type="button">Abrir versión web</button>
         <button class="btn" data-close-modal type="button">Ahora no</button>`
@@ -526,7 +535,9 @@ async function askAI(prompt) {
   }
   try {
     if (!window.puter?.ai?.chat) throw new Error('Puter AI no disponible');
-    const personalizedPrompt = `${personalPrefix()}No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
+    const languageNames = { es:'español', ca:'catalán', en:'inglés', fr:'francés', de:'alemán', zh:'chino simplificado' };
+    const responseLanguage = languageNames[getAppLanguage()] || 'español';
+    const personalizedPrompt = `${personalPrefix()}Responde en ${responseLanguage}. No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
     const result = await window.puter.ai.chat(personalizedPrompt);
     if (typeof result === 'string') return cleanInterpretation(result);
     return cleanInterpretation(result?.message?.content || result?.text || String(result || ''));
@@ -577,7 +588,9 @@ function getNativeAndroidVoices() {
 }
 function getAllDeviceVoices() {
   const nativeVoices = getNativeAndroidVoices();
-  const voices = nativeVoices.length ? nativeVoices : (window.speechSynthesis?.getVoices?.() || []);
+  const currentWebVoices = window.speechSynthesis?.getVoices?.() || [];
+  if (currentWebVoices.length) cachedWebVoices = [...currentWebVoices];
+  const voices = nativeVoices.length ? nativeVoices : (currentWebVoices.length ? currentWebVoices : cachedWebVoices);
   const seen = new Set();
   return voices.filter(voice => {
     const key = `${voice.voiceURI || voice.name}|${voice.name}|${voice.lang}|${voice.localService}`;
@@ -593,26 +606,28 @@ function normalizeVoiceLocale(locale = '') {
   return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
 }
 function getDeviceLocale() {
+  if (getAppLanguagePreference() !== 'auto') return normalizeVoiceLocale(getAppLocale());
   const locales = [...(navigator.languages || []), navigator.language].map(normalizeVoiceLocale).filter(Boolean);
-  return locales.find(locale => locale.startsWith('es-')) || locales[0] || 'es-ES';
+  return locales[0] || 'es-ES';
 }
 function getDeviceRegion() {
   return getDeviceLocale().split('-')[1] || 'ES';
 }
 function getAutomaticSpanishLocale(voices = getAllDeviceVoices()) {
-  const spanish = voices.filter(isSpanishVoice);
   const deviceLocale = getDeviceLocale();
+  const deviceLanguage = deviceLocale.split('-')[0];
   const region = getDeviceRegion();
-  return spanish.find(voice => normalizeVoiceLocale(voice.lang) === deviceLocale)?.lang
-    || spanish.find(voice => normalizeVoiceLocale(voice.lang).endsWith(`-${region}`))?.lang
-    || spanish[0]?.lang
-    || 'es-ES';
+  const matching = voices.filter(voice => normalizeVoiceLocale(voice.lang).split('-')[0] === deviceLanguage);
+  return matching.find(voice => normalizeVoiceLocale(voice.lang) === deviceLocale)?.lang
+    || matching.find(voice => normalizeVoiceLocale(voice.lang).endsWith(`-${region}`))?.lang
+    || matching[0]?.lang
+    || getAppLocale();
 }
 function getEffectiveVoiceLocale(prefs = getVoicePrefs(), voices = getAllDeviceVoices()) {
   return prefs.language && !['auto','all'].includes(prefs.language) ? prefs.language : getAutomaticSpanishLocale(voices);
 }
 function isSpanishVoice(v) {
-  return /^es[-_]/i.test(v.lang || '') || /spanish|español|espanol|castellano/i.test(v.name || '');
+  return /^es(?:[-_]|$)/i.test(v.lang || '') || /spanish|español|espanol|castellano/i.test(`${v.name || ''} ${v.voiceURI || ''}`);
 }
 function scoreHumanSpanishVoice(v, prefs = getVoicePrefs()) {
   const name = `${v.name || ''} ${v.voiceURI || ''}`.toLowerCase();
@@ -621,10 +636,10 @@ function scoreHumanSpanishVoice(v, prefs = getVoicePrefs()) {
   const deviceRegion = getDeviceRegion();
   const preset = typeof prefs === 'string' ? getVoicePreset(prefs) : prefs;
   let score = 0;
-  if (isSpanishVoice(v)) score += 100;
+  if (lang.split('-')[0] === preferredLocale.split('-')[0]) score += 100;
   if (preferredLocale === lang) score += 80;
   if (lang.endsWith(`-${deviceRegion}`)) score += 45;
-  if (lang.startsWith('es')) score += 20;
+  if (lang.startsWith(preferredLocale.split('-')[0])) score += 20;
   if (/premium|enhanced|natural|neural|online|google|microsoft|apple|siri|paulina|mónica|monica|jorge|helena|marisol|sabina|diego|carlos/i.test(name)) score += 18;
   if (v.localService) score += 6;
   (preset.hints || []).forEach(h => { if (name.includes(String(h).toLowerCase())) score += 10; });
@@ -651,9 +666,11 @@ function voiceLabel(v) {
 }
 function getDeviceVoiceOptionsHTML(selected = '', prefs = getVoicePrefs()) {
   const voices = getVisibleDeviceVoices(prefs);
-  if (!voices.length) return '<option value="">El navegador no muestra voces con este filtro</option>';
   const automaticLocale = normalizeVoiceLocale(getEffectiveVoiceLocale(prefs, voices));
-  return [`<option value="">Automática: ${escapeHTML(automaticLocale)} · país del dispositivo</option>`].concat(voices.map(v => {
+  const automaticLabel = getVoicePlatform() === 'android'
+    ? `Automática: Google TTS del sistema · ${automaticLocale}`
+    : `Automática: ${automaticLocale} · país del dispositivo`;
+  return [`<option value="">${escapeHTML(automaticLabel)}</option>`].concat(voices.map(v => {
     const id = deviceVoiceKey(v);
     const legacyId = v.voiceURI || v.name || '';
     return `<option value="${escapeHTML(id)}" ${(selected && (selected === id || selected === legacyId)) ? 'selected' : ''}>${escapeHTML(voiceLabel(v))}</option>`;
@@ -700,23 +717,41 @@ async function reloadDeviceVoices({ reopenLibrary = false, awaken = true } = {})
   refreshDeviceVoiceSelect();
   if (awaken && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
     try {
-      const wake = new SpeechSynthesisUtterance(' ');
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume?.();
+      const wake = new SpeechSynthesisUtterance('.');
       wake.lang = getAutomaticSpanishLocale();
       wake.volume = 0;
-      wake.rate = 2;
+      wake.rate = 10;
+      wake.onend = refreshDeviceVoiceSelect;
       window.speechSynthesis.speak(wake);
-      setTimeout(() => window.speechSynthesis.cancel(), 80);
+      setTimeout(() => {
+        window.speechSynthesis.cancel();
+        refreshDeviceVoiceSelect();
+      }, 650);
     } catch {}
   }
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await new Promise(resolve => setTimeout(resolve, 250));
+  const waits = getVoicePlatform() === 'android'
+    ? [150, 300, 600, 1000, 1500, 2200, 3000]
+    : [150, 250, 350, 500, 700, 900];
+  for (const wait of waits) {
+    await new Promise(resolve => setTimeout(resolve, wait));
     getAllDeviceVoices();
     refreshDeviceVoiceSelect();
   }
   const changed = voiceCatalogSignature() !== before;
-  if (reopenLibrary) showVoiceLibrary(changed
-    ? 'Se ha actualizado el catálogo de voces.'
-    : 'Catálogo revisado. En iPhone, si aún no aparece, cierra completamente la app y vuelve a abrirla.');
+  if (reopenLibrary) {
+    const platform = getVoicePlatform();
+    const inventory = voiceInventory();
+    const status = changed
+      ? 'Se ha actualizado el catálogo de voces.'
+      : platform === 'android' && !inventory.all.length
+        ? 'Chrome no publica los nombres de Google TTS, pero la opción automática utilizará el motor y el idioma configurados en Android.'
+        : platform === 'android'
+          ? 'Catálogo de Android revisado. La opción automática usa siempre el motor TTS predeterminado.'
+          : 'Catálogo revisado. En iPhone, si aún no aparece, cierra completamente la app y vuelve a abrirla.';
+    showVoiceLibrary(status);
+  }
   return changed;
 }
 function getVoicePlatform() {
@@ -748,6 +783,7 @@ function showVoiceLibrary(statusMessage = '') {
       2. Elige el motor de voz preferido.<br>
       3. Pulsa “Instalar datos de voz” y descarga Español de España o Latinoamérica.<br>
       4. Regresa a la app y pulsa “Volver a detectar”.</p>
+      <p class="subtle">Chrome Android puede usar Google TTS sin mostrar cada voz descargada. En ese caso selecciona “Automática: Google TTS del sistema”; Android aplicará el motor, idioma y voz predeterminados.</p>
       <p><a href="https://support.google.com/accessibility/android/answer/6006983" target="_blank" rel="noopener">Guía oficial de Android</a></p>
     </div>`;
   openModal({ icon:'🎙️', title:'Mejorar voces', subtitle:`${inventory.spanish.length} voces españolas detectadas.`, body:`
@@ -784,7 +820,15 @@ function testVoiceSettings() {
   refreshDeviceVoiceSelect();
   previewOracleAvatar();
   unlockAchievement('first_voice');
-  speakText('Hola. Esta es una prueba de la voz seleccionada en español. Respira con calma y escucha el mensaje.');
+  const samples = {
+    es:'Hola. Esta es una prueba de la voz seleccionada. Respira con calma y escucha el mensaje.',
+    ca:'Hola. Aquesta és una prova de la veu seleccionada. Respira amb calma i escolta el missatge.',
+    en:'Hello. This is a test of the selected voice. Breathe calmly and listen to the message.',
+    fr:'Bonjour. Ceci est un test de la voix sélectionnée. Respirez calmement et écoutez le message.',
+    de:'Hallo. Dies ist ein Test der ausgewählten Stimme. Atme ruhig und höre die Nachricht.',
+    zh:'你好。这是所选语音的测试。请平静呼吸并聆听这段讯息。'
+  };
+  speakText(samples[getAppLanguage()] || samples.es);
 }
 function getPreferredVoice(prefs = getVoicePrefs()) {
   const voices = getAllDeviceVoices();
@@ -793,8 +837,10 @@ function getPreferredVoice(prefs = getVoicePrefs()) {
     const chosen = voices.find(v => deviceVoiceKey(v) === prefs.deviceVoiceURI || v.voiceURI === prefs.deviceVoiceURI || v.name === prefs.deviceVoiceURI);
     if (chosen) return chosen;
   }
+  const preferredLanguage = normalizeVoiceLocale(getEffectiveVoiceLocale(prefs)).split('-')[0];
+  const matching = voices.filter(voice => normalizeVoiceLocale(voice.lang).split('-')[0] === preferredLanguage);
   const spanish = voices.filter(isSpanishVoice);
-  const pool = spanish.length ? spanish : voices;
+  const pool = matching.length ? matching : (spanish.length ? spanish : voices);
   return [...pool].sort((a,b) => scoreHumanSpanishVoice(b, prefs) - scoreHumanSpanishVoice(a, prefs))[0] || null;
 }
 function cleanSpeechText(text = '') {
@@ -1143,6 +1189,13 @@ async function releaseVoiceWakeLock() {
 function resetActiveSpeech() {
   activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 }
+function setFloatingVoiceStopVisible(visible) {
+  const button = document.getElementById('floatingVoiceStop');
+  if (!button) return;
+  button.classList.toggle('visible', Boolean(visible));
+  button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  button.tabIndex = visible ? 0 : -1;
+}
 function resumeInterruptedSpeech() {
   if (!activeSpeech.active || !activeSpeech.interrupted || document.hidden || window.speechSynthesis?.speaking) return;
   const start = Math.max(0, activeSpeech.charIndex - 18);
@@ -1169,7 +1222,11 @@ function speakWithDevice(clean, options = {}) {
     showOracleVoiceAvatar(clean);
     requestVoiceWakeLock();
     const started = window.AndroidTTS.speak(clean, voice?.voiceURI || '', Number(prefs.rate || 0.92), Number(prefs.pitch || 1));
-    if (started) return true;
+    if (started) {
+      setFloatingVoiceStopVisible(true);
+      return true;
+    }
+    setFloatingVoiceStopVisible(false);
     resetActiveSpeech();
     releaseVoiceWakeLock();
     hideOracleVoiceAvatar();
@@ -1193,6 +1250,7 @@ function speakWithDevice(clean, options = {}) {
   }
   utter.onstart = () => {
     if (sessionId !== voiceSpeechSession) return;
+    setFloatingVoiceStopVisible(true);
     requestVoiceWakeLock(); showOracleVoiceAvatar(clean); setOracleMouthShape('closed');
   };
   utter.onboundary = event => {
@@ -1205,23 +1263,26 @@ function speakWithDevice(clean, options = {}) {
   utter.onend = () => {
     if (sessionId !== voiceSpeechSession) return;
     if (document.hidden && activeSpeech.active) activeSpeech.interrupted = true;
-    else { resetActiveSpeech(); releaseVoiceWakeLock(); hideOracleVoiceAvatar(); }
+    else { setFloatingVoiceStopVisible(false); resetActiveSpeech(); releaseVoiceWakeLock(); hideOracleVoiceAvatar(); }
   };
   utter.onerror = (event) => {
     if (sessionId !== voiceSpeechSession) return;
     if (document.hidden && activeSpeech.active) activeSpeech.interrupted = true;
     else {
       pushErrorLog('tts-avatar', event?.error || 'Error de voz', 'speech avatar');
+      setFloatingVoiceStopVisible(false);
       resetActiveSpeech();
       releaseVoiceWakeLock();
       hideOracleVoiceAvatar();
     }
   };
   showOracleVoiceAvatar(clean);
+  setFloatingVoiceStopVisible(true);
   window.speechSynthesis.speak(utter);
   return true;
 }
 window.onNativeTTSStart = () => {
+  setFloatingVoiceStopVisible(true);
   updateOracleVoiceAvatarSpeaking(true);
   setOracleMouthShape('closed');
   requestVoiceWakeLock();
@@ -1231,12 +1292,14 @@ window.onNativeTTSRange = charIndex => {
   pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, getVoicePrefs().rate);
 };
 window.onNativeTTSDone = () => {
+  setFloatingVoiceStopVisible(false);
   resetActiveSpeech();
   releaseVoiceWakeLock();
   hideOracleVoiceAvatar();
 };
 window.onNativeTTSError = message => {
   pushErrorLog('android-native-tts', message || 'Error de voz Android', 'native speech');
+  setFloatingVoiceStopVisible(false);
   resetActiveSpeech();
   releaseVoiceWakeLock();
   hideOracleVoiceAvatar();
@@ -1254,7 +1317,9 @@ async function speakText(text) {
   }
   const ok = speakWithDevice(clean);
   if (!ok) return toast('La voz no está disponible en este navegador.');
-  if (!hasSpanishDeviceVoice()) toast('No detecto una voz española instalada. Revisa las voces del dispositivo.');
+  const inventory = voiceInventory();
+  if (!hasSpanishDeviceVoice() && inventory.all.length) toast('No detecto una voz española visible. Revisa el idioma TTS del dispositivo.');
+  else if (getVoicePlatform() === 'android' && !inventory.all.length) toast('Usando Google TTS automático de Android.');
 }
 function generatedSpeechKey(clean, prefs = getVoicePrefs()) {
   return `${prefs.remoteVoice || 'coral'}|${clean}`;
@@ -1269,7 +1334,7 @@ async function generatePuterSpeech(clean) {
     model:'gpt-4o-mini-tts',
     voice:prefs.remoteVoice || (resolveOracleAvatarStyle(prefs) === 'male' ? 'onyx' : 'coral'),
     response_format:'mp3',
-    instructions:'Habla en español con voz cálida, natural, serena y clara. Ritmo pausado, sin dramatización excesiva.'
+    instructions:`Usa el idioma ${getAppLocale()} con voz cálida, natural, serena y clara. Ritmo pausado, sin dramatización excesiva.`
   });
   lastGeneratedSpeech = { key, audio };
   return audio;
@@ -1297,6 +1362,7 @@ async function speakWithPuter(clean) {
     try { audio.currentTime = 0; } catch {}
     setMediaSessionForReading();
     audio.onplay = () => {
+      setFloatingVoiceStopVisible(true);
       updateOracleVoiceAvatarSpeaking(true);
       startRemoteAudioLipSync(audio, clean);
     };
@@ -1304,12 +1370,14 @@ async function speakWithPuter(clean) {
       updateOracleVoiceAvatarSpeaking(false);
       setOracleMouthShape('closed');
     };
-    audio.onended = () => { remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
-    audio.onerror = () => { remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
+    audio.onended = () => { setFloatingVoiceStopVisible(false); remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
+    audio.onerror = () => { setFloatingVoiceStopVisible(false); remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
     await audio.play();
+    setFloatingVoiceStopVisible(true);
     return true;
   } catch (error) {
     pushErrorLog('puter-tts', error?.message || 'Error de voz IA', 'remote speech');
+    setFloatingVoiceStopVisible(false);
     remoteSpeechAudio = null;
     releaseVoiceWakeLock();
     hideOracleVoiceAvatar();
@@ -1341,6 +1409,7 @@ async function downloadReadingMP3() {
 }
 function stopSpeech() {
   voiceSpeechSession += 1;
+  setFloatingVoiceStopVisible(false);
   try { window.AndroidTTS?.stop?.(); } catch {}
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   if (remoteSpeechAudio) {
@@ -1365,7 +1434,7 @@ function startDictation(targetId) {
   if (!Recognition) return toast('El micrófono no está disponible en este navegador. Prueba Chrome o revisa permisos.');
   try {
     const recognition = new Recognition();
-    recognition.lang = 'es-ES';
+    recognition.lang = getAppLocale();
     recognition.interimResults = true;
     recognition.continuous = false;
     const original = target.value || '';
@@ -1391,10 +1460,16 @@ function textareaWithMic(id, attrs = '') {
 
 function updateHome() {
   const name = localStorage.getItem(LS.name) || '';
-  $('#userGreeting').textContent = name ? `Bienvenida, ${name}` : 'Bienvenida al santuario';
-  $('#iaStatusChip').textContent = localStorage.getItem(LS.puter) === 'true' ? '🤖 IA: conectada' : '🤖 IA: modo simbólico';
+  applyAppTranslations(document);
+  $('#userGreeting').textContent = name ? `${getAppLanguage() === 'en' ? 'Hello' : getAppLanguage() === 'fr' ? 'Bonjour' : getAppLanguage() === 'de' ? 'Hallo' : getAppLanguage() === 'zh' ? '你好' : getAppLanguage() === 'ca' ? 'Hola' : 'Hola'}, ${name}` : t('greeting');
+  $('#iaStatusChip').textContent = localStorage.getItem(LS.puter) === 'true' ? '🤖 IA: conectada' : `🤖 ${t('aiSymbolic')}`;
   const intention = localStorage.getItem(LS.intention) || getProfile().intention || 'libre';
   $('#intentionChip').textContent = `🧭 Intención: ${intention}${isPrivateMode() ? ' · privado' : ''}`;
+  const platformChip = $('#platformStatusChip');
+  if (platformChip) {
+    const nativePlatform = window.AndroidTTS?.platform?.() || (window.AndroidTTS ? 'android' : '');
+    platformChip.textContent = nativePlatform === 'ios' ? '📱 App iPhone' : nativePlatform === 'android' ? '📱 App Android' : `📱 ${t('installable')}`;
+  }
   const prefs = storeGet(LS.prefs, {});
   document.body.classList.toggle('large-text', !!prefs.largeText);
   document.body.classList.toggle('high-contrast', !!prefs.highContrast);
@@ -1413,8 +1488,8 @@ function showGuide(force = false) {
       <div class="panel-grid">
         <div class="result-card"><h3>1. Pon tu nombre si quieres</h3><p>Es opcional y solo se guarda en este dispositivo para personalizar saludos y lecturas.</p></div>
         <div class="result-card"><h3>2. Prueba una primera tirada</h3><p>La app te guía con Tarot o Runas sin obligarte a conectar IA.</p></div>
-        <div class="result-card"><h3>3. Conecta Puter IA</h3><p>La IA amplía respuestas, pero el modo simbólico funciona siempre.</p></div>
-        <div class="result-card"><h3>4. Todo está en popups</h3><p>Home limpia, rueda dentada para ajustes y biblioteca para guardar lecturas.</p></div>
+        <div class="result-card"><h3>3. IA opcional</h3><p>Puedes ampliar algunas respuestas con IA, pero todas las funciones simbólicas están disponibles sin conectarla.</p></div>
+        <div class="result-card"><h3>4. Todo bien organizado</h3><p>Usa la pantalla principal para entrar en cada apartado, Ajustes para personalizar y Biblioteca para guardar lecturas.</p></div>
       </div>
       <div class="field mt"><label>Nombre opcional</label>${inputWithMic('guideName', `value="${currentName}" placeholder="Tu nombre"`)}</div>
       <p class="notice mt">Uso simbólico y de entretenimiento. No sustituye consejo profesional.</p>`,
@@ -1428,7 +1503,7 @@ function showFirstReading() {
       <button class="choice" data-act="tarot-one"><strong>🃏 Carta rápida</strong><small>Una carta para orientar tu pregunta.</small></button>
       <button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un símbolo breve para empezar.</small></button>
       <button class="choice" data-act="tarot-three"><strong>🃏 Tirada 3 cartas</strong><small>Pasado, presente y consejo.</small></button>
-      <button class="choice" data-act="demo"><strong>🌟 Demo rápida</strong><small>Ver cómo funciona sin configurar nada.</small></button>
+      <button class="choice" data-module="numerologia"><strong>🔢 Numerología</strong><small>Perfil completo y sinastría entre dos personas.</small></button>
     </div>` });
 }
 
@@ -1437,7 +1512,7 @@ function showMap() {
     ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
-  openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Accesos claros y unificados.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>Abrir módulo en popup premium.</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Todos los apartados en un solo lugar.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>Abrir este apartado.</small></button>`).join('\n\n')}</div>` });
 }
 
 const TAROT_SPREADS = {
@@ -1831,13 +1906,13 @@ ${linesOnly}` : linesOnly;
     </div>` : `
     <div class="library-grid">${cards.map(c=>`<button class="mini-card" data-card-name="${escapeHTML(c.card.name)}">${c.card.img ? `<img src="${escapeHTML(c.card.img)}" alt="${escapeHTML(c.card.name)}">` : ''}<strong>${escapeHTML(c.card.name)}</strong><small>${escapeHTML(c.position || (c.rev ? 'Invertida' : 'Normal'))}</small></button>`).join('\n\n')}</div>
     <div class="result-card"><h3>${escapeHTML(title)}</h3>${question ? `<p><strong>Pregunta:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Tarot')}</div>`;
-  openModal({ icon:'🃏', title, subtitle:'Resultado en popup, no al final de la página.', body: content });
+  openModal({ icon:'🃏', title, subtitle:'Lectura completa.', body: content });
 }
-function animateTarotReading(cards, title = 'Lectura de Tarot') {
+function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0.3) {
   const question = $('#tarotPrompt')?.value?.trim() || '';
   const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? c.card.rv : c.card.up}`).join('\\n\\n');
   const lines = question ? `Pregunta: ${question}\\n\\n${linesOnly}` : linesOnly;
-  setLastReading({ type: 'Tarot', title, text: lines, items: cards.map(c => ({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })) });
+  setLastReading({ type: 'Tarot', title, text: lines, items: cards.map(c => ({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), meta:{ reversedRate } });
   ceremonyTone('shuffle');
   ceremonyVibrate([18, 40, 18]);
   openModal({ icon:'🃏', title, subtitle:'Experiencia ritual con revelación espectacular carta a carta.', body:`
@@ -1865,15 +1940,16 @@ function animateTarotReading(cards, title = 'Lectura de Tarot') {
     const wrap = $('#tarotResultWrap');
     if (!wrap) return;
     wrap.className = 'result-appear';
-    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3>${question ? `<p><strong>Pregunta:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\\n/g,'<br>')}</p>${readingActions(lines,'Tarot')}</div>`;
+    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3>${question ? `<p><strong>Pregunta:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\\n/g,'<br>')}</p>${reversalRateNotice(reversedRate)}${readingActions(lines,'Tarot')}</div>`;
   }, ceremonyDelay(1500 + cards.length * 1150));
 }
 function drawTarot(count = 1, title = 'Carta de Tarot', positions = []) {
+  const reversedRate = chooseReversedRate();
   const deck = [...ALL_TAROT]
     .sort(() => Math.random() - .5)
     .slice(0, count)
-    .map((card, index) => ({ card, rev: Math.random() < .3, position: positions[index] || '' }));
-  animateTarotReading(deck, title);
+    .map((card, index) => ({ card, rev: isReversed(reversedRate), position: positions[index] || '' }));
+  animateTarotReading(deck, title, reversedRate);
 }
 function drawTarotSpread(key = 'one') {
   const spread = getTarotSpread(key);
@@ -1891,7 +1967,7 @@ function showTarot() {
     <div class="spread-grid mt">${normalKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
     <hr class="soft-line"><h3 class="section-title">✨ Tiradas Premium ✨</h3>
     <div class="spread-grid premium-spreads">${premiumKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
-    <p class="notice mt">Todas las tiradas se abren en popup, con IA inline, voz, guardar, compartir y PDF profesional.</p>` });
+    <p class="notice mt">Todas las tiradas incluyen interpretación, voz, guardado, opciones para compartir y exportación en PDF.</p>` });
 }
 function showTarotLibrary(filter = 'all') {
   const tabs = `<div class="tabs"><button class="tab ${filter==='all'?'active':''}" data-act="tarot-lib-all">Todas</button><button class="tab ${filter==='major'?'active':''}" data-act="tarot-lib-major">Mayores</button><button class="tab ${filter==='minor'?'active':''}" data-act="tarot-lib-minor">Menores</button></div>`;
@@ -1907,11 +1983,11 @@ function runeReading(runes, title = 'Lectura de Runas') {
   const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
   setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })) });
   const body = runes.length === 1 ? `<div class="reading-layout"><div class="rune-big">${runes[0].rune.sym}</div><div class="result-card"><h3>${escapeHTML(runes[0].rune.name)} ${runes[0].rev ? 'invertida' : ''}</h3><p>${escapeHTML(runes[0].rev ? (runes[0].rune.rv || runes[0].rune.up) : runes[0].rune.up)}</p>${readingActions(lines,'Runas')}</div></div>` : `<div class="library-grid">${runes.map(r=>`<div class="mini-card rune-mini"><span class="symbol">${r.rune.sym}</span><strong>${escapeHTML(r.rune.name)}</strong><small>${r.rev ? 'Invertida' : 'Normal'}</small></div>`).join('\n\n')}</div><div class="result-card"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Runas')}</div>`;
-  openModal({ icon:'ᚱ', title, subtitle:'Resultado en popup.', body });
+  openModal({ icon:'ᚱ', title, subtitle:'Lectura completa.', body });
 }
-function animateRuneReading(runes, title = 'Lectura de Runas') {
+function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
   const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
-  setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })) });
+  setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })), meta:{ reversedRate } });
   ceremonyTone('shuffle');
   ceremonyVibrate([14, 35, 14]);
   openModal({ icon:'ᚱ', title, subtitle:'Ritual rúnico inmersivo con aparición una a una.', body:`
@@ -1939,12 +2015,13 @@ function animateRuneReading(runes, title = 'Lectura de Runas') {
     const wrap = $('#runeResultWrap');
     if (!wrap) return;
     wrap.className = 'result-appear';
-    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\\n/g,'<br>')}</p>${readingActions(lines,'Runas')}</div>`;
+    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\\n/g,'<br>')}</p>${reversalRateNotice(reversedRate)}${readingActions(lines,'Runas')}</div>`;
   }, ceremonyDelay(1450 + runes.length * 1100));
 }
 function drawRunes(count = 1, title = 'Runa rápida') {
-  const runes = [...RUNAS].sort(() => Math.random() - .5).slice(0, count).map(rune => ({ rune, rev: Math.random() < .25 && rune.rv }));
-  animateRuneReading(runes, title);
+  const reversedRate = chooseReversedRate();
+  const runes = [...RUNAS].sort(() => Math.random() - .5).slice(0, count).map(rune => ({ rune, rev: Boolean(rune.rv) && isReversed(reversedRate) }));
+  animateRuneReading(runes, title, reversedRate);
 }
 function showRunas() {
   openModal({ icon:'ᚱ', title:'Runas', subtitle:'Runa rápida, tiradas y saquito místico con revelación progresiva.', body:`<div class="actions mb"><button class="btn primary" data-act="ceremony-runes" type="button">✨ Ritual guiado</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un mensaje simbólico breve.</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ Tres runas</strong><small>Pasado, presente y consejo.</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ Cinco runas</strong><small>Lectura más completa.</small></button><button class="choice" data-act="runes-library"><strong>📚 Biblioteca</strong><small>24 runas en 5 columnas.</small></button></div>` });
@@ -1960,7 +2037,7 @@ function showRuneDetail(r) {
 function showLuna() {
   const phase = MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
   const body = `<div class="result-card center"><div style="font-size:5rem">${phase.sym}</div><h3>${escapeHTML(phase.name)}</h3><p>${escapeHTML(phase.meaning)}</p><p><strong>Ritual simbólico:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>Afirmación:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt"><div class="field"><label>Enfoque</label><select id="moonFocus"><option>Claridad</option><option>Amor</option><option>Trabajo / estudios</option><option>Descanso</option><option>Soltar</option></select></div><div class="field"><label>Pregunta opcional</label>${inputWithMic('moonQuestion', 'placeholder="¿Qué necesito observar?"')}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">Crear lectura lunar</button></div>`;
-  openModal({ icon:'🌙', title:'Luna', subtitle:'Lectura lunar premium.', body });
+  openModal({ icon:'🌙', title:'Luna', subtitle:'Lectura lunar guiada.', body });
 }
 function moonReading() {
   const phase = MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
@@ -2020,21 +2097,139 @@ function dreamReading() {
   openModal({ icon:'💭', title:'Interpretación de sueño', subtitle:`${mood} · ${type}`, body:`<div class="result-card"><h3>Elemento predominante: ${escapeHTML(element.name)}</h3><p>${escapeHTML(element.explanation)}</p></div><div class="result-card mt"><h3>Lectura simbólica</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Sueños')}</div>` });
 }
 
-function letterValue(ch) { const clean = ch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase(); return clean >= 'A' && clean <= 'Z' ? (clean.charCodeAt(0) - 64) : 0; }
+function letterValue(ch) {
+  const clean = ch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+  return clean >= 'A' && clean <= 'Z' ? ((clean.charCodeAt(0) - 65) % 9) + 1 : 0;
+}
 function reduceNum(n) { while (n > 9 && ![11,22,33].includes(n)) n = String(n).split('').reduce((a,b)=>a+Number(b),0); return n || 0; }
+const NUMEROLOGY_MEANINGS = {
+  1:{ title:'Iniciativa', gift:'independencia, decisión y capacidad para abrir camino', challenge:'impaciencia, aislamiento o exceso de control', advice:'lidera con claridad y deja espacio para escuchar' },
+  2:{ title:'Cooperación', gift:'sensibilidad, diplomacia y atención a los vínculos', challenge:'indecisión, dependencia o evitar el conflicto', advice:'cuida tus límites sin perder la empatía' },
+  3:{ title:'Expresión', gift:'creatividad, comunicación y alegría compartida', challenge:'dispersión, superficialidad o dificultad para terminar', advice:'da forma concreta a una idea antes de empezar otra' },
+  4:{ title:'Estructura', gift:'constancia, orden y capacidad para construir', challenge:'rigidez, exceso de carga o miedo al cambio', advice:'crea una base estable que también permita flexibilidad' },
+  5:{ title:'Movimiento', gift:'adaptación, curiosidad y deseo de experimentar', challenge:'inquietud, impulsividad o rechazo de los compromisos', advice:'elige cambios con propósito y no solo por escapar de la rutina' },
+  6:{ title:'Cuidado', gift:'responsabilidad, armonía y sentido de comunidad', challenge:'perfeccionismo, sobreprotección o cargar con todo', advice:'acompaña sin asumir lo que corresponde a otras personas' },
+  7:{ title:'Profundidad', gift:'análisis, intuición y búsqueda de significado', challenge:'distancia emocional, duda o exceso de pensamiento', advice:'combina reflexión con una acción sencilla y comprobable' },
+  8:{ title:'Realización', gift:'organización, ambición equilibrada y manejo de recursos', challenge:'dureza, obsesión por el resultado o luchas de poder', advice:'mide el éxito también por su impacto y sostenibilidad' },
+  9:{ title:'Integración', gift:'compasión, visión amplia y capacidad para cerrar ciclos', challenge:'idealización, nostalgia o dificultad para soltar', advice:'transforma la experiencia en servicio sin olvidarte de ti' },
+  11:{ title:'Inspiración', gift:'intuición intensa, sensibilidad y capacidad de inspirar', challenge:'nerviosismo, sobrecarga emocional o expectativas elevadas', advice:'aterriza la intuición en hábitos y límites saludables' },
+  22:{ title:'Construcción maestra', gift:'visión grande y capacidad para materializarla paso a paso', challenge:'presión, miedo a la magnitud o control excesivo', advice:'divide la visión en etapas realistas y compartidas' },
+  33:{ title:'Servicio consciente', gift:'compasión, enseñanza y cuidado transformador', challenge:'sacrificio personal, culpa o exigencia imposible', advice:'ayuda desde el equilibrio, no desde el agotamiento' }
+};
+function numerologyMeaning(number) {
+  return NUMEROLOGY_MEANINGS[number] || { title:'Potencial abierto', gift:'aprendizaje y observación', challenge:'falta de información suficiente', advice:'usa el resultado como punto de reflexión' };
+}
+function normalizeNumerologyName(name = '') {
+  return String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
+}
+function nameNumber(name = '', mode = 'all') {
+  const vowels = 'AEIOU';
+  return reduceNum([...normalizeNumerologyName(name)].reduce((sum, char) => {
+    const isVowel = vowels.includes(char);
+    if (mode === 'vowels' && !isVowel) return sum;
+    if (mode === 'consonants' && isVowel) return sum;
+    return sum + letterValue(char);
+  }, 0));
+}
+function dateParts(value = '') {
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? { year:Number(match[1]), month:Number(match[2]), day:Number(match[3]) } : null;
+}
+function calculateNumerologyProfile(name, date) {
+  const parts = dateParts(date);
+  if (!parts) return null;
+  const life = reduceNum(String(date).replace(/\D/g,'').split('').reduce((sum, digit) => sum + Number(digit), 0));
+  const expression = nameNumber(name);
+  const soul = nameNumber(name, 'vowels');
+  const personality = nameNumber(name, 'consonants');
+  const birthday = reduceNum(parts.day);
+  const attitude = reduceNum(parts.month + parts.day);
+  const personalYear = reduceNum(new Date().getFullYear() + parts.month + parts.day);
+  const maturity = reduceNum(life + expression);
+  return { name, date, life, expression, soul, personality, birthday, attitude, maturity, personalYear };
+}
+function numerologyCard(label, number, description) {
+  const meaning = numerologyMeaning(number);
+  return `<article class="result-card numerology-card">
+    <div class="numerology-number">${number}</div>
+    <div><h3>${escapeHTML(label)} · ${escapeHTML(meaning.title)}</h3><p>${escapeHTML(description)}</p><p><strong>Fortaleza:</strong> ${escapeHTML(meaning.gift)}.</p><p><strong>Reto:</strong> ${escapeHTML(meaning.challenge)}.</p></div>
+  </article>`;
+}
 function showNumerologia() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
-  openModal({ icon:'🔢', title:'Numerología', subtitle:'Nombre, fecha y energía personal.', body:`<div class="form-grid"><div class="field"><label>Nombre</label>${inputWithMic('numName', `value="${n}" placeholder="Nombre completo"`)}</div><div class="field"><label>Fecha de nacimiento</label><input id="numDate" class="input" type="date"></div></div><div class="actions mt"><button class="btn primary" data-act="calc-num">Calcular numerología</button></div>` });
+  openModal({ icon:'🔢', title:'Numerología', subtitle:'Perfil personal y sinastría numerológica.', body:`
+    <div class="numerology-intro result-card"><h3>Lectura personal</h3><p>Explora ocho números principales calculados a partir del nombre completo y la fecha de nacimiento.</p></div>
+    <div class="form-grid mt"><div class="field"><label>Nombre completo</label>${inputWithMic('numName', `value="${n}" placeholder="Nombre y apellidos"`)}</div><div class="field"><label>Fecha de nacimiento</label><input id="numDate" class="input" type="date"></div></div>
+    <div class="actions mt"><button class="btn primary" data-act="calc-num">Crear lectura personal</button></div>
+    <hr class="soft-line">
+    <div class="numerology-intro result-card"><h3>Sinastría entre dos personas</h3><p>Compara tendencias de identidad, necesidades internas y forma de relacionarse. No determina el futuro ni mide el valor de una relación.</p></div>
+    <div class="synastry-grid mt">
+      <div class="result-card"><h3>Persona A</h3><div class="field"><label>Nombre completo</label><input id="synNameA" class="input" value="${n}" placeholder="Nombre y apellidos"></div><div class="field mt"><label>Fecha de nacimiento</label><input id="synDateA" class="input" type="date"></div></div>
+      <div class="result-card"><h3>Persona B</h3><div class="field"><label>Nombre completo</label><input id="synNameB" class="input" placeholder="Nombre y apellidos"></div><div class="field mt"><label>Fecha de nacimiento</label><input id="synDateB" class="input" type="date"></div></div>
+    </div>
+    <div class="actions mt"><button class="btn primary" data-act="calc-synastry">Crear sinastría</button></div>
+    <p class="notice mt">La numerología se presenta como herramienta simbólica y reflexiva. No es un método científico ni sustituye decisiones personales o profesionales.</p>` });
 }
 function calcNumerologia() {
-  const name = $('#numName')?.value || localStorage.getItem(LS.name) || '';
-  const date = $('#numDate')?.value || todayKey();
-  const expression = reduceNum([...name].reduce((a,c)=>a+letterValue(c),0));
-  const life = reduceNum(date.replace(/\D/g,'').split('').reduce((a,b)=>a+Number(b),0));
-  const personalYear = reduceNum(new Date().getFullYear() + Number(date.slice(5,7) || 0) + Number(date.slice(8,10) || 0));
-  const text = `Nombre: ${name || 'Sin nombre'}\nCamino de vida: ${life}\nExpresión: ${expression}\nAño personal: ${personalYear}\nConsejo: usa estos números como espejo simbólico, no como destino fijo.`;
-  setLastReading({ type:'Numerología', title:'Lectura numerológica', text, items:[], meta:{ numbers:{ life, expression, personalYear }, name, birthDate:date } });
-  openModal({ icon:'🔢', title:'Lectura numerológica', subtitle:name || 'Sin nombre', body:`<div class="panel-grid"><div class="result-card"><h3>Camino de vida</h3><p style="font-size:2rem;color:var(--gold);font-weight:900">${life}</p><p>Dirección general y aprendizaje principal.</p></div><div class="result-card"><h3>Expresión</h3><p style="font-size:2rem;color:var(--gold);font-weight:900">${expression}</p><p>Cómo tiendes a mostrar tu energía.</p></div><div class="result-card"><h3>Año personal</h3><p style="font-size:2rem;color:var(--gold);font-weight:900">${personalYear}</p><p>Clima simbólico del año.</p></div><div class="result-card"><h3>Consejo</h3><p>Lee los números como orientación reflexiva, no como una sentencia.</p></div></div><div class="result-card">${readingActions(text,'Numerología')}</div>` });
+  const name = $('#numName')?.value?.trim() || '';
+  const date = $('#numDate')?.value || '';
+  if (!name || !date) return toast('Escribe el nombre completo y la fecha de nacimiento.');
+  const profile = calculateNumerologyProfile(name, date);
+  if (!profile) return toast('Revisa la fecha de nacimiento.');
+  const fields = [
+    ['Camino de vida', profile.life, 'Aprendizaje principal y dirección general de la experiencia.'],
+    ['Expresión', profile.expression, 'Talentos, capacidades y forma natural de actuar.'],
+    ['Alma', profile.soul, 'Necesidades internas, motivaciones y deseos profundos.'],
+    ['Personalidad', profile.personality, 'Primera impresión y forma de presentarse ante el entorno.'],
+    ['Día natal', profile.birthday, 'Recurso concreto que tiende a aparecer de manera espontánea.'],
+    ['Actitud', profile.attitude, 'Respuesta inicial ante situaciones, cambios y relaciones.'],
+    ['Madurez', profile.maturity, 'Cualidad que gana importancia con la experiencia.'],
+    ['Año personal', profile.personalYear, `Tema simbólico predominante durante ${new Date().getFullYear()}.`]
+  ];
+  const text = `LECTURA NUMEROLÓGICA DE ${name}\nFecha: ${date}\n\n${fields.map(([label, number, description]) => {
+    const meaning = numerologyMeaning(number);
+    return `${label}: ${number} · ${meaning.title}\n${description}\nFortaleza: ${meaning.gift}.\nReto: ${meaning.challenge}.\nConsejo: ${meaning.advice}.`;
+  }).join('\n\n')}\n\nSíntesis: combina estos números como tendencias complementarias. Ninguno define por sí solo la personalidad ni el destino.`;
+  setLastReading({ type:'Numerología', title:`Numerología de ${name}`, text, items:[], meta:{ numbers:profile, name, birthDate:date } });
+  openModal({ icon:'🔢', title:'Lectura numerológica', subtitle:`${name} · ${date}`, body:`
+    <div class="numerology-results">${fields.map(([label, number, description]) => numerologyCard(label, number, description)).join('')}</div>
+    <div class="result-card mt"><h3>Síntesis práctica</h3><p>Observa qué fortalezas se repiten y qué retos necesitan equilibrio. Los números maestros 11, 22 y 33 se conservan como matices de mayor intensidad, no como categorías superiores.</p>${readingActions(text,'Numerología')}</div>` });
+}
+function synastryTheme(a, b) {
+  if (a === b) return 'Existe una fuerte sensación de reconocimiento: ambos pueden comprender el ritmo del otro, aunque también amplificar el mismo reto.';
+  const distance = Math.abs(reduceNum(a) - reduceNum(b));
+  if (distance <= 2) return 'Los ritmos son cercanos y favorecen acuerdos naturales; conviene evitar asumir que ambos necesitan exactamente lo mismo.';
+  if (distance <= 5) return 'Las diferencias pueden complementarse bien cuando se expresan con claridad y se reparten responsabilidades.';
+  return 'Los ritmos son contrastantes: la relación puede ampliar perspectivas, pero necesita paciencia, traducción emocional y acuerdos explícitos.';
+}
+function calculateSynastry() {
+  const nameA = $('#synNameA')?.value?.trim() || '';
+  const dateA = $('#synDateA')?.value || '';
+  const nameB = $('#synNameB')?.value?.trim() || '';
+  const dateB = $('#synDateB')?.value || '';
+  if (!nameA || !dateA || !nameB || !dateB) return toast('Completa los nombres y fechas de las dos personas.');
+  const a = calculateNumerologyProfile(nameA, dateA);
+  const b = calculateNumerologyProfile(nameB, dateB);
+  if (!a || !b) return toast('Revisa las fechas de nacimiento.');
+  const relationship = reduceNum(a.life + b.life);
+  const relationMeaning = numerologyMeaning(relationship);
+  const sections = [
+    ['Dirección compartida', a.life, b.life, synastryTheme(a.life, b.life)],
+    ['Comunicación y acción', a.expression, b.expression, synastryTheme(a.expression, b.expression)],
+    ['Necesidades emocionales', a.soul, b.soul, synastryTheme(a.soul, b.soul)],
+    ['Convivencia e imagen externa', a.personality, b.personality, synastryTheme(a.personality, b.personality)]
+  ];
+  const advice = `La vibración conjunta ${relationship} (${relationMeaning.title}) favorece ${relationMeaning.gift}. El cuidado principal está en ${relationMeaning.challenge}. Consejo: ${relationMeaning.advice}.`;
+  const text = `SINASTRÍA NUMEROLÓGICA\n${nameA}: camino ${a.life}, expresión ${a.expression}, alma ${a.soul}, personalidad ${a.personality}.\n${nameB}: camino ${b.life}, expresión ${b.expression}, alma ${b.soul}, personalidad ${b.personality}.\n\n${sections.map(([label, nA, nB, interpretation]) => `${label}: ${nA} y ${nB}\n${interpretation}`).join('\n\n')}\n\nNúmero de la relación: ${relationship} · ${relationMeaning.title}\n${advice}\n\nEsta lectura describe tendencias simbólicas; no determina compatibilidad real ni sustituye la comunicación entre las personas.`;
+  setLastReading({ type:'Numerología · Sinastría', title:`Sinastría: ${nameA} y ${nameB}`, text, items:[], meta:{ synastry:{ a, b, relationship }, numbers:{ life:relationship, expression:reduceNum(a.expression + b.expression), personalYear:reduceNum(a.personalYear + b.personalYear) } } });
+  openModal({ icon:'💞', title:'Sinastría numerológica', subtitle:`${nameA} y ${nameB}`, body:`
+    <div class="synastry-summary">
+      <div class="result-card center"><small>${escapeHTML(nameA)}</small><div class="numerology-number">${a.life}</div><strong>${escapeHTML(numerologyMeaning(a.life).title)}</strong></div>
+      <div class="synastry-link"><span>∞</span><small>Relación ${relationship}</small></div>
+      <div class="result-card center"><small>${escapeHTML(nameB)}</small><div class="numerology-number">${b.life}</div><strong>${escapeHTML(numerologyMeaning(b.life).title)}</strong></div>
+    </div>
+    <div class="numerology-results mt">${sections.map(([label, nA, nB, interpretation]) => `<article class="result-card numerology-card"><div class="numerology-pair">${nA}<span>·</span>${nB}</div><div><h3>${escapeHTML(label)}</h3><p>${escapeHTML(interpretation)}</p></div></article>`).join('')}</div>
+    <div class="result-card mt"><h3>Número de la relación: ${relationship} · ${escapeHTML(relationMeaning.title)}</h3><p>${escapeHTML(advice)}</p><p class="notice">La sinastría es una lectura simbólica. Una relación saludable depende de comunicación, respeto, consentimiento y acciones reales.</p>${readingActions(text,'Numerología · Sinastría')}</div>` });
 }
 
 async function loadGrabovoi() {
@@ -2150,7 +2345,7 @@ async function handleChatGrabovoi(query = '') {
 }
 async function showGrabovoi() {
   const entries = await loadGrabovoi();
-  openModal({ icon:'📜', title:'Grabovoi simbólico', subtitle:'Cada código abre su popup.', body:`<p class="notice">Contenido simbólico y de entretenimiento. No es consejo médico ni promete resultados.</p><div class="field mt"><label>Buscar código o tema</label>${inputWithMic('grabSearch', 'placeholder="amor, calma, 147..."')}</div><div id="grabList" class="diary-list mt">${renderGrabList(entries.slice(0,40))}</div>` });
+  openModal({ icon:'📜', title:'Grabovoi simbólico', subtitle:'Consulta cada secuencia con explicación y forma de uso.', body:`<p class="notice">Contenido simbólico y de entretenimiento. No es consejo médico ni promete resultados.</p><div class="field mt"><label>Buscar código o tema</label>${inputWithMic('grabSearch', 'placeholder="amor, calma, 147..."')}</div><div id="grabList" class="diary-list mt">${renderGrabList(entries.slice(0,40))}</div>` });
 }
 function renderGrabList(list) { return list.map((e,i)=>`<button class="choice" data-grab-index="${grabovoiEntries.indexOf(e)}"><strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong><small>${escapeHTML(e.categoria || '')}</small></button>`).join('\n\n') || '<p class="subtle">Sin resultados.</p>'; }
 function buildGrabovoiInterpretation(entry) {
@@ -2241,7 +2436,7 @@ function showBiblioteca(filter = 'all') {
   if (q) list = list.filter(d => `${d.title} ${d.type} ${d.text} ${d.note || ''}`.toLowerCase().includes(q));
   openModal({ icon:'📚', title:'Biblioteca Mística', subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
     <div class="form-grid"><div class="field"><label>Buscar en el diario</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label>Filtrar tipo</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
-    <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar TXT</button><button class="btn" data-act="export-diary-pdf">Diario PDF</button><button class="btn" data-act="backup-data">Backup JSON</button><button class="btn danger" data-act="clear-diary">Vaciar diario</button></div>
+    <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar texto</button><button class="btn" data-act="export-diary-pdf">Crear PDF</button><button class="btn" data-act="backup-data">Copia de seguridad</button><button class="btn danger" data-act="clear-diary">Vaciar biblioteca</button></div>
     <div class="diary-list mt">${list.map(item=>`<article class="diary-item ${item.favorite?'favorite':''}"><div class="split"><h3>${item.favorite?'⭐ ':''}${escapeHTML(item.title)}</h3><small>${new Date(item.date || Date.now()).toLocaleDateString()}</small></div><small class="pill">${escapeHTML(item.type || 'Lectura')}</small>${item.note ? `<p class="diary-note"><strong>Nota:</strong> ${escapeHTML(item.note)}</p>` : ''}<p>${escapeHTML(clampText(item.text,260))}</p><div class="actions mt"><button class="btn compact" data-fav-diary="${item.id}">${item.favorite?'Quitar ⭐':'Favorita ⭐'}</button><button class="btn compact" data-note-diary="${item.id}">Nota</button><button class="btn compact" data-copy-diary="${item.id}">Copiar</button><button class="btn compact" data-delete-diary="${item.id}">Borrar</button></div></article>`).join('\n\n') || '<p class="subtle">Todavía no hay lecturas guardadas con ese filtro.</p>'}</div>` });
 }
 
@@ -2256,10 +2451,11 @@ function showSettings() {
     <summary>👤 Perfil e IA</summary>
     <div class="settings-section-content">
     <div class="form-grid">
+      <div class="field"><label>${escapeHTML(t('appLanguage'))}</label><select id="appLanguage">${languageOptionsHTML()}</select><small>${escapeHTML(t('languageHelp'))}</small></div>
       <div class="field"><label>Nombre opcional</label>${inputWithMic('settingsName', `value="${name}" placeholder="Tu nombre"`)}</div>
       <div class="field"><label>Estado IA</label><input class="input" value="${localStorage.getItem(LS.puter)==='true'?'Conectada':'Modo simbólico'}" readonly></div>
       <div class="field"><label>Tipo de lectura IA</label><select id="aiStyle"><option value="mistica" ${getAIStyle() === 'mistica' ? 'selected' : ''}>Mística</option><option value="razonable" ${getAIStyle() === 'razonable' ? 'selected' : ''}>Razonable</option><option value="corta" ${getAIStyle() === 'corta' ? 'selected' : ''}>Corta</option><option value="profunda" ${getAIStyle() === 'profunda' ? 'selected' : ''}>Profunda</option><option value="directa" ${getAIStyle() === 'directa' ? 'selected' : ''}>Directa</option><option value="amorosa" ${getAIStyle() === 'amorosa' ? 'selected' : ''}>Amorosa</option></select></div>
-    </div></div></details>
+    </div><p class="notice mt">${escapeHTML(t('internationalNote'))}</p></div></details>
 
     <details class="settings-section">
     <summary>🔊 Voz y lectura</summary>
@@ -2324,22 +2520,16 @@ function showSettings() {
     </div>
     <h3 class="section-title">Datos y ayuda</h3>
     <div class="panel-grid settings-actions">
-      <button class="choice" data-act="backup-data"><strong>🧳 Backup</strong><small>Exporta datos en JSON.</small></button>
-      <button class="choice" data-act="import-backup"><strong>📥 Restaurar backup</strong><small>Importa JSON de otra copia.</small></button>
+      <button class="choice" data-act="backup-data"><strong>🧳 Crear copia de seguridad</strong><small>Exporta tus datos en un archivo.</small></button>
+      <button class="choice" data-act="import-backup"><strong>📥 Restaurar copia</strong><small>Recupera una copia guardada anteriormente.</small></button>
       <button class="choice" data-act="privacy-center"><strong>🔐 Privacidad y datos</strong><small>Controla el historial local.</small></button>
       <button class="choice" data-act="install-help"><strong>📲 Instalar aplicación</strong><small>Añádela a iPhone o Android.</small></button>
-      <button class="choice" data-act="open-manual"><strong>📘 Manual completo</strong><small>Abrir manual exhaustivo en PDF.</small></button>
+      <button class="choice" data-act="open-manual"><strong>📘 Manual de usuario</strong><small>Abrir la guía completa en PDF.</small></button>
     </div>
     <p class="notice mt">Las lecturas y preferencias se guardan en este dispositivo, salvo que actives servicios de IA externos.</p>` });
 }
 
 
-function demo() {
-  const card = sample(ALL_TAROT), rune = sample(RUNAS);
-  const text = `Carta: ${card.name}\n${card.up}\n\nRuna: ${rune.name}\n${rune.up}`;
-  setLastReading({ type:'Demo', title:'Demo rápida', text, items:[{ kind:'tarot', name:card.name, subtitle:card.key || card.el || '', image:card.img || '', symbol:'🃏', position:'Carta demo' }, { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:'Runa demo' }] });
-  openModal({ icon:'🌟', title:'Demo rápida', subtitle:'Ejemplo sin configuración.', body:`<div class="reading-layout"><div>${cardImage(card)}<div class="rune-big mt">${rune.sym}</div></div><div class="result-card"><h3>${escapeHTML(card.name)} + ${escapeHTML(rune.name)}</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Demo')}</div></div>` });
-}
 function daily() {
   unlockAchievement('first_daily');
   const key = 'oraculo.daily.' + todayKey();
@@ -2450,9 +2640,10 @@ function detectChatIntent(text) {
 }
 function chatDrawTarot(spreadKey = 'one') {
   const spread = getTarotSpread(spreadKey);
-  const cards = [...ALL_TAROT].sort(() => Math.random() - .5).slice(0, spread.count).map((card, index) => ({ card, rev: Math.random() < .3, position: spread.positions[index] || '' }));
+  const reversedRate = chooseReversedRate();
+  const cards = [...ALL_TAROT].sort(() => Math.random() - .5).slice(0, spread.count).map((card, index) => ({ card, rev: isReversed(reversedRate), position: spread.positions[index] || '' }));
   const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? c.card.rv : c.card.up}`).join('\n\n');
-  setLastReading({ type:'Tarot privado', title:spread.title, text:linesOnly, items:cards.map(c=>({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), ritual:{ module:'chat', action:'tarot', spread:spreadKey } });
+  setLastReading({ type:'Tarot privado', title:spread.title, text:linesOnly, items:cards.map(c=>({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), ritual:{ module:'chat', action:'tarot', spread:spreadKey }, meta:{ reversedRate } });
   ceremonyTone('shuffle'); ceremonyVibrate([14,35,14]);
   addChat('oracle', `El oráculo está mezclando las cartas para tu ${spread.title}...`);
   cards.forEach((c, i) => setTimeout(() => { ceremonyTone('reveal'); ceremonyVibrate(22); addChat('oracle', `${c.position || `Carta ${i+1}`}: ${c.card.name}${c.rev ? ' invertida' : ''}
@@ -2460,10 +2651,11 @@ ${c.rev ? c.card.rv : c.card.up}`, `<div class="chat-ritual-grid single">${chatT
   setTimeout(() => addChat('oracle', `Lectura completada. Puedes guardarla, crear PDF, escuchar la voz o pedirme que profundice con IA.`, `<div class="chat-ritual-grid summary tarot-count-${cards.length}">${cards.map(chatTarotCardHTML).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="speak-ai">🔊 Leer IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra ${spread.title}">🔄 Otra similar</button></div>`), ceremonyDelay(900 + cards.length * 950));
 }
 function chatDrawRunes(count = 1) {
-  const runes = [...RUNAS].sort(() => Math.random() - .5).slice(0, count).map(rune => ({ rune, rev: Math.random() < .25 && rune.rv }));
+  const reversedRate = chooseReversedRate();
+  const runes = [...RUNAS].sort(() => Math.random() - .5).slice(0, count).map(rune => ({ rune, rev: Boolean(rune.rv) && isReversed(reversedRate) }));
   const title = count === 1 ? 'Runa privada' : `Tirada privada de ${count} runas`;
   const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
-  setLastReading({ type:'Runas privadas', title, text:lines, items:runes.map(r=>({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })), ritual:{ module:'chat', action:'runes', count } });
+  setLastReading({ type:'Runas privadas', title, text:lines, items:runes.map(r=>({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })), ritual:{ module:'chat', action:'runes', count }, meta:{ reversedRate } });
   ceremonyTone('shuffle'); ceremonyVibrate([14,35,14]);
   addChat('oracle', 'El oráculo agita el saquito de runas...');
   runes.forEach((r, i) => setTimeout(() => { ceremonyTone('rune'); ceremonyVibrate(22); addChat('oracle', `Runa ${i+1}: ${r.rune.sym} ${r.rune.name}${r.rev ? ' invertida' : ''}
@@ -2521,7 +2713,6 @@ function handleAction(action) {
   if (action?.startsWith('spread-')) return drawTarotSpread(action.replace('spread-', ''));
   const actionMap = {
     'first-reading': showFirstReading,
-    'demo': demo,
     'connect-ai': connectPuter,
     'daily': daily,
     'tarot-one': () => drawTarotSpread('one'),
@@ -2538,12 +2729,13 @@ function handleAction(action) {
     'moon-reading': moonReading,
     'dream-reading': dreamReading,
     'calc-num': calcNumerologia,
+    'calc-synastry': calculateSynastry,
     'biblioteca': () => showBiblioteca('all'),
     'settings': showSettings,
     'control-center': showControlCenter,
     'preview-avatar': previewOracleAvatar,
     'preview-avatar-emotions': previewOracleAvatarEmotions,
-    'hide-avatar': hideOracleVoiceAvatar,
+    'hide-avatar': stopSpeech,
     'version-status': showVersionStatus,
     'repair-cache': repairCacheAndReload,
     'error-log': showErrorLog,
@@ -2575,7 +2767,7 @@ function handleAction(action) {
     'clear-profile': clearProfileData,
     'factory-reset': factoryResetData,
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast('Guía completada.'); },
-    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); closeModal(); updateHome(); toast('Ajustes guardados.'); },
+    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'toggle-large-text': () => { const p=storeGet(LS.prefs,{}); p.largeText=!p.largeText; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
@@ -2614,8 +2806,8 @@ function handleAction(action) {
       const isGrabovoi = lastReading.type === 'Grabovoi';
       setAIReadingPanel(`<div class="channeling"><span class="orb-pulse">🔮</span><div><h3>${isGrabovoi ? 'Analizando el código Grabovoi...' : `${getUserName() ? getUserName() + ', e' : 'E'}l oráculo está canalizando...`}</h3><p>${isGrabovoi ? 'La ampliación se centrará únicamente en la secuencia, su práctica y sus límites.' : 'Estoy profundizando la lectura con IA. Puedes dejar esta pantalla abierta.'}</p></div></div>`, 'loading');
       const prompt = isGrabovoi
-        ? `Analiza exclusivamente esta ficha de un código Grabovoi. No hables del usuario, su personalidad, energía ni destino. Explica: finalidad declarada, estructura y bloques de la secuencia, lectura simbólica de los dígitos sin inventar propiedades, una práctica de concentración paso a paso, duración prudente, formas de escribir o visualizar el número y consejos para registrar la práctica. No prometas resultados. Si trata salud, deja claro que no diagnostica, trata ni cura y que no sustituye atención médica. Esta pantalla no es un chat: entrega una interpretación completa y cerrada, sin formular preguntas, sin pedir datos y sin invitar al usuario a responder. Responde en español claro y organizado:\n\n${base}`
-        : `Amplía esta lectura de forma simbólica, clara, positiva y segura. Esta pantalla no es un chat: entrega una interpretación completa, autónoma y cerrada. No formules ninguna pregunta al usuario, no pidas aclaraciones o datos adicionales, no ofrezcas continuar conversando y no termines con una interrogación. Interpreta únicamente la información disponible. Si es una tirada de una carta, explica el mensaje central, cómo se relaciona con la pregunta si existe, la advertencia o matiz y un paso práctico concreto. En tiradas de varias cartas, integra sus posiciones y concluye con un consejo final. No hagas promesas absolutas. No des consejos médicos, legales ni financieros. Responde en español con tono místico, claro y útil:
+        ? `Analiza exclusivamente esta ficha de un código Grabovoi. No hables del usuario, su personalidad, energía ni destino. Explica: finalidad declarada, estructura y bloques de la secuencia, lectura simbólica de los dígitos sin inventar propiedades, una práctica de concentración paso a paso, duración prudente, formas de escribir o visualizar el número y consejos para registrar la práctica. No prometas resultados. Si trata salud, deja claro que no diagnostica, trata ni cura y que no sustituye atención médica. Esta pantalla no es un chat: entrega una interpretación completa y cerrada, sin formular preguntas, sin pedir datos y sin invitar al usuario a responder. Responde de forma clara y organizada:\n\n${base}`
+        : `Amplía esta lectura de forma simbólica, clara, positiva y segura. Esta pantalla no es un chat: entrega una interpretación completa, autónoma y cerrada. No formules ninguna pregunta al usuario, no pidas aclaraciones o datos adicionales, no ofrezcas continuar conversando y no termines con una interrogación. Interpreta únicamente la información disponible. Si es una tirada de una carta, explica el mensaje central, cómo se relaciona con la pregunta si existe, la advertencia o matiz y un paso práctico concreto. En tiradas de varias cartas, integra sus posiciones y concluye con un consejo final. No hagas promesas absolutas. No des consejos médicos, legales ni financieros. Usa un tono místico, claro y útil:
 
 ${base}`;
       const rawAI = await askAI(prompt);
@@ -2714,14 +2906,19 @@ function boot() {
   try {
     document.body.classList.toggle('native-android', Boolean(window.AndroidTTS));
     migrateData();
+    applyAppTranslations(document);
     applyTheme();
     updateHome();
     attachGlobalEvents();
     document.addEventListener('visibilitychange', handleSpeechVisibility);
     registerSW();
   if ('speechSynthesis' in window) {
-    window.speechSynthesis.addEventListener?.('voiceschanged', refreshDeviceVoiceSelect);
-    setTimeout(refreshDeviceVoiceSelect, 600);
+    const onWebVoicesChanged = () => {
+      getAllDeviceVoices();
+      refreshDeviceVoiceSelect();
+    };
+    window.speechSynthesis.addEventListener?.('voiceschanged', onWebVoicesChanged);
+    [300, 900, 1800, 3500, 6500, 10000].forEach(delay => setTimeout(onWebVoicesChanged, delay));
     window.addEventListener('pageshow', () => reloadDeviceVoices({ awaken:false }));
     window.addEventListener('focus', () => reloadDeviceVoices({ awaken:false }));
   }

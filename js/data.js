@@ -22,7 +22,7 @@ export const MAJOR_ARCANA = [
     { num:'XVII', name:'La Estrella', emoji:'⭐', key:'Esperanza, sanación', img:imgObj('am17.png'), up:'Optimismo. Amor: nuevas ilusiones. Trabajo: inspiración. Salud: recuperación.', rv:'Invertida: desesperanza.', el:'Acuario' },
     { num:'XVIII', name:'La Luna', emoji:'🌙', key:'Ilusión, subconsciente', img:imgObj('am18.png'), up:'Intuición, sueños. Amor: confusiones. Trabajo: engaños. Salud: ansiedad.', rv:'Invertida: claridad, secretos revelados.', el:'Piscis' },
     { num:'XIX', name:'El Sol', emoji:'☀️', key:'Éxito, alegría', img:imgObj('am19.png'), up:'Felicidad plena. Amor: matrimonio. Trabajo: éxito rotundo. Salud: energía.', rv:'Invertido: éxito retrasado.', el:'Sol' },
-    { num:'XX', name:'El Juicio', emoji:'📯', key:'Renacimiento, llamado', img:imgObj('am20.png'), up:'Despertar espiritual. Amor: reconciliación. Trabajo: oportunidad. Salud: diagnóstico certero.', rv:'Invertido: autocrítica excesiva.', el:'Fuego' },
+    { num:'XX', name:'El Juicio', emoji:'📯', key:'Renacimiento, llamado', img:imgObj('am20.png'), up:'Despertar y revisión. Amor: posibilidad de reconciliación. Trabajo: nueva oportunidad. Bienestar: escucha las señales y busca orientación profesional cuando sea necesario.', rv:'Invertido: autocrítica excesiva.', el:'Fuego' },
     { num:'XXI', name:'El Mundo', emoji:'🌍', key:'Completud, éxito', img:imgObj('am21.png'), up:'Culminación. Amor: unión completa. Trabajo: meta alcanzada. Salud: plenitud.', rv:'Invertido: falta de cierre.', el:'Saturno' }
 ];
 
@@ -71,7 +71,7 @@ export const MINOR_ARCANA = (() => {
             Rey: { up: 'Intuición y compasión. Amor: consejera amorosa. Trabajo: apoyo emocional.', rv: 'Invertido: drama emocional.' }
         },
         swords: {
-            As: { up: 'Claridad mental. Amor: comunicación honesta. Trabajo: idea brillante. Salud: diagnóstico certero.', rv: 'Invertido: confusión.' },
+            As: { up: 'Claridad mental. Amor: comunicación honesta. Trabajo: idea brillante. Bienestar: ordenar dudas y consultar a un profesional cuando corresponda.', rv: 'Invertido: confusión.' },
             '2': { up: 'Indecisión y bloqueo. Amor: no saber qué hacer. Trabajo: estancamiento.', rv: 'Invertido: liberación.' },
             '3': { up: 'Dolor y traición. Amor: desamor. Trabajo: fracaso.', rv: 'Invertido: superación.' },
             '4': { up: 'Descanso y recuperación. Amor: tiempo a solas. Trabajo: pausa necesaria.', rv: 'Invertido: insomnio.' },

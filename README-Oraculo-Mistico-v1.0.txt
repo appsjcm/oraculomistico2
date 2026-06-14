@@ -1,6 +1,17 @@
 Oráculo Místico v1.0
 
-App PWA simbólica con tarot, runas, luna, sueños, numerología, Grabovoi, diario místico, voz, avatar animado, PDF premium y Chat Ritual.
+Aplicación simbólica con tarot, runas, luna, sueños, numerología completa, sinastría, Grabovoi, biblioteca, voz, avatar animado, PDF y Chat Ritual.
+
+Idiomas:
+- Interfaz en español, catalán, inglés, francés, alemán y chino simplificado.
+- Selección automática según el idioma del dispositivo o elección manual en Ajustes.
+- Dictado, voz automática e IA siguen el idioma elegido.
+- Los textos tradicionales extensos de cartas, runas y manuales conservan su fuente en español mientras se completa su traducción editorial.
+
+Cartas y runas invertidas:
+- Cada tirada elige aleatoriamente una tasa del 20%, 30% o 50%.
+- Nunca supera el 50%.
+- La tasa usada se indica en el resultado.
 
 Voz:
 - Por defecto utiliza el TTS del sistema, sin Puter.
@@ -12,6 +23,13 @@ Publicación rápida:
 2. Sube todo el contenido a GitHub Pages.
 3. Abre la URL pública.
 4. Comprueba una lectura, la voz, el avatar y la instalación desde un móvil.
+5. Cambia el idioma en Ajustes y revisa la portada, el dictado y la voz.
+
+Numerología:
+- Perfil personal con ocho números principales.
+- Significados, fortalezas, retos y consejos.
+- Sinastría entre dos personas basada en nombres y fechas.
+- Uso reflexivo y simbólico; no determina personalidad, futuro ni compatibilidad real.
 
 Uso simbólico y de entretenimiento. No sustituye consejo profesional.
 

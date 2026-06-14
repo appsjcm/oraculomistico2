@@ -1,0 +1,61 @@
+ORACULO MISTICO v1.0 - TEXTOS PARA PUBLICACION
+
+NOMBRE
+Oraculo Mistico
+
+SUBTITULO
+Tarot, runas y numerologia
+
+DESCRIPCION BREVE
+Lecturas simbolicas de tarot, runas, luna y suenos, con numerologia completa,
+sinastria, voz del dispositivo, biblioteca privada y exportacion en PDF.
+
+DESCRIPCION COMPLETA
+Oraculo Mistico reune herramientas simbolicas y de entretenimiento en una
+experiencia clara y personal:
+
+- Tarot con distintas tiradas y biblioteca de cartas.
+- Runas del Futhark con lecturas de una, tres o cinco runas.
+- Fase lunar, afirmaciones y rituales simbolicos.
+- Interpretacion de suenos por simbolos y elemento predominante.
+- Numerologia personal con ocho numeros principales.
+- Sinastria numerologica entre dos personas.
+- Biblioteca local para guardar lecturas y notas.
+- Voz del dispositivo, avatar animado y control flotante para detenerla.
+- Exportacion y opciones para compartir.
+- Chat Ritual con inteligencia artificial opcional.
+- Interfaz en español, catalán, inglés, francés, alemán y chino simplificado.
+- Selección de idioma automática o manual, aplicada también a voz y dictado.
+- Probabilidad de cartas y runas invertidas limitada al 50%.
+
+Las lecturas son simbolicas y de entretenimiento. No sustituyen asesoramiento
+medico, psicologico, legal, financiero ni profesional. La numerologia y la
+sinastria no son metodos cientificos y no determinan la personalidad, el
+futuro ni la compatibilidad real de una relacion.
+
+PALABRAS CLAVE
+tarot, runas, numerologia, sinastria, luna, suenos, oraculo, diario
+
+CATEGORIA SUGERIDA
+Entretenimiento o Estilo de vida
+
+EDAD SUGERIDA
+12+ o la clasificacion que determine el cuestionario de cada tienda.
+
+DATOS OBLIGATORIOS PENDIENTES DEL PROPIETARIO
+- Nombre legal o nombre comercial responsable.
+- Correo electronico publico de soporte.
+- URL publica de soporte.
+- URL publica de la politica de privacidad.
+- Pais y datos fiscales o comerciales exigidos por la tienda.
+- Cuenta Apple Developer y cuenta Google Play Console.
+- Certificados privados definitivos de firma.
+
+COMPROBACIONES ANTES DE ENVIAR
+- Probar voz y boton de paro en un Android y un iPhone fisicos.
+- Probar los seis idiomas y confirmar que el TTS instalado admite el idioma elegido.
+- Probar enlaces, politica de privacidad y manual.
+- Verificar que la IA opcional se abre en navegador seguro.
+- Confirmar que no se introducen datos sensibles en la IA.
+- Crear capturas de pantalla sin paneles de desarrollo.
+- Revisar la ficha de privacidad y recopilacion de datos de cada tienda.
