@@ -1,9 +1,10 @@
-const CACHE_NAME = 'oraculo-v1-0-public-launch-closed-readings-8';
+const CACHE_NAME = 'oraculo-v1-0-public-international-13';
 const APP_SHELL = [
   './',
   './index.html',
   './styles/core-remodel-v1-0-70.css',
   './js/coreApp-v1-0-firefox.js',
+  './js/i18n.js',
   './js/data.js',
   './js/config.js',
   './grabovoi_db.json',

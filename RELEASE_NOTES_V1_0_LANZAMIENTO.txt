@@ -22,5 +22,23 @@ VERSIÓN DE LANZAMIENTO
 - El APK evita el inicio de Google dentro del visor interno y ofrece abrir la versión web en el navegador seguro.
 - Las interpretaciones IA de tiradas son cerradas y no hacen preguntas al usuario.
 - La tirada de una carta entrega mensaje central, matiz y paso práctico sin comportamiento de chat.
+- Un botón flotante permite parar la voz desde cualquier pantalla.
+- El botón de paro solo aparece mientras la voz está reproduciéndose y se oculta automáticamente al terminar.
+- La web en Android mantiene disponible Google TTS automático aunque Chrome oculte los nombres de las voces.
+- La detección de voces Android se repite durante varios segundos y conserva el último catálogo válido.
+- Se reconocen correctamente las voces cuyo idioma llega como "es" sin código de país.
+- El botón flotante de paro aparece aunque Android no envíe el evento de inicio de voz.
+- Cerrar el avatar detiene completamente la voz activa.
+- Numerología ampliada con camino de vida, expresión, alma, personalidad, día natal, actitud, madurez y año personal.
+- Nueva sinastría numerológica entre dos personas, con afinidades, diferencias y consejos prácticos.
+- Textos públicos revisados para eliminar términos internos y mejorar claridad.
+- Eliminadas afirmaciones médicas tajantes en las cartas.
+- Nueva interfaz internacional con detección automática del idioma del dispositivo.
+- Idiomas de lanzamiento: español, catalán, inglés, francés, alemán y chino simplificado.
+- El idioma elegido también configura el dictado, la voz automática y el formato regional.
+- La IA responde en el idioma seleccionado cuando está conectada.
+- Tarot y runas eligen una probabilidad invertida por tirada entre 20%, 30% y 50%.
+- La probabilidad nunca supera el 50% y se muestra con transparencia en el resultado.
+- Los significados tradicionales conservan por ahora su fuente editorial en español.
 
 Uso simbólico y de entretenimiento. No sustituye asesoramiento profesional.

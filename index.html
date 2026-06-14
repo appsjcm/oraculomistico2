@@ -8,10 +8,10 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Oráculo Místico v1.0</title>
-  <meta name="description" content="Oráculo Místico: PWA de entretenimiento con tarot, runas, luna, sueños, numerología, diario local, voz del dispositivo, PDF y Chat Ritual.">
-  <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, PWA, diario místico, lectura simbólica">
+  <meta name="description" content="Oráculo Místico: tarot, runas, luna, sueños, numerología completa, sinastría, diario local, voz y Chat Ritual.">
+  <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, sinastría, diario místico, lectura simbólica">
   <meta property="og:title" content="Oráculo Místico v1.0">
-  <meta property="og:description" content="Tarot, runas, luna, sueños, diario, voz gratis y PDF premium en una PWA simbólica.">
+  <meta property="og:description" content="Tarot, runas, luna, sueños, numerología, sinastría, diario y voz en una experiencia simbólica.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="icon-512.png">
   <meta name="twitter:card" content="summary">
@@ -21,10 +21,10 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-closed-readings-8">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-international-13">
   <script>
     (() => {
-      const build = '1.0-closed-readings-8';
+      const build = '1.0-international-13';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -42,75 +42,77 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-closed-readings-8"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-international-13"></script>
 </head>
 <body>
   <div class="cosmos" aria-hidden="true"></div>
-  <a class="skip-link" href="#home">Saltar al contenido</a>
+  <a class="skip-link" href="#home" data-i18n="skip">Saltar al contenido</a>
 
   <header class="topbar">
-    <button id="openGuideBtn" class="icon-pill" type="button">✨ Guía</button>
+    <button id="openGuideBtn" class="icon-pill" type="button">✨ <span data-i18n="guide">Guía</span></button>
     <div class="brand" aria-label="Oráculo Místico">
       <span class="brand-orb">🔮</span>
       <span><strong>Oráculo Místico</strong><small>v1.0</small></span>
     </div>
-    <button id="gearBtn" class="gear" type="button" aria-label="Abrir ajustes">⚙️</button>
+    <button id="gearBtn" class="gear" type="button" aria-label="Ajustes" data-i18n="settings">⚙️</button>
   </header>
 
   <main id="home" class="app-shell">
     <section class="hero card-glass">
-      <div class="hero-kicker" id="userGreeting">Bienvenida al santuario</div>
-      <h1>Consulta tu energía con una experiencia clara y premium.</h1>
-      <p>Tarot, runas, luna, sueños, numerología y biblioteca mística unidos en una sola pantalla limpia.</p>
+      <div class="hero-kicker" id="userGreeting" data-i18n="greeting">Bienvenida al santuario</div>
+      <h1 data-i18n="heroTitle">Encuentra una lectura simbólica clara y personal.</h1>
+      <p data-i18n="heroText">Tarot, runas, luna, sueños, numerología, sinastría y biblioteca mística en una experiencia sencilla.</p>
       <div class="status-row">
-        <span id="iaStatusChip" class="chip">🤖 IA: modo simbólico</span>
-        <span id="intentionChip" class="chip">🧭 Intención: libre</span>
-        <span class="chip">📱 PWA lista</span>
+        <span id="iaStatusChip" class="chip">🤖 <span data-i18n="aiSymbolic">IA: modo simbólico</span></span>
+        <span id="intentionChip" class="chip">🧭 <span data-i18n="intentionFree">Intención: libre</span></span>
+        <span id="platformStatusChip" class="chip">📱 <span data-i18n="installable">Web instalable</span></span>
       </div>
       <div class="hero-actions">
-        <button class="btn primary" data-action="first-reading" type="button">✨ Primeras tiradas</button>
-        <button class="btn ghost" data-action="demo" type="button">🌟 Demo rápida</button>
-        <button class="btn ghost" data-action="connect-ai" type="button">🤖 Conectar IA</button>
-        <button class="btn ghost" data-action="control-center" type="button">🧭 Centro de control</button>
-        <button class="btn ghost" data-action="tutorial-app" type="button">🎓 Tutorial</button>
-        <button class="btn ghost" data-action="install-help" type="button">📲 Instalar</button>
-        <button class="btn ghost" data-action="preview-avatar" type="button">🪄 Avatar voz</button>
-        <button class="btn ghost" data-action="settings" type="button">⚙️ Ajustes</button>
+        <button class="btn primary" data-action="first-reading" type="button">✨ <span data-i18n="firstReadings">Primeras tiradas</span></button>
+        <button class="btn ghost" data-action="connect-ai" type="button">🤖 <span data-i18n="connectAI">Conectar IA</span></button>
+        <button class="btn ghost" data-action="control-center" type="button">🧭 <span data-i18n="controlCenter">Centro de control</span></button>
+        <button class="btn ghost" data-action="tutorial-app" type="button">🎓 <span data-i18n="tutorial">Tutorial</span></button>
+        <button class="btn ghost" data-action="install-help" type="button">📲 <span data-i18n="install">Instalar</span></button>
+        <button class="btn ghost" data-action="preview-avatar" type="button">🪄 <span data-i18n="voiceAvatar">Avatar voz</span></button>
+        <button class="btn ghost" data-action="settings" type="button">⚙️ <span data-i18n="settings">Ajustes</span></button>
       </div>
     </section>
 
-    <section class="home-grid" aria-label="Módulos principales">
-      <button class="module-card" data-module="map" type="button"><span>🗺️</span><strong>Mapa</strong><small>Todo de un vistazo</small></button>
-      <button class="module-card featured" data-module="chat" type="button"><span>🕯️</span><strong>Chat Ritual</strong><small>Tiradas privadas con voz e IA</small></button>
-      <button class="module-card" data-module="tarot" type="button"><span>🃏</span><strong>Tarot</strong><small>Carta, tiradas y biblioteca</small></button>
-      <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong>Runas</strong><small>Runa rápida y tiradas</small></button>
-      <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong>Luna</strong><small>Lectura lunar guiada</small></button>
-      <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong>Sueños</strong><small>Interpretación simbólica</small></button>
-      <button class="module-card" data-module="numerologia" type="button"><span>🔢</span><strong>Numerología</strong><small>Nombre, fecha y energía</small></button>
-      <button class="module-card" data-module="grabovoi" type="button"><span>📜</span><strong>Grabovoi</strong><small>Códigos en popup</small></button>
-      <button class="module-card" data-module="biblioteca" type="button"><span>📚</span><strong>Biblioteca</strong><small>Diario y guardados</small></button>
-      <button class="module-card" data-action="control-center" type="button"><span>🧭</span><strong>Centro</strong><small>Buscar, estado y privacidad</small></button>
-      <button class="module-card" data-action="preview-avatar" type="button"><span>🪄</span><strong>Avatar</strong><small>Oráculo animado con voz</small></button>
-      <button class="module-card" data-action="settings" type="button"><span>⚙️</span><strong>Ajustes</strong><small>Voz, avatar y visual</small></button>
+    <section class="home-grid" aria-label="Módulos principales" data-i18n-aria="mainModules">
+      <button class="module-card" data-module="map" type="button"><span>🗺️</span><strong data-i18n="map">Mapa</strong><small data-i18n="mapSub">Todo de un vistazo</small></button>
+      <button class="module-card featured" data-module="chat" type="button"><span>🕯️</span><strong data-i18n="ritualChat">Chat Ritual</strong><small data-i18n="ritualChatSub">Tiradas privadas con voz e IA</small></button>
+      <button class="module-card" data-module="tarot" type="button"><span>🃏</span><strong data-i18n="tarot">Tarot</strong><small data-i18n="tarotSub">Carta, tiradas y biblioteca</small></button>
+      <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong data-i18n="runes">Runas</strong><small data-i18n="runesSub">Runa rápida y tiradas</small></button>
+      <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong data-i18n="moon">Luna</strong><small data-i18n="moonSub">Lectura lunar guiada</small></button>
+      <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong data-i18n="dreams">Sueños</strong><small data-i18n="dreamsSub">Interpretación simbólica</small></button>
+      <button class="module-card" data-module="numerologia" type="button"><span>🔢</span><strong data-i18n="numerology">Numerología</strong><small data-i18n="numerologySub">Perfil completo y sinastría</small></button>
+      <button class="module-card" data-module="grabovoi" type="button"><span>📜</span><strong data-i18n="grabovoi">Grabovoi</strong><small data-i18n="grabovoiSub">Secuencias y formas de uso</small></button>
+      <button class="module-card" data-module="biblioteca" type="button"><span>📚</span><strong data-i18n="library">Biblioteca</strong><small data-i18n="librarySub">Diario y guardados</small></button>
+      <button class="module-card" data-action="control-center" type="button"><span>🧭</span><strong data-i18n="center">Centro</strong><small data-i18n="centerSub">Buscar, estado y privacidad</small></button>
+      <button class="module-card" data-action="preview-avatar" type="button"><span>🪄</span><strong data-i18n="avatar">Avatar</strong><small data-i18n="avatarSub">Oráculo animado con voz</small></button>
+      <button class="module-card" data-action="settings" type="button"><span>⚙️</span><strong data-i18n="settings">Ajustes</strong><small data-i18n="settingsSub">Voz, avatar y visual</small></button>
     </section>
 
     <section class="daily card-glass">
       <div>
-        <strong>🌟 Mensaje del día</strong>
-        <p id="dailyText">Pulsa para revelar carta, runa y luna del día, con IA, voz, guardar y PDF profesional.</p>
+        <strong>🌟 <span data-i18n="dailyMessage">Mensaje del día</span></strong>
+        <p id="dailyText" data-i18n="dailyText">Revela la carta, la runa y la fase lunar del día. Puedes escuchar, guardar o exportar la lectura.</p>
       </div>
-      <button class="btn compact" data-action="daily" type="button">Revelar</button>
+      <button class="btn compact" data-action="daily" type="button" data-i18n="reveal">Revelar</button>
     </section>
   </main>
 
   <footer class="app-footer">
-    <p>Experiencia simbólica y de entretenimiento. No sustituye asesoramiento profesional.</p>
-    <a href="privacy.html">Privacidad</a>
+    <p data-i18n="disclaimer">Experiencia simbólica y de entretenimiento. No sustituye asesoramiento profesional.</p>
+    <a href="privacy.html" data-i18n="privacy">Privacidad</a>
     <span aria-hidden="true">·</span>
-    <a href="docs/manual_usuario_oraculo_mistico_v1_0.pdf" target="_blank" rel="noopener">Manual</a>
+    <a href="docs/manual_usuario_oraculo_mistico_v1_0.pdf" target="_blank" rel="noopener" data-i18n="manual">Manual</a>
   </footer>
 
   <div id="modalRoot" class="modal-root" aria-live="polite"></div>
   <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+  <button id="floatingVoiceStop" class="floating-voice-stop" data-act="stop-voice" type="button" aria-label="Parar la voz">
+    <span aria-hidden="true">■</span> <span data-i18n="stopVoice">Parar voz</span>
+  </button>
 </body>
 </html>
