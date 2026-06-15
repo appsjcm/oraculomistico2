@@ -51,8 +51,8 @@ export const MINOR_ARCANA = (() => {
             '10': { up: 'Carga y responsabilidad. Amor: compromiso pesado. Trabajo: mucho trabajo.', rv: 'Invertido: liberación de cargas.' },
             Sota: { up: 'Mensajero entusiasta. Amor: nuevas ilusiones. Trabajo: aprendiz creativo.', rv: 'Invertido: inmadurez.' },
             Caballero: { up: 'Acción impulsiva. Amor: declaración apasionada. Trabajo: iniciativa.', rv: 'Invertido: impaciencia.' },
-            Reina: { up: 'Confianza y calidez. Amor: apoyo incondicional. Trabajo: liderazgo femenino.', rv: 'Invertido: dependencia emocional.' },
-            Rey: { up: 'Liderazgo visionario. Amor: figura protectora. Trabajo: emprendedor exitoso.', rv: 'Invertido: autoritarismo.' }
+            Reina: { up: 'Carisma, confianza y calidez. Amor: vínculo apasionado con apoyo e independencia. Trabajo: creatividad, iniciativa y capacidad para inspirar a otras personas.', rv: 'Invertida: inseguridad, celos, temperamento dominante o necesidad excesiva de aprobación.' },
+            Rey: { up: 'Liderazgo visionario, iniciativa y dominio de la energía creativa. Amor: presencia leal, apasionada y protectora. Trabajo: dirección, emprendimiento y decisiones con perspectiva.', rv: 'Invertido: autoritarismo, impulsividad, arrogancia o promesas difíciles de sostener.' }
         },
         cups: {
             As: { up: 'Amor puro y emociones. En amor: nuevo romance. Trabajo: proyecto creativo. Salud: sanación emocional.', rv: 'Invertido: bloqueo emocional.' },
@@ -67,8 +67,8 @@ export const MINOR_ARCANA = (() => {
             '10': { up: 'Felicidad plena. Amor: armonía total. Trabajo: éxito rotundo.', rv: 'Invertido: desarmonía.' },
             Sota: { up: 'Mensajero emocional. Amor: declaración de amor. Trabajo: buena noticia.', rv: 'Invertido: noticias tristes.' },
             Caballero: { up: 'Propuesta romántica. Amor: invitación a salir. Trabajo: oferta tentadora.', rv: 'Invertido: rechazo.' },
-            Reina: { up: 'Control emocional. Amor: pareja estable. Trabajo: líder empático.', rv: 'Invertido: frialdad.' },
-            Rey: { up: 'Intuición y compasión. Amor: consejera amorosa. Trabajo: apoyo emocional.', rv: 'Invertido: drama emocional.' }
+            Reina: { up: 'Intuición, sensibilidad y profunda comprensión emocional. Amor: escucha, ternura y conexión afectiva. Trabajo: creatividad, empatía y capacidad de acompañar.', rv: 'Invertida: dependencia emocional, susceptibilidad, idealización o dificultad para poner límites.' },
+            Rey: { up: 'Madurez y equilibrio emocional. Amor: afecto estable, comprensión y compromiso sereno. Trabajo: diplomacia, mediación y liderazgo empático.', rv: 'Invertido: frialdad aparente, manipulación emocional, ánimo inestable o sentimientos reprimidos.' }
         },
         swords: {
             As: { up: 'Claridad mental. Amor: comunicación honesta. Trabajo: idea brillante. Bienestar: ordenar dudas y consultar a un profesional cuando corresponda.', rv: 'Invertido: confusión.' },
@@ -83,8 +83,8 @@ export const MINOR_ARCANA = (() => {
             '10': { up: 'Final doloroso. Amor: ruptura definitiva. Trabajo: fin de ciclo.', rv: 'Invertido: renacer.' },
             Sota: { up: 'Vigilancia y espionaje. Amor: curiosidad. Trabajo: investigación.', rv: 'Invertido: chismes.' },
             Caballero: { up: 'Impulso mental. Amor: declaración racional. Trabajo: ataque verbal.', rv: 'Invertido: ira.' },
-            Reina: { up: 'Autoridad intelectual. Amor: pareja racional. Trabajo: juez o abogado.', rv: 'Invertido: tiranía.' },
-            Rey: { up: 'Intelecto y honestidad. Amor: comunicación clara. Trabajo: liderazgo justo.', rv: 'Invertido: crueldad.' }
+            Reina: { up: 'Claridad, independencia y percepción aguda. Amor: sinceridad, límites sanos y comunicación directa. Trabajo: análisis preciso, criterio y decisiones objetivas.', rv: 'Invertida: dureza, resentimiento, crítica destructiva o aislamiento emocional.' },
+            Rey: { up: 'Autoridad intelectual, verdad y juicio equilibrado. Amor: comunicación madura y decisiones razonadas. Trabajo: estrategia, liderazgo justo y dominio profesional.', rv: 'Invertido: abuso de autoridad, manipulación, rigidez mental o crueldad verbal.' }
         },
         pents: {
             As: { up: 'Abundancia material. Amor: relación sólida. Trabajo: nueva fuente de ingresos. Salud: bienestar físico.', rv: 'Invertido: pérdida económica.' },
@@ -99,8 +99,8 @@ export const MINOR_ARCANA = (() => {
             '10': { up: 'Riqueza y legado. Amor: familia estable. Trabajo: éxito total.', rv: 'Invertido: pérdida de herencia.' },
             Sota: { up: 'Estudiante aplicado. Amor: nuevo interés. Trabajo: prácticas.', rv: 'Invertido: pereza.' },
             Caballero: { up: 'Trabajo duro. Amor: constancia. Trabajo: movimiento laboral.', rv: 'Invertido: vagancia.' },
-            Reina: { up: 'Éxito financiero. Amor: proveedor. Trabajo: empresario.', rv: 'Invertido: codicia.' },
-            Rey: { up: 'Generosidad y conexión con la naturaleza. Amor: cuidar. Trabajo: buena administradora.', rv: 'Invertido: avaricia.' }
+            Reina: { up: 'Cuidado práctico, abundancia y conexión con la naturaleza. Amor: afecto estable, generosidad y creación de un hogar seguro. Trabajo: buena administración, constancia y prosperidad sostenible.', rv: 'Invertida: descuido personal, dependencia material, sobreprotección o mala organización.' },
+            Rey: { up: 'Éxito material, seguridad y dominio de los recursos. Amor: compromiso estable y capacidad de proveer sin perder la cercanía. Trabajo: empresa, inversión y administración responsable.', rv: 'Invertido: codicia, materialismo, terquedad o uso controlador del dinero y la posición.' }
         }
     };
     for (let s in suits) {
