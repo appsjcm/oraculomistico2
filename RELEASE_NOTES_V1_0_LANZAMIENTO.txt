@@ -40,5 +40,6 @@ VERSIÓN DE LANZAMIENTO
 - Tarot y runas eligen una probabilidad invertida por tirada entre 20%, 30% y 50%.
 - La probabilidad nunca supera el 50% y se muestra con transparencia en el resultado.
 - Los significados tradicionales conservan por ahora su fuente editorial en español.
+- Corregidos y revisados los significados de Reyes y Reinas de Bastos, Copas, Espadas y Pentáculos.
 
 Uso simbólico y de entretenimiento. No sustituye asesoramiento profesional.
