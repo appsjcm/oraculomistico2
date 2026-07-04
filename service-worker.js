@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-court-cards-15';
+const CACHE_NAME = 'oraculo-v1-0-public-court-cards-16';
 const APP_SHELL = [
   './',
   './index.html',
@@ -17,6 +17,8 @@ const APP_SHELL = [
   './docs/manual_usuario_oraculo_mistico_v1_0.pdf',
   './img/tarot-shuffle-hero.svg',
   './img/rune-pouch.svg',
+  './img/cards/am18.jpg',
+  './img/cards/ameb08.jpg',
   './img/avatars/oracle-female-realistic.png',
   './img/avatars/oracle-female-mouth-medium.png',
   './img/avatars/oracle-female-mouth-open.png',
