@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 240" role="img" aria-label="Franja premium de tablero">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1">
+      <stop offset="0%" stop-color="#170e2c"/>
+      <stop offset="50%" stop-color="#090714"/>
+      <stop offset="100%" stop-color="#1f1035"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="240" rx="40" fill="url(#bg)"/>
+  <g opacity=".55" fill="none" stroke="#f4cf75">
+    <circle cx="700" cy="120" r="76" stroke-width="3"/>
+    <circle cx="700" cy="120" r="46" stroke-opacity=".45"/>
+    <path d="M700 44 L726 120 L700 196 L674 120 Z" stroke-width="2.4"/>
+    <path d="M560 120 H840 M700 44 V196" stroke-opacity=".35"/>
+  </g>
+  <g opacity=".34" fill="#fff6db">
+    <circle cx="180" cy="80" r="2.2"/><circle cx="1240" cy="80" r="2.2"/><circle cx="250" cy="170" r="1.6"/><circle cx="1160" cy="170" r="1.6"/>
+  </g>
+</svg>

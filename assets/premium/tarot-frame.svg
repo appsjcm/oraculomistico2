@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" role="img" aria-label="Marco premium para carta">
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fff4c9"/>
+      <stop offset="45%" stop-color="#f4cf75"/>
+      <stop offset="100%" stop-color="#9a6825"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="768" height="1168" rx="58" fill="none" stroke="url(#gold)" stroke-width="10"/>
+  <rect x="42" y="42" width="716" height="1116" rx="42" fill="none" stroke="#fff8dd" stroke-opacity=".32" stroke-width="2"/>
+  <g fill="none" stroke="url(#gold)" stroke-width="3" opacity=".7">
+    <path d="M98 98 C150 64 220 64 272 98"/>
+    <path d="M528 98 C580 64 650 64 702 98"/>
+    <path d="M98 1102 C150 1136 220 1136 272 1102"/>
+    <path d="M528 1102 C580 1136 650 1136 702 1102"/>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 520" role="img" aria-label="Panel premium constelación">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#110a22"/>
+      <stop offset="50%" stop-color="#080713"/>
+      <stop offset="100%" stop-color="#1a0d2f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="520" rx="72" fill="url(#bg)"/>
+  <g fill="none" stroke="#f4cf75" stroke-opacity=".42">
+    <path d="M210 130 L420 200 L640 120 L810 248 L1020 168 L1220 250 L1400 140" stroke-width="2.4"/>
+    <path d="M300 364 L520 288 L704 364 L910 294 L1130 370 L1320 312" stroke-width="1.8"/>
+  </g>
+  <g fill="#fff8dd" opacity=".72">
+    <circle cx="210" cy="130" r="4"/><circle cx="420" cy="200" r="3.2"/><circle cx="640" cy="120" r="4.2"/>
+    <circle cx="810" cy="248" r="4"/><circle cx="1020" cy="168" r="3.6"/><circle cx="1220" cy="250" r="4.1"/><circle cx="1400" cy="140" r="3.8"/>
+    <circle cx="300" cy="364" r="3.4"/><circle cx="520" cy="288" r="3"/><circle cx="704" cy="364" r="3.6"/><circle cx="910" cy="294" r="3.2"/><circle cx="1130" cy="370" r="3.8"/><circle cx="1320" cy="312" r="3"/>
+    <circle cx="180" cy="88" r="1.8"/><circle cx="520" cy="90" r="1.3"/><circle cx="870" cy="82" r="1.6"/><circle cx="1460" cy="260" r="1.6"/><circle cx="132" cy="292" r="1.2"/><circle cx="1180" cy="92" r="1.5"/>
+  </g>
+</svg>

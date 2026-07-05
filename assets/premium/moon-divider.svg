@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 180" role="img" aria-label="Divisor lunar premium">
+  <defs>
+    <linearGradient id="line" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f4cf75" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#f4cf75" stop-opacity=".75"/>
+      <stop offset="60%" stop-color="#fff7df" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#f4cf75" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 90 H1200" stroke="url(#line)" stroke-width="3"/>
+  <g fill="none" stroke="#f4cf75" stroke-width="3" opacity=".8">
+    <circle cx="600" cy="90" r="42"/>
+    <path d="M620 55 A42 42 0 1 0 620 125 A30 42 0 1 1 620 55Z" fill="#f4cf75" opacity=".28"/>
+    <path d="M506 90 C540 54 660 54 694 90 C660 126 540 126 506 90Z"/>
+  </g>
+</svg>

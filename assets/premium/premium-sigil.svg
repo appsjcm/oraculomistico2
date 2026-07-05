@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sello premium Oráculo Místico">
+  <defs>
+    <radialGradient id="orb" cx="35%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#fff7df"/>
+      <stop offset="25%" stop-color="#f4cf75"/>
+      <stop offset="62%" stop-color="#8d66ff"/>
+      <stop offset="100%" stop-color="#11091d"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#080713"/>
+  <circle cx="256" cy="256" r="188" fill="none" stroke="#f4cf75" stroke-width="12"/>
+  <circle cx="256" cy="256" r="128" fill="url(#orb)" opacity=".92"/>
+  <circle cx="220" cy="200" r="36" fill="#fff7df" opacity=".55"/>
+  <path d="M256 64 L315 256 L256 448 L197 256 Z" fill="none" stroke="#fff7df" stroke-opacity=".74" stroke-width="8"/>
+  <path d="M72 256 H440 M256 64 V448" stroke="#f4cf75" stroke-opacity=".42" stroke-width="5"/>
+  <text x="256" y="285" text-anchor="middle" font-family="Georgia, serif" font-size="108" fill="#080713" opacity=".82">☾</text>
+</svg>
