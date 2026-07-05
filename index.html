@@ -7,11 +7,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Oráculo Místico v1.0</title>
+  <title>Oráculo Místico v1.0 · Native Tarot Engine</title>
   <meta name="description" content="Oráculo Místico: tarot, runas, luna, sueños, numerología completa, sinastría, diario local, voz y Chat Ritual.">
   <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, sinastría, diario místico, lectura simbólica">
   <link rel="canonical" href="https://appsjcm.github.io/oraculomistico2/">
-  <meta property="og:title" content="Oráculo Místico v1.0">
+  <meta property="og:title" content="Oráculo Místico v1.0 · Native Tarot Engine">
   <meta property="og:description" content="Tarot, runas, luna, sueños, numerología, sinastría, diario y voz en una experiencia simbólica.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://appsjcm.github.io/oraculomistico2/">
@@ -19,7 +19,7 @@
   <meta property="og:locale" content="es_ES">
   <meta property="og:image" content="https://appsjcm.github.io/oraculomistico2/icon-512.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Oráculo Místico v1.0">
+  <meta name="twitter:title" content="Oráculo Místico v1.0 · Native Tarot Engine">
   <meta name="twitter:description" content="App simbólica de tarot, runas, luna, sueños y diario místico.">
   <meta name="twitter:image" content="https://appsjcm.github.io/oraculomistico2/icon-512.png">
   <link rel="preconnect" href="https://i.ibb.co" crossorigin>
@@ -43,9 +43,10 @@
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-court-cards-16">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-native-tarot-engine-12">
   <script>
     (() => {
-      const build = '1.0-court-cards-16';
+      const build = '1.0-native-tarot-engine-12';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -64,45 +65,554 @@
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-court-cards-16"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-native-tarot-engine-12"></script>
 </head>
 <body>
+  <div id="premiumLoader" class="premium-loader" aria-hidden="true">
+    <div class="premium-loader-card">
+      <div class="premium-loader-orb">🔮</div>
+      <strong>Abriendo el santuario</strong>
+      <span>Barajando energías...</span>
+    </div>
+  </div>
   <div class="cosmos" aria-hidden="true"></div>
   <a class="skip-link" href="#home" data-i18n="skip">Saltar al contenido</a>
 
-  <header class="topbar">
+  <header class="topbar premium-topbar">
     <button id="openGuideBtn" class="icon-pill" type="button">✨ <span data-i18n="guide">Guía</span></button>
     <div class="brand" aria-label="Oráculo Místico">
       <span class="brand-orb">🔮</span>
-      <span><strong>Oráculo Místico</strong><small>v1.0</small></span>
+      <span><strong>Oráculo Místico</strong><small>Premium v1.0</small></span>
     </div>
     <button id="gearBtn" class="gear" type="button" aria-label="Ajustes" data-i18n="settings">⚙️</button>
   </header>
 
-  <main id="home" class="app-shell">
-    <section class="hero card-glass">
+  <main id="home" class="app-shell premium-shell">
+    <section class="hero card-glass premium-hero">
       <div class="hero-kicker" id="userGreeting" data-i18n="greeting">Bienvenida al santuario</div>
+
+      <div class="premium-orb-stage" aria-hidden="true">
+        <div class="premium-orb-ring"></div>
+        <div class="premium-orb-core">🔮</div>
+        <span class="premium-spark s1">✦</span>
+        <span class="premium-spark s2">✧</span>
+        <span class="premium-spark s3">✦</span>
+      </div>
+
+      <div class="premium-deck-preview" aria-hidden="true">
+        <img src="assets/premium/card-back-premium.svg" alt="">
+        <img src="assets/premium/card-back-premium.svg" alt="">
+        <img src="assets/premium/card-back-premium.svg" alt="">
+      </div>
+
       <h1 data-i18n="heroTitle">Encuentra una lectura simbólica clara y personal.</h1>
       <p data-i18n="heroText">Tarot, runas, luna, sueños, numerología, sinastría y biblioteca mística en una experiencia sencilla.</p>
-      <div class="status-row">
+
+      <div class="status-row premium-status-row">
         <span id="iaStatusChip" class="chip">🤖 <span data-i18n="aiSymbolic">IA: modo simbólico</span></span>
         <span id="intentionChip" class="chip">🧭 <span data-i18n="intentionFree">Intención: libre</span></span>
         <span id="platformStatusChip" class="chip">📱 <span data-i18n="installable">Web instalable</span></span>
       </div>
-      <div class="hero-actions">
-        <button class="btn primary" data-action="first-reading" type="button">✨ <span data-i18n="firstReadings">Primeras tiradas</span></button>
+
+      <div class="hero-actions premium-hero-actions">
+        <button class="btn primary premium-main-cta" data-action="first-reading" type="button">✨ <span data-i18n="firstReadings">Iniciar lectura</span></button>
+        <button class="btn ghost" data-module="tarot" type="button">🃏 <span data-i18n="tarot">Tarot</span></button>
+        <button class="btn ghost" data-module="biblioteca" type="button">📚 <span data-i18n="library">Biblioteca</span></button>
         <button class="btn ghost" data-action="connect-ai" type="button">🤖 <span data-i18n="connectAI">Conectar IA</span></button>
-        <button class="btn ghost" data-action="control-center" type="button">🧭 <span data-i18n="controlCenter">Centro de control</span></button>
-        <button class="btn ghost" data-action="tutorial-app" type="button">🎓 <span data-i18n="tutorial">Tutorial</span></button>
-        <button class="btn ghost" data-action="install-help" type="button">📲 <span data-i18n="install">Instalar</span></button>
-        <button class="btn ghost" data-action="preview-avatar" type="button">🪄 <span data-i18n="voiceAvatar">Avatar voz</span></button>
-        <button class="btn ghost" data-action="settings" type="button">⚙️ <span data-i18n="settings">Ajustes</span></button>
       </div>
     </section>
 
-    <section class="home-grid" aria-label="Módulos principales" data-i18n-aria="mainModules">
+    <section class="premium-focus-row" aria-label="Experiencia premium">
+      <button class="premium-feature-card" data-module="tarot" type="button">
+        <span>🃏</span>
+        <strong>Tarot completo</strong>
+        <small>Mazo de 78 cartas, tiradas y biblioteca visual.</small>
+      </button>
+      <button class="premium-feature-card" data-module="biblioteca" type="button">
+        <span>📓</span>
+        <strong>Diario místico</strong>
+        <small>Guarda lecturas, notas y mensajes personales.</small>
+      </button>
+      <button class="premium-feature-card" data-action="daily" type="button">
+        <span>🌟</span>
+        <strong>Mensaje del día</strong>
+        <small>Carta, runa y guía simbólica en un toque.</small>
+      </button>
+    </section>
+
+
+    
+    <section class="premium-dashboard card-glass" aria-label="Panel premium diario">
+      <div class="premium-dashboard-hero">
+        <span class="premium-section-kicker">✦ Santuario Premium</span>
+        <h2>Tu tablero místico personal</h2>
+        <p>Accede a tus rituales, revisa tu actividad y entra en una experiencia guiada más profesional.</p>
+      </div>
+
+      <div class="premium-stats-grid">
+        <article class="premium-stat-card">
+          <span>📅</span>
+          <strong id="premiumTodayLabel">Hoy</strong>
+          <small id="premiumTodayMessage">Día de lectura y enfoque</small>
+        </article>
+        <article class="premium-stat-card">
+          <span>🔥</span>
+          <strong id="premiumVisitCount">0</strong>
+          <small>Sesiones en este dispositivo</small>
+        </article>
+        <article class="premium-stat-card">
+          <span>📝</span>
+          <strong id="premiumIntentionStatus">Libre</strong>
+          <small>Intención activa</small>
+        </article>
+        <article class="premium-stat-card">
+          <span>⚡</span>
+          <strong id="premiumSessionTimer">00:00</strong>
+          <small>Tiempo en sesión</small>
+        </article>
+      </div>
+
+      <div class="premium-launch-row">
+        <button class="btn primary" data-premium-action="ritual-onboarding" type="button">✨ Entrar al ritual guiado</button>
+        <button class="btn ghost" data-premium-action="open-palette" type="button">⌘ Búsqueda rápida</button>
+        <button class="btn ghost" data-premium-action="toggle-immersive" type="button">🌌 Modo inmersivo</button>
+      </div>
+    </section>
+
+    
+    <section class="premium-tarot-studio card-glass" aria-label="Tarot Studio Premium">
+      <div class="premium-tarot-studio-head">
+        <span class="premium-section-kicker">✦ Tarot Studio</span>
+        <h2>Una mesa premium para tus tiradas</h2>
+        <p>Accesos directos, lectura visual mejorada y una experiencia de cartas más elegante.</p>
+      </div>
+
+      <div class="premium-spread-grid">
+        <button class="premium-spread-card" data-premium-action="daily-reading" type="button">
+          <span>🌟</span>
+          <strong>Carta del día</strong>
+          <small>Una lectura rápida para entrar en sintonía.</small>
+        </button>
+        <button class="premium-spread-card" data-premium-action="tarot-reading" type="button">
+          <span>🃏</span>
+          <strong>Tirada completa</strong>
+          <small>Abre el módulo de tarot con estética mejorada.</small>
+        </button>
+        <button class="premium-spread-card" data-premium-action="open-library" type="button">
+          <span>📚</span>
+          <strong>Biblioteca visual</strong>
+          <small>Consulta cartas y guardados desde la biblioteca.</small>
+        </button>
+        <button class="premium-spread-card" data-premium-action="open-palette" type="button">
+          <span>⌘</span>
+          <strong>Buscador rápido</strong>
+          <small>Encuentra módulos y acciones al instante.</small>
+        </button>
+      </div>
+    </section>
+
+    
+    <section class="premium-concierge card-glass" aria-label="Concierge Premium">
+      <div class="premium-concierge-head">
+        <span class="premium-section-kicker">✦ Concierge</span>
+        <h2>Centro premium de control</h2>
+        <p>Personaliza el santuario, toma notas rápidas y revisa tu actividad reciente sin salir de la portada.</p>
+      </div>
+
+      <div class="premium-concierge-grid">
+        <article class="premium-concierge-card">
+          <h3>🎨 Tema visual</h3>
+          <p>Elige un estilo para que la app se sienta todavía más premium.</p>
+          <div class="premium-theme-row">
+            <button type="button" data-premium-theme="gold">Gold</button>
+            <button type="button" data-premium-theme="violet">Violet</button>
+            <button type="button" data-premium-theme="obsidian">Obsidian</button>
+          </div>
+        </article>
+
+        <article class="premium-concierge-card">
+          <h3>📝 Nota rápida</h3>
+          <p>Guarda una idea, una intención o una conclusión breve.</p>
+          <textarea id="premiumQuickNote" class="premium-note-input" rows="5" maxlength="280" placeholder="Escribe aquí tu nota rápida..."></textarea>
+          <div class="premium-inline-actions">
+            <button type="button" data-premium-action="save-quick-note">Guardar nota</button>
+            <button type="button" data-premium-action="clear-quick-note">Limpiar</button>
+          </div>
+        </article>
+
+        <article class="premium-concierge-card">
+          <h3>🕘 Actividad reciente</h3>
+          <p>Pequeño historial local de tus acciones premium.</p>
+          <div id="premiumActivityList" class="premium-activity-list"></div>
+        </article>
+      </div>
+    </section>
+
+    
+    <section class="premium-library-studio card-glass" aria-label="Biblioteca premium de cartas">
+      <div class="premium-library-head">
+        <span class="premium-section-kicker">✦ Card Library</span>
+        <h2>Biblioteca visual más premium</h2>
+        <p>Un espacio más elegante para explorar cartas, favoritos e ideas de lectura como si fuera una app de pago.</p>
+      </div>
+
+      <div class="premium-library-toolbar">
+        <button type="button" class="library-chip active">Mayores</button>
+        <button type="button" class="library-chip">Bastos</button>
+        <button type="button" class="library-chip">Copas</button>
+        <button type="button" class="library-chip">Espadas</button>
+        <button type="button" class="library-chip">Oros</button>
+      </div>
+
+      <div class="premium-library-grid">
+        <article class="premium-library-card featured">
+          <span class="badge">Destacado</span>
+          <strong>Explorador visual del mazo</strong>
+          <p>Accede a la biblioteca con una presentación más limpia, más enfocada y con sensación editorial.</p>
+          <div class="premium-inline-actions">
+            <button type="button" data-premium-action="open-card-library">Abrir biblioteca</button>
+            <button type="button" data-premium-action="open-library">Ver guardados</button>
+          </div>
+        </article>
+
+        <article class="premium-library-card mini">
+          <span>0</span>
+          <strong>El Loco</strong>
+          <small>Inicio, impulso, viaje</small>
+        </article>
+        <article class="premium-library-card mini">
+          <span>I</span>
+          <strong>El Mago</strong>
+          <small>Voluntad, creación</small>
+        </article>
+        <article class="premium-library-card mini">
+          <span>II</span>
+          <strong>La Sacerdotisa</strong>
+          <small>Silencio, intuición</small>
+        </article>
+        <article class="premium-library-card mini">
+          <span>XVII</span>
+          <strong>La Estrella</strong>
+          <small>Calma, esperanza</small>
+        </article>
+        <article class="premium-library-card mini">
+          <span>XVIII</span>
+          <strong>La Luna</strong>
+          <small>Misterio, símbolos</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="premium-reading-theatre card-glass" aria-label="Reading Theatre Premium">
+      <div class="premium-reading-head">
+        <span class="premium-section-kicker">✦ Reading Theatre</span>
+        <h2>Una lectura con más espectáculo visual</h2>
+        <p>Eleva la sensación de tirada con una escena tipo altar, carta central y acciones rápidas.</p>
+      </div>
+
+      <div class="premium-reading-stage">
+        <div class="premium-stage-cards" aria-hidden="true">
+          <div class="stage-card s1"></div>
+          <div class="stage-card s2"></div>
+          <div class="stage-card s3 focus"></div>
+          <div class="stage-card s4"></div>
+          <div class="stage-card s5"></div>
+        </div>
+
+        <div class="premium-stage-copy">
+          <strong>Modo ceremonial</strong>
+          <p>Abre Tarot, entra en enfoque y disfruta de transiciones más elegantes para la lectura.</p>
+          <div class="premium-inline-actions">
+            <button type="button" data-premium-action="start-ceremonial-reading">Iniciar lectura ceremonial</button>
+            <button type="button" data-premium-action="ritual-onboarding">Abrir ritual guiado</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+
+    <section id="premiumNativeEngine" class="premium-native-engine card-glass" aria-label="Native Tarot Engine">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Native Tarot Engine v12</span>
+        <h2>Motor de tarot local con 78 cartas reales</h2>
+        <p>Busca cartas, filtra por palos, genera tiradas y guarda sesiones en el navegador como una app nativa.</p>
+      </div>
+      <div class="premium-engine-toolbar">
+        <label class="premium-search-box premium-engine-search"><span>⌕</span><input id="premiumRealCardSearch" type="search" placeholder="Buscar carta, palo o palabra clave..."></label>
+        <div class="premium-filter-row" aria-label="Filtros de cartas">
+          <button type="button" data-card-filter="all" class="engine-filter active">Todas</button>
+          <button type="button" data-card-filter="mayor" class="engine-filter">Mayores</button>
+          <button type="button" data-card-filter="bastos" class="engine-filter">Bastos</button>
+          <button type="button" data-card-filter="copas" class="engine-filter">Copas</button>
+          <button type="button" data-card-filter="espadas" class="engine-filter">Espadas</button>
+          <button type="button" data-card-filter="oros" class="engine-filter">Oros</button>
+        </div>
+      </div>
+      <div class="premium-engine-stats">
+        <article><strong id="premiumCardCount">78</strong><span>cartas disponibles</span></article>
+        <article><strong id="premiumCurrentFilter">Todas</strong><span>filtro activo</span></article>
+        <article><strong id="premiumVaultCount">0</strong><span>tiradas guardadas</span></article>
+      </div>
+      <div id="premiumRealCardGrid" class="premium-real-card-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="premiumNativeSpread" class="premium-native-spread card-glass" aria-label="Tirada local real">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Tirada Express Real</span>
+        <h2>Baraja local con lectura de 1, 3 o 5 cartas</h2>
+        <p>Elige una tirada, genera cartas al azar y guárdala en tu vault personal.</p>
+      </div>
+      <div class="premium-native-spread-actions">
+        <button type="button" data-native-spread="1">1 carta</button>
+        <button type="button" data-native-spread="3">3 cartas</button>
+        <button type="button" data-native-spread="5">5 cartas</button>
+        <button type="button" data-premium-action="save-native-spread">Guardar tirada</button>
+      </div>
+      <div id="premiumSpreadResult" class="premium-spread-result"><div class="premium-empty-state"><strong>Tu mesa está preparada.</strong><span>Pulsa una tirada para revelar cartas.</span></div></div>
+    </section>
+
+    <section id="premiumNativeVault" class="premium-native-vault card-glass" aria-label="Vault local real">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Vault local</span>
+        <h2>Historial real de tiradas guardadas</h2>
+        <p>Las tiradas se guardan en este navegador usando almacenamiento local.</p>
+      </div>
+      <div class="premium-inline-actions">
+        <button type="button" data-premium-action="render-native-vault">Actualizar vault</button>
+        <button type="button" data-premium-action="clear-native-vault">Vaciar vault</button>
+      </div>
+      <div id="premiumVaultRealList" class="premium-vault-real-list" aria-live="polite"><div class="premium-empty-state"><strong>Aún no hay tiradas guardadas.</strong><span>Genera una lectura y pulsa “Guardar tirada”.</span></div></div>
+    </section>
+
+    <section class="premium-library-suite card-glass" aria-label="Library Suite Premium">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Library Suite</span>
+        <h2>Biblioteca con búsqueda y filtros premium</h2>
+        <p>Un espacio más profesional para explorar el mazo y preparar lecturas con una sensación mucho más de app premium.</p>
+      </div>
+
+      <div class="premium-library-suite-toolbar">
+        <label class="premium-search-box">
+          <span>⌕</span>
+          <input id="premiumLibrarySearch" type="text" placeholder="Buscar carta, palo o concepto...">
+        </label>
+        <div class="premium-filter-row">
+          <button type="button" class="library-filter active">Todos</button>
+          <button type="button" class="library-filter">Mayor</button>
+          <button type="button" class="library-filter">Cortes</button>
+          <button type="button" class="library-filter">Elementos</button>
+        </div>
+      </div>
+
+      <div class="premium-search-results">
+        <article class="premium-search-card">
+          <strong>La Luna</strong>
+          <small>Mayor · intuición · símbolos · noche</small>
+        </article>
+        <article class="premium-search-card">
+          <strong>Sota de Copas</strong>
+          <small>Corte · agua · sensibilidad</small>
+        </article>
+        <article class="premium-search-card">
+          <strong>As de Espadas</strong>
+          <small>Espadas · aire · claridad</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="premium-spread-lab card-glass" aria-label="Tarot Flow Lab">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Tarot Flow Lab</span>
+        <h2>Pantalla de tirada más espectacular</h2>
+        <p>Presenta la lectura con más teatralidad visual: presets de tirada, reveal y una experiencia mucho más elegante.</p>
+      </div>
+
+      <div class="premium-spread-lab-grid">
+        <div class="premium-spread-presets">
+          <button type="button" class="spread-preset active">1 carta</button>
+          <button type="button" class="spread-preset">3 cartas</button>
+          <button type="button" class="spread-preset">Cruz</button>
+          <button type="button" class="spread-preset">Relación</button>
+        </div>
+
+        <div class="premium-reveal-stage">
+          <div class="reveal-card rc1"></div>
+          <div class="reveal-card rc2 focus"></div>
+          <div class="reveal-card rc3"></div>
+        </div>
+
+        <div class="premium-inline-actions">
+          <button type="button" data-premium-action="launch-spread-lab">Abrir tirada premium</button>
+          <button type="button" data-premium-action="start-ceremonial-reading">Modo ceremonial</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="premium-reading-vault card-glass" aria-label="Reading Vault Premium">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Reading Vault</span>
+        <h2>Lecturas guardadas con diseño tipo app de pago</h2>
+        <p>Una previsualización elegante de sesiones, intenciones y registros guardados para que toda la experiencia se sienta más pro.</p>
+      </div>
+
+      <div class="premium-vault-grid">
+        <article class="premium-vault-card">
+          <span>🌙</span>
+          <strong>Lectura nocturna</strong>
+          <small>Intención: claridad emocional · guardada hoy</small>
+        </article>
+        <article class="premium-vault-card">
+          <span>🃏</span>
+          <strong>Tirada de enfoque</strong>
+          <small>3 cartas · energía del día · local</small>
+        </article>
+        <article class="premium-vault-card">
+          <span>✨</span>
+          <strong>Ritual personal</strong>
+          <small>Intención libre · modo inmersivo</small>
+        </article>
+      </div>
+    </section>
+
+    
+    <section class="premium-onboarding-hub card-glass" aria-label="Onboarding Hub Premium">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Onboarding Hub</span>
+        <h2>Onboarding completo como app profesional</h2>
+        <p>Una presentación más seria y premium para guiar al usuario por la app, sus lecturas, la biblioteca y su espacio personal.</p>
+      </div>
+
+      <div class="premium-onboarding-grid">
+        <article class="premium-onboarding-step active">
+          <span>01</span>
+          <strong>Bienvenida</strong>
+          <small>Introduce la propuesta, estilo y valor de la experiencia.</small>
+        </article>
+        <article class="premium-onboarding-step">
+          <span>02</span>
+          <strong>Configura tu experiencia</strong>
+          <small>Tema, intensidad visual, modo inmersivo y estilo de lectura.</small>
+        </article>
+        <article class="premium-onboarding-step">
+          <span>03</span>
+          <strong>Explora cartas y tiradas</strong>
+          <small>Accede a biblioteca, presets de tiradas y lecturas guardadas.</small>
+        </article>
+      </div>
+
+      <div class="premium-inline-actions">
+        <button type="button" data-premium-action="open-onboarding-hub">Abrir onboarding</button>
+        <button type="button" data-premium-action="open-settings-drawer">Configurar experiencia</button>
+      </div>
+    </section>
+
+    <section class="premium-pro-workspace card-glass" aria-label="Professional Workspace Premium">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ Pro Workspace</span>
+        <h2>Zona profesional y mucho más funcional</h2>
+        <p>Una vista tipo dashboard premium para tener a mano búsquedas, cartas destacadas, sesiones y acciones rápidas.</p>
+      </div>
+
+      <div class="premium-workspace-grid">
+        <article class="premium-workspace-card spotlight">
+          <strong>Centro de control</strong>
+          <p>Desde aquí puedes lanzar lecturas, abrir biblioteca, recuperar lecturas guardadas y presentar la app con un look más profesional.</p>
+          <div class="premium-inline-actions">
+            <button type="button" data-premium-action="launch-spread-lab">Abrir lectura</button>
+            <button type="button" data-premium-action="open-card-library">Biblioteca</button>
+          </div>
+        </article>
+
+        <article class="premium-workspace-card">
+          <span>🔎</span>
+          <strong>Búsqueda avanzada</strong>
+          <small>Filtra por palo, energía, arquetipo o carta destacada.</small>
+        </article>
+        <article class="premium-workspace-card">
+          <span>📁</span>
+          <strong>Vault rápido</strong>
+          <small>Acceso directo a registros y sesiones destacadas.</small>
+        </article>
+        <article class="premium-workspace-card">
+          <span>⚙️</span>
+          <strong>Ajustes premium</strong>
+          <small>Visual, reveal, glass, onboarding y modo profesional.</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="premium-user-identity card-glass" aria-label="User Identity Premium">
+      <div class="premium-suite-head">
+        <span class="premium-section-kicker">✦ User Identity</span>
+        <h2>Perfil de usuario con sensación de app de pago</h2>
+        <p>Un bloque estilo cuenta premium para que la app se sienta más completa, seria y lista para crecer.</p>
+      </div>
+
+      <div class="premium-identity-shell">
+        <div class="premium-identity-main">
+          <div class="premium-avatar-orb">A</div>
+          <div>
+            <strong>Alaya / Usuario Premium</strong>
+            <small>Sesión espiritual · modo premium · experiencia personalizada</small>
+          </div>
+        </div>
+
+        <div class="premium-identity-metrics">
+          <article><strong>12</strong><small>Lecturas</small></article>
+          <article><strong>7</strong><small>Favoritos</small></article>
+          <article><strong>3</strong><small>Rituales</small></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="premium-ritual-panel card-glass" aria-label="Ritual rápido premium">
+      <div class="premium-ritual-copy">
+        <span class="premium-section-kicker">✦ Ritual Premium</span>
+        <h2>Prepara tu lectura antes de revelar el mensaje.</h2>
+        <p>Escribe una intención, elige el camino y entra en modo enfoque para una experiencia más limpia y profunda.</p>
+      </div>
+
+      <div class="premium-intention-box">
+        <label for="premiumIntention">Intención de la lectura</label>
+        <div class="premium-intention-row">
+          <input id="premiumIntention" class="input premium-intention-input" type="text" maxlength="90" placeholder="Ej: claridad, amor, trabajo, energía del día...">
+          <button class="btn compact" data-premium-action="save-intention" type="button">Guardar</button>
+        </div>
+        <small id="premiumIntentionHint">Se guardará solo en este dispositivo.</small>
+      </div>
+
+      <div class="premium-ritual-actions">
+        <button class="premium-path-card" data-premium-action="tarot-reading" type="button">
+          <span>🃏</span>
+          <strong>Tirada de tarot</strong>
+          <small>Abre directamente una lectura con cartas.</small>
+        </button>
+        <button class="premium-path-card" data-premium-action="daily-reading" type="button">
+          <span>🌟</span>
+          <strong>Mensaje del día</strong>
+          <small>Carta, runa y energía diaria.</small>
+        </button>
+        <button class="premium-path-card" data-premium-action="ritual-chat" type="button">
+          <span>🕯️</span>
+          <strong>Chat ritual</strong>
+          <small>Lectura guiada con voz e IA.</small>
+        </button>
+      </div>
+    </section>
+
+    <section class="premium-control-strip" aria-label="Controles premium">
+      <button data-premium-action="focus-mode" type="button">🌙 Modo enfoque</button>
+      <button data-premium-action="clear-intention" type="button">🧹 Limpiar intención</button>
+      <button data-action="install-help" type="button">📲 Instalar app</button>
+      <button data-action="tutorial-app" type="button">🎓 Tutorial</button>
+    </section>
+
+
+    <section class="home-grid premium-home-grid" aria-label="Módulos principales" data-i18n-aria="mainModules">
       <button class="module-card" data-module="map" type="button"><span>🗺️</span><strong data-i18n="map">Mapa</strong><small data-i18n="mapSub">Todo de un vistazo</small></button>
       <button class="module-card featured" data-module="chat" type="button"><span>🕯️</span><strong data-i18n="ritualChat">Chat Ritual</strong><small data-i18n="ritualChatSub">Tiradas privadas con voz e IA</small></button>
-      <button class="module-card" data-module="tarot" type="button"><span>🃏</span><strong data-i18n="tarot">Tarot</strong><small data-i18n="tarotSub">Carta, tiradas y biblioteca</small></button>
+      <button class="module-card premium-card-highlight" data-module="tarot" type="button"><span>🃏</span><strong data-i18n="tarot">Tarot</strong><small data-i18n="tarotSub">Carta, tiradas y biblioteca</small></button>
       <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong data-i18n="runes">Runas</strong><small data-i18n="runesSub">Runa rápida y tiradas</small></button>
       <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong data-i18n="moon">Luna</strong><small data-i18n="moonSub">Lectura lunar guiada</small></button>
       <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong data-i18n="dreams">Sueños</strong><small data-i18n="dreamsSub">Interpretación simbólica</small></button>
@@ -114,7 +624,7 @@
       <button class="module-card" data-action="settings" type="button"><span>⚙️</span><strong data-i18n="settings">Ajustes</strong><small data-i18n="settingsSub">Voz, avatar y visual</small></button>
     </section>
 
-    <section class="daily card-glass">
+    <section class="daily card-glass premium-daily">
       <div>
         <strong>🌟 <span data-i18n="dailyMessage">Mensaje del día</span></strong>
         <p id="dailyText" data-i18n="dailyText">Revela la carta, la runa y la fase lunar del día. Puedes escuchar, guardar o exportar la lectura.</p>
@@ -122,6 +632,223 @@
       <button class="btn compact" data-action="daily" type="button" data-i18n="reveal">Revelar</button>
     </section>
   </main>
+
+  <nav class="premium-bottom-nav" aria-label="Navegación rápida">
+    <button data-action="first-reading" type="button"><span>✨</span><small>Inicio</small></button>
+    <button data-module="tarot" type="button"><span>🃏</span><small>Tarot</small></button>
+    <button data-module="biblioteca" type="button"><span>📚</span><small>Diario</small></button>
+    <button data-module="luna" type="button"><span>🌙</span><small>Luna</small></button>
+    <button data-action="settings" type="button"><span>⚙️</span><small>Ajustes</small></button>
+  </nav>
+
+  <div id="premiumFocusVeil" class="premium-focus-veil" aria-hidden="true"></div>
+
+  
+  <button id="premiumOracleFab" class="premium-oracle-fab" data-premium-action="ritual-onboarding" type="button" aria-label="Abrir ritual premium">
+    <span>🔮</span>
+  </button>
+
+  <div id="premiumPalette" class="premium-palette" hidden>
+    <div class="premium-palette-backdrop" data-premium-action="close-palette"></div>
+    <div class="premium-palette-panel">
+      <div class="premium-palette-head">
+        <strong>Buscar módulo o acción</strong>
+        <button type="button" data-premium-action="close-palette">✕</button>
+      </div>
+      <input id="premiumPaletteInput" type="text" class="input" placeholder="Tarot, runas, diario, ajustes...">
+      <div id="premiumPaletteResults" class="premium-palette-results"></div>
+    </div>
+  </div>
+
+  <div id="premiumOnboarding" class="premium-onboarding" hidden>
+    <div class="premium-onboarding-backdrop" data-premium-action="close-onboarding"></div>
+    <div class="premium-onboarding-panel">
+      <span class="premium-section-kicker">✦ Ritual guiado</span>
+      <h3>Elige cómo quieres entrar al santuario</h3>
+      <div class="premium-onboarding-grid">
+        <button class="premium-entry-card" data-premium-action="tarot-reading" type="button">
+          <span>🃏</span><strong>Tarot</strong><small>Lectura con cartas</small>
+        </button>
+        <button class="premium-entry-card" data-premium-action="daily-reading" type="button">
+          <span>🌟</span><strong>Mensaje del día</strong><small>Rápido y directo</small>
+        </button>
+        <button class="premium-entry-card" data-premium-action="ritual-chat" type="button">
+          <span>🕯️</span><strong>Chat ritual</strong><small>Más guiado</small>
+        </button>
+        <button class="premium-entry-card" data-premium-action="focus-mode" type="button">
+          <span>🌙</span><strong>Enfoque</strong><small>Sin distracciones</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  
+  <div class="premium-smart-dock" aria-label="Dock premium">
+    <button type="button" data-premium-action="tarot-reading">🃏 Tarot</button>
+    <button type="button" data-premium-action="daily-reading">🌟 Día</button>
+    <button type="button" data-premium-action="open-library">📚 Biblioteca</button>
+    <button type="button" data-premium-action="open-card-library">🗂️ Cartas</button>
+    <button type="button" data-premium-action="open-reading-vault">🗄️ Vault</button>
+    <button type="button" data-premium-action="open-native-engine">⚡ Engine</button>
+    <button type="button" data-premium-action="open-onboarding-hub">🚀 Onboarding</button>
+    <button type="button" data-premium-action="ritual-onboarding">✨ Ritual</button>
+    <button type="button" data-premium-action="open-palette">⌘ Buscar</button>
+    <button type="button" data-premium-action="open-settings-drawer">⚙️ Ajustes</button>
+  </div>
+
+  
+  <button id="premiumSettingsFab" class="premium-settings-fab" data-premium-action="open-settings-drawer" type="button" aria-label="Abrir ajustes premium">
+    <span>⚙️</span>
+  </button>
+
+  <div id="premiumNativeSplash" class="premium-native-splash" hidden>
+    <div class="premium-native-splash-bg"></div>
+    <div class="premium-native-splash-card">
+      <span class="premium-section-kicker">✦ Ultra Premium</span>
+      <h2>Bienvenido al Santuario</h2>
+      <p>Una experiencia más cercana a una app nativa, con control visual, transiciones y ajustes premium.</p>
+      <div class="premium-native-splash-actions">
+        <button class="btn primary" data-premium-action="dismiss-native-splash" type="button">Entrar</button>
+        <button class="btn ghost" data-premium-action="dont-show-native-splash" type="button">No mostrar más</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="premiumSettingsDrawer" class="premium-settings-drawer" hidden>
+    <div class="premium-settings-backdrop" data-premium-action="close-settings-drawer"></div>
+    <aside class="premium-settings-panel" aria-label="Ajustes premium">
+      <div class="premium-settings-head">
+        <div>
+          <span class="premium-section-kicker">✦ Ajustes Premium</span>
+          <h3>Personaliza la experiencia</h3>
+        </div>
+        <button type="button" data-premium-action="close-settings-drawer">✕</button>
+      </div>
+
+      <div class="premium-settings-group">
+        <label class="premium-setting-row">
+          <div>
+            <strong>Reducir animaciones</strong>
+            <small>Hace la interfaz más sobria y ligera.</small>
+          </div>
+          <input id="premiumReduceMotion" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Modo tarjetas intensas</strong>
+            <small>Más brillo y profundidad en cartas y paneles.</small>
+          </div>
+          <input id="premiumRichCards" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Mostrar bienvenida</strong>
+            <small>Activa la pantalla de entrada premium.</small>
+          </div>
+          <input id="premiumShowSplash" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Modo compacto</strong>
+            <small>Reduce espacios para ver más contenido.</small>
+          </div>
+          <input id="premiumCompactMode" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Halo ambiental</strong>
+            <small>Refuerza el brillo premium del santuario.</small>
+          </div>
+          <input id="premiumAmbientGlow" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Glass máximo</strong>
+            <small>Refuerza el efecto cristal premium.</small>
+          </div>
+          <input id="premiumGlassMax" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Modo showcase</strong>
+            <small>Ideal para presentar la app con una estética más impactante.</small>
+          </div>
+          <input id="premiumShowcaseMode" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Modo profesional</strong>
+            <small>Activa una presentación más tipo dashboard / app de pago.</small>
+          </div>
+          <input id="premiumProMode" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Transiciones intensas</strong>
+            <small>Refuerza reveals y cambios entre módulos.</small>
+          </div>
+          <input id="premiumCinematicMode" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Motor local real</strong>
+            <small>Activa biblioteca, tiradas y vault nativo sin depender de servidores.</small>
+          </div>
+          <input id="premiumNativeEngineToggle" type="checkbox">
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Cartas compactas</strong>
+            <small>Reduce el tamaño visual de la biblioteca real.</small>
+          </div>
+          <input id="premiumCompactCards" type="checkbox">
+        </label>
+      </div>
+
+      <div class="premium-settings-group">
+        <strong class="premium-settings-title">Atajos</strong>
+        <div class="premium-native-chip-row">
+          <button type="button" data-premium-action="tarot-reading">🃏 Tarot</button>
+          <button type="button" data-premium-action="daily-reading">🌟 Día</button>
+          <button type="button" data-premium-action="open-library">📚 Biblioteca</button>
+    <button type="button" data-premium-action="open-card-library">🗂️ Cartas</button>
+    <button type="button" data-premium-action="open-reading-vault">🗄️ Vault</button>
+    <button type="button" data-premium-action="open-native-engine">⚡ Engine</button>
+    <button type="button" data-premium-action="open-onboarding-hub">🚀 Onboarding</button>
+          <button type="button" data-premium-action="open-palette">⌘ Buscar</button>
+        </div>
+      </div>
+
+      <div class="premium-settings-group">
+        <strong class="premium-settings-title">Estado de la app</strong>
+        <div class="premium-native-status-grid">
+          <div class="premium-native-status-card">
+            <span>⚡</span>
+            <strong id="premiumNativeBuild">v8</strong>
+            <small>Build premium</small>
+          </div>
+          <div class="premium-native-status-card">
+            <span>🪞</span>
+            <strong id="premiumNativeTheme">Gold</strong>
+            <small>Tema actual</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="premiumTransitionVeil" class="premium-transition-veil" aria-hidden="true"></div>
 
   <footer class="app-footer">
     <p data-i18n="disclaimer">Experiencia simbólica y de entretenimiento. No sustituye asesoramiento profesional.</p>
