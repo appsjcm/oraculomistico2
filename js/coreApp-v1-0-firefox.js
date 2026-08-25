@@ -2064,13 +2064,69 @@ function showRuneDetail(r) {
   openModal({ icon:'ᚱ', title:r.name, subtitle:'Runa del Futhark', body:`<div class="reading-layout"><div class="rune-big">${r.sym}</div><div class="result-card"><h3>Mensaje</h3><p>${escapeHTML(r.up)}</p><h3>Invertida</h3><p>${escapeHTML(r.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${r.name}\n${r.up}`,'Runas')}</div></div>` });
 }
 
+/* La fase se calculaba como el día del mes entre ocho, así que casi nunca
+   coincidía con la luna real. Ahora se deriva del ciclo sinódico a partir
+   de una luna nueva conocida (6 de enero de 2000, 18:14 UTC). */
+const LUNACION = 29.530588853;
+const LUNA_CERO = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
+
+function edadLunar(fecha = new Date()) {
+  const dias = fecha.getTime() / 86400000;
+  const edad = (dias - LUNA_CERO) % LUNACION;
+  return edad < 0 ? edad + LUNACION : edad;
+}
+function faseLunar(fecha = new Date()) {
+  const edad = edadLunar(fecha);
+  const ciclo = edad / LUNACION;                       // 0 a 1
+  const indice = Math.round(ciclo * 8) % 8;            // 0 = nueva
+  const iluminacion = Math.round((1 - Math.cos(2 * Math.PI * ciclo)) / 2 * 100);
+  return { fase: MOON_PHASES[indice] || MOON_PHASES[0], indice, edad, iluminacion, creciente: ciclo < 0.5 };
+}
+/** Cuándo llega la próxima fase principal: nueva, creciente, llena o menguante. */
+function proximaFasePrincipal(fecha = new Date()) {
+  const edad = edadLunar(fecha);
+  const hitos = [0, LUNACION * 0.25, LUNACION * 0.5, LUNACION * 0.75, LUNACION];
+  const nombres = ['Luna Nueva', 'Cuarto Creciente', 'Luna Llena', 'Cuarto Menguante', 'Luna Nueva'];
+  for (let i = 0; i < hitos.length; i++) {
+    if (edad < hitos[i] - 0.02) {
+      const faltan = hitos[i] - edad;
+      return { nombre: nombres[i], dias: Math.max(1, Math.round(faltan)) };
+    }
+  }
+  return { nombre: 'Luna Nueva', dias: Math.max(1, Math.round(LUNACION - edad)) };
+}
+/** Los próximos siete días, para el calendario lunar. */
+function semanaLunar(fecha = new Date()) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(fecha.getTime() + i * 86400000);
+    const f = faseLunar(d);
+    return { dia: d.getDate(), inicial: ['D', 'L', 'M', 'X', 'J', 'V', 'S'][d.getDay()], sym: f.fase.sym, iluminacion: f.iluminacion, hoy: i === 0 };
+  });
+}
+
 function showLuna() {
-  const phase = MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
-  const body = `<div class="result-card center"><div style="font-size:5rem">${phase.sym}</div><h3>${escapeHTML(phase.name)}</h3><p>${escapeHTML(phase.meaning)}</p><p><strong>Ritual simbólico:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>Afirmación:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt"><div class="field"><label>Enfoque</label><select id="moonFocus"><option>Claridad</option><option>Amor</option><option>Trabajo / estudios</option><option>Descanso</option><option>Soltar</option></select></div><div class="field"><label>Pregunta opcional</label>${inputWithMic('moonQuestion', 'placeholder="¿Qué necesito observar?"')}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">Crear lectura lunar</button></div>`;
+  const { fase: phase, iluminacion, edad, creciente } = faseLunar();
+  const proxima = proximaFasePrincipal();
+  const dias = semanaLunar();
+  const body = `<div class="om-luna">
+      <div class="om-luna-astro" role="img" aria-label="${escapeHTML(phase.name)}, ${iluminacion}% iluminada">
+        <div class="om-luna-disco" style="--ilum:${iluminacion}%; --lado:${creciente ? 'right' : 'left'}"></div>
+      </div>
+      <p class="om-luna-fase">${phase.sym} ${escapeHTML(phase.name)}</p>
+      <div class="om-luna-datos">
+        <span><b>${iluminacion}%</b> iluminada</span>
+        <span><b>Día ${Math.floor(edad) + 1}</b> del ciclo</span>
+        <span><b>${escapeHTML(proxima.nombre)}</b> en ${proxima.dias} día${proxima.dias > 1 ? 's' : ''}</span>
+      </div>
+      <div class="om-luna-semana" aria-label="Próximos siete días">
+        ${dias.map(d => `<div class="om-luna-dia${d.hoy ? ' hoy' : ''}"><small>${d.inicial}</small><span>${d.sym}</span><b>${d.dia}</b><i>${d.iluminacion}%</i></div>`).join('')}
+      </div>
+    </div>
+    <div class="result-card"><p>${escapeHTML(phase.meaning)}</p><p><strong>Ritual simbólico:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>Afirmación:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt"><div class="field"><label>Enfoque</label><select id="moonFocus"><option>Claridad</option><option>Amor</option><option>Trabajo / estudios</option><option>Descanso</option><option>Soltar</option></select></div><div class="field"><label>Pregunta opcional</label>${inputWithMic('moonQuestion', 'placeholder="¿Qué necesito observar?"')}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">Crear lectura lunar</button></div>`;
   openModal({ icon:'🌙', title:'Luna', subtitle:'Lectura lunar guiada.', body });
 }
 function moonReading() {
-  const phase = MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
+  const phase = faseLunar().fase;
   const focus = $('#moonFocus')?.value || 'Claridad';
   const q = $('#moonQuestion')?.value || 'Sin pregunta';
   const text = `${phase.name}\nEnfoque: ${focus}\nPregunta: ${q}\n${phase.meaning}\nRitual simbólico: ${phase.ritual}\nAfirmación: ${phase.affirmation}`;
@@ -2565,13 +2621,13 @@ function daily() {
   const key = 'oraculo.daily.' + todayKey();
   let saved = storeGet(key);
   if (!saved) {
-    const card = sample(ALL_TAROT), rune = sample(RUNAS), phase = MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
+    const card = sample(ALL_TAROT), rune = sample(RUNAS), phase = faseLunar().fase;
     saved = { card: card.name, rune: rune.name, phase: phase.name };
     storeSet(key, saved);
   }
   const card = ALL_TAROT.find(c => c.name === saved.card) || sample(ALL_TAROT);
   const rune = RUNAS.find(r => r.name === saved.rune) || sample(RUNAS);
-  const phase = MOON_PHASES.find(m => m.name === saved.phase) || MOON_PHASES[new Date().getDate() % MOON_PHASES.length];
+  const phase = MOON_PHASES.find(m => m.name === saved.phase) || faseLunar().fase;
   const text = `Fecha: ${new Date().toLocaleDateString()}
 
 Carta del día: ${card.name}

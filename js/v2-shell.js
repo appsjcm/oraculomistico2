@@ -146,6 +146,14 @@
         if (cont && cont.hidden && cont.contains(accion)) mostrarPaneles(false);
         // Al elegir un altar del Santuario se cierra el Perfil si estaba abierto.
         if (accion.closest('.om-altar') && !$('#omProfile')?.hidden) cerrarPerfil();
+
+        /* Se marca el modal con el oráculo activo para que cada uno tenga
+           su atmósfera. El motor no necesita enterarse. */
+        const modulo = accion.getAttribute('data-module');
+        if (modulo) {
+          const raiz = $('#modalRoot');
+          if (raiz) raiz.setAttribute('data-om-oracle', modulo);
+        }
       }
     });
 
