@@ -1541,9 +1541,23 @@ const TAROT_SPREADS = {
 };
 function getTarotSpread(key = 'one') { return TAROT_SPREADS[key] || TAROT_SPREADS.one; }
 
-function cardImage(card) { return card.img ? `<img class="tarot-img" src="${escapeHTML(card.img)}" alt="${escapeHTML(card.name)}" loading="lazy">` : `<div class="rune-big">🃏</div>`; }
+/* Las cartas y runas se muestran a menos de 200px, así que basta la miniatura:
+   una tirada de 12 casas descarga la mitad y falla mucho menos. `data-full`
+   guarda el original por si la miniatura no llega. */
+function cardImage(card) { return card.img ? `<img class="tarot-img" src="${escapeHTML(thumbFor(card.img))}" data-full="${escapeHTML(card.img)}" alt="${escapeHTML(card.name)}" loading="lazy" decoding="async">` : `<div class="rune-big">🃏</div>`; }
 /** La runa ilustrada; conserva el glifo como distintivo y como respaldo. */
-function runeImage(rune) { return rune.img ? `<img class="rune-img" src="${escapeHTML(rune.img)}" alt="${escapeHTML(rune.name)}" loading="lazy" decoding="async"><span class="symbol glyph-badge">${rune.sym}</span>` : `<span class="symbol">${rune.sym}</span>`; }
+function runeImage(rune) { return rune.img ? `<img class="rune-img" src="${escapeHTML(thumbFor(rune.img))}" data-full="${escapeHTML(rune.img)}" alt="${escapeHTML(rune.name)}" loading="lazy" decoding="async"><span class="symbol glyph-badge">${rune.sym}</span>` : `<span class="symbol">${rune.sym}</span>`; }
+
+/* Si una imagen no carga -red inestable, muchas a la vez- se reintenta una sola
+   vez con el original antes de darla por perdida. */
+document.addEventListener('error', (event) => {
+  const img = event.target;
+  if (!img || img.tagName !== 'IMG' || img.dataset.retried) return;
+  const full = img.dataset.full;
+  if (!full || img.getAttribute('src') === full) return;
+  img.dataset.retried = '1';
+  img.src = full;
+}, true);
 
 
 function getProfile() {

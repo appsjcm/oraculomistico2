@@ -2985,3 +2985,19 @@ body.premium-compact-cards .premium-real-card .card-art{margin-bottom:8px}
 .premium-quick-actions{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(760px,calc(100% - 24px));margin:8px auto 30px;text-align:center}
 .premium-smart-dock{position:static;bottom:auto;z-index:auto;margin:0 auto;max-width:100%}
 @media (max-width:520px){.premium-quick-actions{margin:4px auto 22px}}
+
+/* v14 · La carta invertida vuelve a verse girada 180°.
+   La capa premium anima .tarot-img con fill-mode `both`, así que el fotograma
+   final (rotateY(0)) pisaba el rotate(180deg) de las reglas de invertida: las
+   cartas salían derechas aunque el texto dijera "invertida". La invertida usa
+   ahora su propia animación, que entra igual pero termina girada. */
+.reversed .tarot-img,
+.card-frame.reversed .tarot-img,
+.chat-ritual-card.reversed .tarot-img{animation-name:premiumCardInReversed}
+@keyframes premiumCardInReversed{
+  from{opacity:0;transform:rotate(180deg) rotateY(58deg) translateY(20px) scale(.88);filter:blur(5px) drop-shadow(0 12px 24px rgba(0,0,0,.36))}
+  to{opacity:1;transform:rotate(180deg) rotateY(0) translateY(0) scale(1);filter:blur(0) drop-shadow(0 18px 40px rgba(0,0,0,.46))}
+}
+/* La runa invertida gira igual que la carta. */
+.rune-stone.reversed .rune-img,.rune-mini.reversed img{transform:rotate(180deg)}
+.rune-stone .rune-img{transition:transform .45s ease}
