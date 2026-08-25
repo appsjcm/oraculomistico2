@@ -2018,12 +2018,6 @@ function showCardDetail(card) {
   openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>Al derecho</h3><p>${escapeHTML(card.up)}</p><h3>Invertida</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
 }
 
-function runeReading(runes, title = 'Lectura de Runas') {
-  const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
-  setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })) });
-  const body = runes.length === 1 ? `<div class="reading-layout"><div class="rune-big${runes[0].rune.img ? ' has-art' : ''}">${runes[0].rune.img ? `<img src="${escapeHTML(runes[0].rune.img)}" alt="${escapeHTML(runes[0].rune.name)}"><span class="rune-glyph">${runes[0].rune.sym}</span>` : runes[0].rune.sym}</div><div class="result-card"><h3>${escapeHTML(runes[0].rune.name)} ${runes[0].rev ? 'invertida' : ''}</h3><p>${escapeHTML(runes[0].rev ? (runes[0].rune.rv || runes[0].rune.up) : runes[0].rune.up)}</p>${readingActions(lines,'Runas')}</div></div>` : `<div class="library-grid">${runes.map(r=>`<div class="mini-card rune-mini">${r.rune.img ? `<img src="${escapeHTML(thumbFor(r.rune.img))}" alt="${escapeHTML(r.rune.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.rune.sym}</span>`}<strong>${r.rune.sym} ${escapeHTML(r.rune.name)}</strong><small>${r.rev ? 'Invertida' : 'Normal'}</small></div>`).join('\n\n')}</div><div class="result-card"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Runas')}</div>`;
-  openModal({ icon:'ᚱ', title, subtitle:'Lectura completa.', body });
-}
 function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
   const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
   setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })), meta:{ reversedRate } });

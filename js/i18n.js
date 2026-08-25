@@ -218,5 +218,132 @@ export function applyAppTranslations(root = document) {
   root.querySelectorAll?.('[data-i18n-aria]').forEach(element => {
     element.setAttribute('aria-label', t(element.dataset.i18nAria));
   });
-  document.title = `Oráculo Místico v1.0`;
+  document.title = 'Oráculo Místico';
 }
+
+/* ============================================================
+   V2 · Cadenas de la nueva carcasa
+   La capa premium se había escrito solo en español: quien usara
+   la app en otro idioma veía la portada a medias. Se añaden aquí
+   y se fusionan con el diccionario, sin tocar lo ya traducido.
+   ============================================================ */
+const V2_STRINGS = {
+  es: {
+    omTagline: 'Las respuestas están más cerca de lo que imaginas.',
+    omEnter: 'Entrar al Oráculo', omExplore: 'Explorar',
+    omSanctuary: 'El Santuario', omSanctuaryTitle: 'Elige por dónde entrar',
+    omSanctuarySub: 'Ocho caminos hacia la misma pregunta.',
+    omTarotSub: '78 cartas, tiradas y ritual completo',
+    omRunesSub: 'El Futhark antiguo, piedra a piedra',
+    omMoonSub: 'Fase actual y su lectura simbólica',
+    omDreamsSub: 'Escribe lo soñado y encuentra sus símbolos',
+    omNumSub: 'Tu perfil numérico y la sinastría',
+    omGrabovoiSub: 'Secuencias numéricas y cómo usarlas',
+    omOracle: 'Consultar al Oráculo', omOracleSub: 'Conversación guiada, con voz si la quieres',
+    omGrimoire: 'Mi Grimorio', omGrimoireSub: 'Tus lecturas guardadas y el diario',
+    omNavHome: 'Inicio', omNavLibrary: 'Biblioteca', omNavProfile: 'Perfil',
+    omGroupAppearance: 'Apariencia', omGroupOracle: 'Oráculo y voz',
+    omGroupApp: 'Aplicación', omGroupAdvanced: 'Avanzado',
+    omVoiceTitle: 'La Voz del Oráculo', omVoiceSub: 'Reproducir, pausar, silenciar y velocidad',
+    omPanels: 'Paneles avanzados', omPanelsSub: 'Las herramientas de las versiones anteriores'
+  },
+  ca: {
+    omTagline: 'Les respostes són més a prop del que imagines.',
+    omEnter: 'Entra a l’Oracle', omExplore: 'Explorar',
+    omSanctuary: 'El Santuari', omSanctuaryTitle: 'Tria per on entrar',
+    omSanctuarySub: 'Vuit camins cap a la mateixa pregunta.',
+    omTarotSub: '78 cartes, tirades i ritual complet',
+    omRunesSub: 'El Futhark antic, pedra a pedra',
+    omMoonSub: 'Fase actual i la seva lectura simbòlica',
+    omDreamsSub: 'Escriu el que has somiat i troba’n els símbols',
+    omNumSub: 'El teu perfil numèric i la sinastria',
+    omGrabovoiSub: 'Seqüències numèriques i com fer-les servir',
+    omOracle: 'Consultar l’Oracle', omOracleSub: 'Conversa guiada, amb veu si la vols',
+    omGrimoire: 'El meu Grimori', omGrimoireSub: 'Les teves lectures desades i el diari',
+    omNavHome: 'Inici', omNavLibrary: 'Biblioteca', omNavProfile: 'Perfil',
+    omGroupAppearance: 'Aparença', omGroupOracle: 'Oracle i veu',
+    omGroupApp: 'Aplicació', omGroupAdvanced: 'Avançat',
+    omVoiceTitle: 'La Veu de l’Oracle', omVoiceSub: 'Reproduir, pausar, silenciar i velocitat',
+    omPanels: 'Plafons avançats', omPanelsSub: 'Les eines de les versions anteriors'
+  },
+  en: {
+    omTagline: 'The answers are closer than you think.',
+    omEnter: 'Enter the Oracle', omExplore: 'Explore',
+    omSanctuary: 'The Sanctuary', omSanctuaryTitle: 'Choose where to begin',
+    omSanctuarySub: 'Eight paths to the same question.',
+    omTarotSub: '78 cards, spreads and the full ritual',
+    omRunesSub: 'The Elder Futhark, stone by stone',
+    omMoonSub: 'Tonight’s phase and what it points to',
+    omDreamsSub: 'Write your dream and find its symbols',
+    omNumSub: 'Your number profile and synastry',
+    omGrabovoiSub: 'Number sequences and how to use them',
+    omOracle: 'Ask the Oracle', omOracleSub: 'A guided conversation, with voice if you want it',
+    omGrimoire: 'My Grimoire', omGrimoireSub: 'Your saved readings and journal',
+    omNavHome: 'Home', omNavLibrary: 'Library', omNavProfile: 'Profile',
+    omGroupAppearance: 'Appearance', omGroupOracle: 'Oracle and voice',
+    omGroupApp: 'App', omGroupAdvanced: 'Advanced',
+    omVoiceTitle: 'The Voice of the Oracle', omVoiceSub: 'Play, pause, mute and speed',
+    omPanels: 'Advanced panels', omPanelsSub: 'Tools from earlier versions'
+  },
+  fr: {
+    omTagline: 'Les réponses sont plus proches que vous ne le pensez.',
+    omEnter: 'Entrer dans l’Oracle', omExplore: 'Explorer',
+    omSanctuary: 'Le Sanctuaire', omSanctuaryTitle: 'Choisissez par où entrer',
+    omSanctuarySub: 'Huit chemins vers la même question.',
+    omTarotSub: '78 cartes, tirages et rituel complet',
+    omRunesSub: 'Le Futhark ancien, pierre après pierre',
+    omMoonSub: 'La phase actuelle et sa lecture symbolique',
+    omDreamsSub: 'Écrivez votre rêve et trouvez ses symboles',
+    omNumSub: 'Votre profil numérique et la synastrie',
+    omGrabovoiSub: 'Séquences numériques et leur usage',
+    omOracle: 'Consulter l’Oracle', omOracleSub: 'Une conversation guidée, avec la voix si vous le souhaitez',
+    omGrimoire: 'Mon Grimoire', omGrimoireSub: 'Vos lectures enregistrées et le journal',
+    omNavHome: 'Accueil', omNavLibrary: 'Bibliothèque', omNavProfile: 'Profil',
+    omGroupAppearance: 'Apparence', omGroupOracle: 'Oracle et voix',
+    omGroupApp: 'Application', omGroupAdvanced: 'Avancé',
+    omVoiceTitle: 'La Voix de l’Oracle', omVoiceSub: 'Lire, mettre en pause, couper le son et vitesse',
+    omPanels: 'Panneaux avancés', omPanelsSub: 'Les outils des versions précédentes'
+  },
+  de: {
+    omTagline: 'Die Antworten sind näher, als du denkst.',
+    omEnter: 'Das Orakel betreten', omExplore: 'Erkunden',
+    omSanctuary: 'Das Heiligtum', omSanctuaryTitle: 'Wähle deinen Eingang',
+    omSanctuarySub: 'Acht Wege zur selben Frage.',
+    omTarotSub: '78 Karten, Legungen und das ganze Ritual',
+    omRunesSub: 'Das ältere Futhark, Stein für Stein',
+    omMoonSub: 'Die aktuelle Phase und ihre Deutung',
+    omDreamsSub: 'Schreib deinen Traum und finde seine Symbole',
+    omNumSub: 'Dein Zahlenprofil und die Synastrie',
+    omGrabovoiSub: 'Zahlenfolgen und ihre Anwendung',
+    omOracle: 'Das Orakel befragen', omOracleSub: 'Ein geführtes Gespräch, auf Wunsch mit Stimme',
+    omGrimoire: 'Mein Grimoire', omGrimoireSub: 'Deine gespeicherten Legungen und das Tagebuch',
+    omNavHome: 'Start', omNavLibrary: 'Bibliothek', omNavProfile: 'Profil',
+    omGroupAppearance: 'Erscheinungsbild', omGroupOracle: 'Orakel und Stimme',
+    omGroupApp: 'App', omGroupAdvanced: 'Erweitert',
+    omVoiceTitle: 'Die Stimme des Orakels', omVoiceSub: 'Abspielen, pausieren, stumm und Tempo',
+    omPanels: 'Erweiterte Bereiche', omPanelsSub: 'Werkzeuge früherer Versionen'
+  },
+  zh: {
+    omTagline: '答案比你想象的更近。',
+    omEnter: '进入神谕', omExplore: '探索',
+    omSanctuary: '圣所', omSanctuaryTitle: '选择你的入口',
+    omSanctuarySub: '通往同一问题的八条路。',
+    omTarotSub: '78 张牌、牌阵与完整仪式',
+    omRunesSub: '古弗萨克文，一石一符',
+    omMoonSub: '当前月相及其象征解读',
+    omDreamsSub: '写下你的梦，找出其中的符号',
+    omNumSub: '你的数字档案与合盘',
+    omGrabovoiSub: '数字序列及其用法',
+    omOracle: '请教神谕', omOracleSub: '引导式对话，可选语音',
+    omGrimoire: '我的魔典', omGrimoireSub: '你保存的解读与日记',
+    omNavHome: '首页', omNavLibrary: '书库', omNavProfile: '个人',
+    omGroupAppearance: '外观', omGroupOracle: '神谕与语音',
+    omGroupApp: '应用', omGroupAdvanced: '进阶',
+    omVoiceTitle: '神谕之声', omVoiceSub: '播放、暂停、静音与语速',
+    omPanels: '进阶面板', omPanelsSub: '早期版本的工具'
+  }
+};
+
+Object.keys(V2_STRINGS).forEach(idioma => {
+  if (STRINGS[idioma]) Object.assign(STRINGS[idioma], V2_STRINGS[idioma]);
+});

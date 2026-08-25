@@ -528,3 +528,9 @@ body.om-teclado .om-ritual-panel { max-height: calc(var(--om-vv-alto, 100svh) - 
   .om-aviso { flex-wrap: wrap; border-radius: var(--om-r-lg); }
   .om-aviso span { flex: 1 1 100%; }
 }
+
+/* Los enlaces del pie medían 19 px de alto: por debajo de lo cómodo al tocar. */
+.app-footer a {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 var(--om-s-2);
+}
