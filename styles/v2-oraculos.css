@@ -1,0 +1,253 @@
+/* ============================================================
+   ORÁCULO MÍSTICO · LOS ORÁCULOS
+   Fase 5. Cada oráculo con atmósfera propia sobre el mismo
+   sistema: cambia el aire, no la estructura.
+   ============================================================ */
+
+/* El modal recibe data-om-oracle desde la carcasa V2. */
+#modalRoot[data-om-oracle] .modal-panel {
+  position: relative;
+  overflow: hidden;
+}
+#modalRoot[data-om-oracle] .modal-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 190px;
+  pointer-events: none;
+  opacity: .55;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, var(--om-aura, transparent), transparent 72%);
+}
+#modalRoot[data-om-oracle] .modal-head { position: relative; }
+
+#modalRoot[data-om-oracle="tarot"]       { --om-aura: rgba(242, 204, 101, .30); }
+#modalRoot[data-om-oracle="runas"]       { --om-aura: rgba(127, 168, 217, .26); }
+#modalRoot[data-om-oracle="luna"]        { --om-aura: rgba(159, 180, 255, .30); }
+#modalRoot[data-om-oracle="suenos"]      { --om-aura: rgba(169, 139, 255, .30); }
+#modalRoot[data-om-oracle="numerologia"] { --om-aura: rgba(242, 204, 101, .26); }
+#modalRoot[data-om-oracle="grabovoi"]    { --om-aura: rgba(236, 124, 255, .22); }
+#modalRoot[data-om-oracle="chat"]        { --om-aura: rgba(141, 102, 255, .30); }
+#modalRoot[data-om-oracle="biblioteca"]  { --om-aura: rgba(242, 204, 101, .22); }
+
+
+/* ============================================================
+   LUNA · la fase real, dibujada
+   ============================================================ */
+.om-luna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--om-s-3);
+  padding: var(--om-s-5) var(--om-s-3) var(--om-s-4);
+  text-align: center;
+}
+
+.om-luna-astro {
+  position: relative;
+  width: clamp(140px, 42vw, 190px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(159,180,255,.16), transparent 70%);
+  display: grid;
+  place-items: center;
+}
+/* El disco: una esfera iluminada por un lado, con la sombra
+   avanzando según el porcentaje real. */
+.om-luna-disco {
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 34%, #fdfbf4, #d9dbe6 52%, #9aa0b4 78%, #6d7488);
+  box-shadow: 0 0 60px rgba(207, 224, 242, .22), inset 0 0 26px rgba(0, 0, 0, .32);
+  position: relative;
+  overflow: hidden;
+}
+.om-luna-disco::after {
+  content: "";
+  position: absolute;
+  top: -2%;
+  bottom: -2%;
+  width: calc(100% - var(--ilum, 50%));
+  background: linear-gradient(90deg, rgba(6,7,18,.97), rgba(6,7,18,.90));
+  filter: blur(3px);
+}
+.om-luna-disco[style*="right"]::after { left: 0; border-radius: 0 50% 50% 0 / 0 50% 50% 0; }
+.om-luna-disco[style*="left"]::after  { right: 0; border-radius: 50% 0 0 50% / 50% 0 0 50%; }
+
+.om-luna-fase {
+  margin: 0;
+  font-family: var(--om-font-display);
+  font-size: var(--om-t-xl);
+  color: var(--om-ivory);
+}
+.om-luna-datos {
+  display: flex; flex-wrap: wrap; gap: var(--om-s-2) var(--om-s-4);
+  justify-content: center;
+  font-size: var(--om-t-sm);
+  color: var(--om-ivory-3);
+}
+.om-luna-datos b { color: var(--om-gold); font-variant-numeric: tabular-nums; }
+
+/* Calendario de la semana */
+.om-luna-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: var(--om-s-2);
+}
+.om-luna-dia {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--om-s-2) 2px;
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-sm);
+  background: var(--om-surface-1);
+}
+.om-luna-dia.hoy { border-color: var(--om-gold); background: var(--om-gold-veil); }
+.om-luna-dia small { font-size: .62rem; color: var(--om-ivory-3); text-transform: uppercase; letter-spacing: .06em; }
+.om-luna-dia span  { font-size: 1.05rem; line-height: 1; }
+.om-luna-dia b     { font-size: var(--om-t-xs); color: var(--om-ivory-2); font-variant-numeric: tabular-nums; }
+.om-luna-dia i     { font-size: .6rem; font-style: normal; color: var(--om-ivory-3); font-variant-numeric: tabular-nums; }
+
+
+/* ============================================================
+   RUNAS · superficie ceremonial
+   ============================================================ */
+#modalRoot[data-om-oracle="runas"] .library-grid,
+#modalRoot[data-om-oracle="runas"] .draw-reveal-grid {
+  padding: var(--om-s-3);
+  border-radius: var(--om-r-lg);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(127,168,217,.08), transparent 62%),
+    linear-gradient(165deg, rgba(24,22,30,.62), rgba(12,11,18,.72));
+  border: 1px solid var(--om-line-1);
+}
+
+
+/* ============================================================
+   NUMEROLOGÍA · los números, grandes
+   ============================================================ */
+.om-num-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: var(--om-s-3);
+  margin-top: var(--om-s-3);
+}
+.om-num-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--om-s-4) var(--om-s-3);
+  text-align: center;
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-md);
+  background: linear-gradient(170deg, var(--om-surface-2), var(--om-surface-1));
+  overflow: hidden;
+}
+.om-num-card::before {
+  content: "";
+  position: absolute; inset: -40% -20% auto -20%;
+  height: 120%;
+  background: radial-gradient(ellipse at 50% 0%, var(--om-gold-veil), transparent 62%);
+  pointer-events: none;
+}
+.om-num-valor {
+  position: relative;
+  font-family: var(--om-font-display);
+  font-size: clamp(2.6rem, 9vw, 3.4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--om-gold);
+  text-shadow: 0 2px 24px rgba(242, 204, 101, .22);
+}
+.om-num-nombre {
+  position: relative;
+  font-size: var(--om-t-xs);
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-ivory-3);
+}
+.om-num-desc { position: relative; font-size: var(--om-t-sm); color: var(--om-ivory-2); line-height: 1.45; }
+
+
+/* ============================================================
+   SINASTRÍA · dos círculos y lo que los une
+   ============================================================ */
+.om-syn-astro {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--om-s-3);
+  padding: var(--om-s-5) var(--om-s-3);
+  margin-top: var(--om-s-3);
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-lg);
+  background: radial-gradient(ellipse at 50% 50%, rgba(141,102,255,.10), transparent 68%);
+}
+.om-syn-circulo {
+  aspect-ratio: 1;
+  width: min(112px, 100%);
+  justify-self: center;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--om-line-gold);
+  background: radial-gradient(circle at 40% 34%, var(--om-surface-3), transparent 62%);
+  font-family: var(--om-font-display);
+  font-size: 2rem;
+  color: var(--om-gold);
+  font-variant-numeric: tabular-nums;
+}
+.om-syn-circulo small {
+  display: block;
+  font-family: var(--om-font-body);
+  font-size: .6rem;
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-ivory-3);
+}
+.om-syn-lazo {
+  position: relative;
+  height: 2px;
+  min-width: 42px;
+  background: linear-gradient(90deg, transparent, var(--om-gold), transparent);
+  opacity: .7;
+}
+.om-syn-lazo::after {
+  content: "✦";
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: .85rem;
+  color: var(--om-gold);
+}
+
+
+/* ============================================================
+   SUEÑOS · etiquetas de símbolos
+   ============================================================ */
+.om-dream-tags { display: flex; flex-wrap: wrap; gap: var(--om-s-2); margin-top: var(--om-s-3); }
+.om-dream-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px var(--om-s-3);
+  border: 1px solid var(--om-line-violet);
+  border-radius: var(--om-r-full);
+  background: var(--om-violet-veil);
+  color: var(--om-ivory-2);
+  font-size: var(--om-t-xs);
+}
+
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+  .om-luna-semana { max-width: 100%; gap: 3px; }
+  .om-luna-dia { padding: 5px 1px; }
+  .om-luna-dia i { display: none; }
+  .om-syn-astro { grid-template-columns: 1fr; gap: var(--om-s-2); }
+  .om-syn-lazo { width: 2px; height: 34px; min-width: 0; justify-self: center;
+                 background: linear-gradient(180deg, transparent, var(--om-gold), transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .om-luna-disco { box-shadow: inset 0 0 26px rgba(0,0,0,.32); }
+}
