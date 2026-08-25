@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-oraculos-21';
+const CACHE_NAME = 'oraculo-v1-0-public-grimorio-22';
 const APP_SHELL = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
   './js/v2-ritual.js',
+  './js/v2-grimorio.js',
   './js/i18n.js',
   './js/data.js',
   './js/config.js',

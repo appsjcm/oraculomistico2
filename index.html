@@ -41,17 +41,17 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-oraculos-21">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-oraculos-21">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-grimorio-22">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-oraculos-21">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-oraculos-21">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-oraculos-21">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-oraculos-21">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-grimorio-22">
   <script>
     (() => {
-      const build = '1.0-oraculos-21';
+      const build = '1.0-grimorio-22';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -69,10 +69,11 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-oraculos-21"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-oraculos-21"></script>
-  <script defer src="js/v2-shell.js?v=1.0-oraculos-21"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-oraculos-21"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-grimorio-22"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-grimorio-22"></script>
+  <script defer src="js/v2-shell.js?v=1.0-grimorio-22"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-grimorio-22"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-grimorio-22"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -181,7 +182,7 @@
           <span class="om-altar-name">Consultar al Oráculo</span>
           <span class="om-altar-desc">Conversación guiada, con voz si la quieres</span>
         </button>
-        <button class="om-altar om-altar-wide" data-module="biblioteca" type="button" style="--om-altar-hue: 45">
+        <button class="om-altar om-altar-wide" data-om-grimorio type="button" style="--om-altar-hue: 45">
           <span class="om-altar-icon" aria-hidden="true">📖</span>
           <span class="om-altar-name">Mi Grimorio</span>
           <span class="om-altar-desc">Tus lecturas guardadas y el diario</span>
@@ -712,7 +713,7 @@
   <nav class="premium-bottom-nav om-nav" aria-label="Navegación principal">
     <button data-om-nav="inicio" type="button" aria-current="page"><span aria-hidden="true">✦</span><small>Inicio</small></button>
     <button data-om-nav="santuario" type="button"><span aria-hidden="true">🔮</span><small>Santuario</small></button>
-    <button data-module="biblioteca" type="button"><span aria-hidden="true">📖</span><small>Grimorio</small></button>
+    <button data-om-grimorio type="button"><span aria-hidden="true">📖</span><small>Grimorio</small></button>
     <button data-module="map" type="button"><span aria-hidden="true">📚</span><small>Biblioteca</small></button>
     <button data-om-nav="perfil" type="button"><span aria-hidden="true">☾</span><small>Perfil</small></button>
   </nav>

@@ -251,3 +251,108 @@
 @media (prefers-reduced-motion: reduce) {
   .om-luna-disco { box-shadow: inset 0 0 26px rgba(0,0,0,.32); }
 }
+
+
+/* ============================================================
+   MI GRIMORIO · Fase 6
+   ============================================================ */
+.om-grim-panel { width: min(680px, 100%); max-height: 92svh; }
+.om-grim-tabs { display: flex; gap: var(--om-s-2); padding: 0 var(--om-s-5); }
+.om-grim-tab {
+  flex: 1; min-height: 42px;
+  border: 1px solid var(--om-line-1); border-bottom: 0;
+  border-radius: var(--om-r-sm) var(--om-r-sm) 0 0;
+  background: var(--om-surface-1); color: var(--om-ivory-3);
+  font-size: var(--om-t-sm); cursor: pointer;
+}
+.om-grim-tab.activo { background: var(--om-gold-veil); color: var(--om-gold); border-color: var(--om-line-gold); }
+.om-grim-buscar { padding: var(--om-s-3) var(--om-s-5) 0; }
+.om-grim-body { padding-top: var(--om-s-3); }
+
+.om-grim-filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--om-s-3); }
+.om-grim-chip {
+  min-height: 34px; padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: var(--om-surface-1); color: var(--om-ivory-3);
+  font-size: var(--om-t-xs); cursor: pointer;
+}
+.om-grim-chip.activo { border-color: var(--om-gold); color: var(--om-gold); background: var(--om-gold-veil); }
+.om-grim-cuenta { margin: 0 0 var(--om-s-3); font-size: var(--om-t-xs); color: var(--om-ivory-3); }
+.om-grim-pie { margin: var(--om-s-4) 0 0; font-size: var(--om-t-xs); color: var(--om-ivory-3); text-align: center; }
+
+.om-grim-lista { display: flex; flex-direction: column; gap: var(--om-s-3); }
+.om-grim-item {
+  padding: var(--om-s-4);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+}
+.om-grim-item.favorita { border-color: var(--om-line-gold); background: var(--om-gold-veil); }
+.om-grim-item header { display: flex; justify-content: space-between; align-items: baseline; gap: var(--om-s-2); flex-wrap: wrap; }
+.om-grim-tipo {
+  font-size: .64rem; letter-spacing: var(--om-track-caps); text-transform: uppercase; color: var(--om-gold);
+}
+.om-grim-item time { font-size: var(--om-t-xs); color: var(--om-ivory-3); }
+.om-grim-item h3 { margin: 6px 0 4px; font-size: var(--om-t-md); color: var(--om-ivory); }
+.om-grim-cartas { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+.om-grim-cartas em {
+  font-style: normal; font-size: var(--om-t-xs);
+  padding: 3px 8px; border-radius: var(--om-r-full);
+  background: var(--om-surface-2); color: var(--om-ivory-2);
+}
+.om-grim-texto { margin: 4px 0 0; font-size: var(--om-t-sm); line-height: 1.5; color: var(--om-ivory-2); }
+.om-grim-nota { margin: 6px 0 0; font-size: var(--om-t-xs); color: var(--om-gold); font-style: italic; }
+.om-grim-item footer { display: flex; gap: var(--om-s-2); align-items: center; margin-top: var(--om-s-3); }
+.om-grim-accion {
+  min-height: 36px; padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: transparent; color: var(--om-ivory-2);
+  font-size: var(--om-t-xs); cursor: pointer;
+}
+.om-grim-accion:hover { border-color: var(--om-gold); color: var(--om-gold); }
+.om-grim-borrar:hover { border-color: var(--om-danger); color: var(--om-danger); }
+.om-grim-origen { font-size: var(--om-t-xs); color: var(--om-ivory-3); }
+.om-grim-pie-acciones {
+  display: flex; gap: var(--om-s-2); justify-content: center; flex-wrap: wrap;
+  padding: var(--om-s-3) var(--om-s-5) calc(var(--om-s-4) + var(--om-safe-bottom));
+  border-top: 1px solid var(--om-line-1);
+}
+
+/* Estado vacío */
+.om-vacio { display: flex; flex-direction: column; align-items: center; gap: var(--om-s-3); padding: var(--om-s-7) var(--om-s-4); text-align: center; }
+.om-vacio span { font-size: 2.6rem; }
+.om-vacio h3 { margin: 0; font-family: var(--om-font-display); font-weight: 400; font-size: var(--om-t-lg); color: var(--om-ivory); text-wrap: balance; }
+.om-vacio p { margin: 0; max-width: 34ch; font-size: var(--om-t-sm); color: var(--om-ivory-3); text-wrap: balance; }
+
+/* Mi Viaje · calendario */
+.om-viaje { display: flex; flex-direction: column; gap: var(--om-s-3); }
+.om-cal-semana, .om-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.om-cal-semana span { text-align: center; font-size: .62rem; letter-spacing: .08em; color: var(--om-ivory-3); }
+.om-cal-dia, .om-cal-hueco {
+  position: relative; aspect-ratio: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: var(--om-r-sm);
+  font-style: normal;
+}
+.om-cal-dia { border: 1px solid var(--om-line-1); background: var(--om-surface-1); }
+.om-cal-dia b { font-size: var(--om-t-xs); font-weight: 500; color: var(--om-ivory-3); font-variant-numeric: tabular-nums; }
+.om-cal-dia.con { border-color: var(--om-line-gold); background: var(--om-gold-veil); }
+.om-cal-dia.con b { color: var(--om-ivory); }
+.om-cal-dia.con u { width: 5px; height: 5px; border-radius: 50%; background: var(--om-gold); }
+.om-cal-dia.hoy { outline: 1px solid var(--om-gold); outline-offset: 1px; }
+
+.om-viaje-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--om-s-2); margin-top: var(--om-s-2); }
+.om-viaje-dato {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+}
+.om-viaje-dato span { font-size: .62rem; letter-spacing: var(--om-track-caps); text-transform: uppercase; color: var(--om-ivory-3); }
+.om-viaje-dato b { font-family: var(--om-font-display); font-size: var(--om-t-lg); font-weight: 400; color: var(--om-gold); line-height: 1.2; }
+.om-viaje-dato small { font-size: var(--om-t-xs); color: var(--om-ivory-3); }
+
+@media (max-width: 480px) {
+  .om-grim-tabs { padding: 0 var(--om-s-4); }
+  .om-grim-buscar, .om-grim-pie-acciones { padding-left: var(--om-s-4); padding-right: var(--om-s-4); }
+  .om-cal { gap: 3px; }
+}
