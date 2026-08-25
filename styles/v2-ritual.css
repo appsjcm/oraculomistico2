@@ -1,0 +1,248 @@
+/* ============================================================
+   ORÁCULO MÍSTICO · EL RITUAL
+   Fase 4: intención, conexión y elección de cartas.
+   ============================================================ */
+
+.om-ritual { position: fixed; inset: 0; z-index: 140; }
+.om-ritual[hidden] { display: none !important; }
+
+.om-ritual-backdrop {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(20, 12, 44, .72), rgba(3, 2, 8, .90));
+  backdrop-filter: blur(var(--om-blur-md));
+  opacity: 0;
+  transition: opacity var(--om-dur) var(--om-ease);
+}
+.om-ritual-abierto .om-ritual-backdrop { opacity: 1; }
+
+.om-ritual-panel {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: min(620px, calc(100% - 2 * var(--om-s-4)));
+  max-height: 88svh;
+  overflow-y: auto;
+  transform: translate(-50%, -46%);
+  opacity: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--om-s-3);
+  padding: var(--om-s-6) var(--om-s-5) var(--om-s-5);
+  text-align: center;
+  border: 1px solid var(--om-line-2);
+  border-radius: var(--om-r-xl);
+  background: linear-gradient(180deg, var(--om-night), var(--om-void));
+  box-shadow: var(--om-shadow-3), var(--om-glow-violet);
+  transition: transform var(--om-dur) var(--om-ease-out), opacity var(--om-dur) var(--om-ease);
+}
+.om-ritual-abierto .om-ritual-panel { transform: translate(-50%, -50%); opacity: 1; }
+
+/* Pasos */
+.om-ritual-steps { display: flex; gap: var(--om-s-2); margin-bottom: var(--om-s-2); }
+.om-ritual-steps i {
+  width: 26px; height: 3px;
+  border-radius: var(--om-r-full);
+  background: var(--om-line-1);
+  transition: background-color var(--om-dur) var(--om-ease);
+}
+.om-ritual-steps i.activo { background: var(--om-gold); }
+.om-ritual-steps i.hecho  { background: var(--om-gold-deep); }
+
+.om-ritual-cerrar {
+  position: absolute; top: var(--om-s-3); right: var(--om-s-3);
+  width: 40px; height: 40px;
+  border-radius: var(--om-r-full);
+  border: 1px solid var(--om-line-1);
+  background: var(--om-surface-1);
+  color: var(--om-ivory-3);
+  cursor: pointer;
+}
+.om-ritual-cerrar:hover { color: var(--om-ivory); background: var(--om-surface-2); }
+
+.om-ritual-eyebrow {
+  margin: 0;
+  font-size: var(--om-t-xs);
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-gold);
+}
+.om-ritual-panel h2 {
+  margin: 0;
+  font-family: var(--om-font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 4.6vw, 2.1rem);
+  line-height: var(--om-lh-tight);
+  color: var(--om-ivory);
+  text-wrap: balance;
+}
+.om-ritual-sub {
+  margin: 0;
+  max-width: 42ch;
+  font-size: var(--om-t-sm);
+  line-height: var(--om-lh-body);
+  color: var(--om-ivory-2);
+  text-wrap: balance;
+}
+.om-ritual-nota, .om-ritual-pie {
+  margin: 0;
+  font-size: var(--om-t-xs);
+  color: var(--om-ivory-3);
+}
+.om-ritual-eco {
+  margin: 0;
+  max-width: 40ch;
+  font-family: var(--om-font-display);
+  font-size: var(--om-t-lg);
+  line-height: 1.4;
+  color: var(--om-gold);
+  text-wrap: balance;
+}
+
+.om-ritual-input {
+  width: 100%;
+  padding: var(--om-s-3) var(--om-s-4);
+  border: 1px solid var(--om-line-2);
+  border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+  color: var(--om-ivory);
+  font: 400 var(--om-t-md)/1.5 var(--om-font-body);
+  resize: vertical;
+}
+.om-ritual-input::placeholder { color: var(--om-ivory-3); }
+.om-ritual-input:focus-visible { border-color: var(--om-gold); }
+
+.om-ritual-acciones {
+  display: flex; flex-wrap: wrap; gap: var(--om-s-2);
+  justify-content: center;
+  margin-top: var(--om-s-2);
+}
+
+
+/* ---------- Paso 2 · respiración ---------- */
+.om-breath {
+  position: relative;
+  width: 128px; height: 128px;
+  display: grid; place-items: center;
+  margin: var(--om-s-3) 0;
+}
+.om-breath span {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--om-line-gold);
+  animation: omBreathRing 7s ease-in-out infinite;
+}
+.om-breath span:nth-child(2) { animation-delay: -2.3s; }
+.om-breath span:nth-child(3) { animation-delay: -4.6s; }
+@keyframes omBreathRing {
+  0%, 100% { transform: scale(.62); opacity: .18 }
+  50%      { transform: scale(1);   opacity: .75 }
+}
+.om-breath-text { animation: omBreathText 7s ease-in-out infinite; }
+@keyframes omBreathText { 0%,100% { opacity: .58 } 50% { opacity: 1 } }
+
+
+/* ---------- Paso 3 · la mesa ---------- */
+.om-ritual-contador {
+  margin: 0;
+  font: 600 var(--om-t-sm)/1 var(--om-font-mono);
+  color: var(--om-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.om-mesa {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--om-s-2);
+  width: 100%;
+  padding: var(--om-s-4) var(--om-s-2);
+  perspective: 900px;
+}
+
+.om-carta {
+  width: clamp(46px, 12vw, 62px);
+  aspect-ratio: 3 / 4.4;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform: rotate(var(--giro, 0deg));
+  transform-style: preserve-3d;
+  transition: transform var(--om-dur) var(--om-ease), filter var(--om-dur) var(--om-ease);
+  animation: omCartaEntra var(--om-dur-slow) var(--om-ease-out) both;
+  animation-delay: var(--retardo, 0ms);
+}
+@keyframes omCartaEntra {
+  from { opacity: 0; transform: rotate(var(--giro, 0deg)) translateY(22px) scale(.9) }
+  to   { opacity: 1; transform: rotate(var(--giro, 0deg)) }
+}
+
+.om-carta-dorso {
+  display: block;
+  width: 100%; height: 100%;
+  border-radius: var(--om-r-sm);
+  border: 1px solid var(--om-line-gold);
+  background:
+    radial-gradient(circle at 50% 32%, var(--om-gold-veil), transparent 56%),
+    linear-gradient(160deg, #1a1330, #0c0819 62%, #140d26);
+  box-shadow: var(--om-shadow-1), inset 0 1px 0 rgba(255, 255, 255, .07);
+  position: relative;
+  overflow: hidden;
+}
+/* El destello dorado que recorre el dorso al pasar por encima. */
+.om-carta-dorso::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 38%, rgba(242, 204, 101, .32) 50%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform var(--om-dur-slow) var(--om-ease);
+}
+.om-carta:hover, .om-carta:focus-visible {
+  transform: rotate(var(--giro, 0deg)) translateY(-10px) scale(1.05);
+  z-index: 2;
+}
+.om-carta:hover .om-carta-dorso::after,
+.om-carta:focus-visible .om-carta-dorso::after { transform: translateX(120%); }
+
+.om-carta-tomada {
+  transform: rotate(0deg) translateY(-16px) scale(1.02);
+  filter: brightness(1.25);
+  cursor: default;
+}
+.om-carta-tomada .om-carta-dorso {
+  border-color: var(--om-gold);
+  box-shadow: var(--om-shadow-2), var(--om-glow-gold);
+}
+.om-mesa-completa .om-carta:not(.om-carta-tomada) { opacity: .28; pointer-events: none; }
+
+
+/* ---------- Revelación: numeral y palabras clave ---------- */
+.card-frame .card-roman {
+  display: block;
+  margin-top: 6px;
+  font: 600 var(--om-t-xs)/1 var(--om-font-mono);
+  letter-spacing: .1em;
+  color: var(--om-gold);
+}
+.card-frame .card-keys {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--om-t-xs);
+  line-height: 1.35;
+  color: var(--om-ivory-3);
+}
+
+
+/* ---------- Responsive ---------- */
+@media (max-width: 520px) {
+  .om-ritual-panel { padding: var(--om-s-5) var(--om-s-4) var(--om-s-4); border-radius: var(--om-r-lg); }
+  .om-mesa { gap: 5px; padding: var(--om-s-3) 0; }
+  .om-breath { width: 104px; height: 104px; }
+}
+
+
+/* ---------- Menos movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .om-carta, .om-breath span, .om-breath-text { animation: none; }
+  .om-carta:hover, .om-carta:focus-visible { transform: rotate(var(--giro, 0deg)); }
+  .om-carta-dorso::after { display: none; }
+  .om-ritual-panel { transition: opacity var(--om-dur) var(--om-ease); }
+}
