@@ -4,6 +4,8 @@
    Las claves conservan los nombres históricos para no tocar data.js. */
 export const DECK_DIR = 'img/deck/';
 export const DECK_THUMB_DIR = 'img/deck/thumb/';
+export const RUNE_DIR = 'img/runes/';
+export const RUNE_THUMB_DIR = 'img/runes/thumb/';
 
 export const CARD_IMAGES = {
     'am00.png': 'img/deck/am00.webp',
@@ -90,5 +92,10 @@ export function getCardImageUrl(fileName) { return CARD_IMAGES[fileName] || ''; 
 export function imgObj(fileName) { return getCardImageUrl(fileName); }
 export function getImgSrc(card) { return typeof card.img === 'string' ? card.img : ''; }
 
-/** Versión ligera de una carta para rejillas; cae al tamaño normal si no existe. */
-export function thumbFor(url = '') { return url.startsWith(DECK_DIR) ? url.replace(DECK_DIR, DECK_THUMB_DIR) : url; }
+/** Versión ligera de una carta o runa para rejillas; deja intacto lo demás. */
+export function thumbFor(url = '') {
+    if (!url || url.includes('/thumb/')) return url;
+    if (url.startsWith(DECK_DIR)) return url.replace(DECK_DIR, DECK_THUMB_DIR);
+    if (url.startsWith(RUNE_DIR)) return url.replace(RUNE_DIR, RUNE_THUMB_DIR);
+    return url;
+}

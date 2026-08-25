@@ -1,4 +1,5 @@
 import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES } from './data.js';
+import { thumbFor } from './config.js';
 import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
 
 document.documentElement.dataset.oraculoModule = 'loaded';
@@ -1541,6 +1542,8 @@ const TAROT_SPREADS = {
 function getTarotSpread(key = 'one') { return TAROT_SPREADS[key] || TAROT_SPREADS.one; }
 
 function cardImage(card) { return card.img ? `<img class="tarot-img" src="${escapeHTML(card.img)}" alt="${escapeHTML(card.name)}" loading="lazy">` : `<div class="rune-big">🃏</div>`; }
+/** La runa ilustrada; conserva el glifo como distintivo y como respaldo. */
+function runeImage(rune) { return rune.img ? `<img class="rune-img" src="${escapeHTML(rune.img)}" alt="${escapeHTML(rune.name)}" loading="lazy" decoding="async"><span class="symbol glyph-badge">${rune.sym}</span>` : `<span class="symbol">${rune.sym}</span>`; }
 
 
 function getProfile() {
@@ -1972,7 +1975,7 @@ function showTarot() {
 function showTarotLibrary(filter = 'all') {
   const tabs = `<div class="tabs"><button class="tab ${filter==='all'?'active':''}" data-act="tarot-lib-all">Todas</button><button class="tab ${filter==='major'?'active':''}" data-act="tarot-lib-major">Mayores</button><button class="tab ${filter==='minor'?'active':''}" data-act="tarot-lib-minor">Menores</button></div>`;
   const cards = filter === 'major' ? MAJOR_ARCANA : filter === 'minor' ? MINOR_ARCANA : ALL_TAROT;
-  openModal({ icon:'🃏', title:'Biblioteca de Tarot', subtitle:`${cards.length} cartas visibles en galería.`, body:`${tabs}<div class="library-grid">${cards.map(c=>`<button class="mini-card" data-open-card="${escapeHTML(c.name)}">${c.img ? `<img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.name)}" loading="lazy">` : ''}<strong>${escapeHTML(c.name)}</strong><small>${escapeHTML(c.key || c.el || '')}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🃏', title:'Biblioteca de Tarot', subtitle:`${cards.length} cartas visibles en galería.`, body:`${tabs}<div class="library-grid">${cards.map(c=>`<button class="mini-card" data-open-card="${escapeHTML(c.name)}">${c.img ? `<img src="${escapeHTML(thumbFor(c.img))}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async">` : ''}<strong>${escapeHTML(c.name)}</strong><small>${escapeHTML(c.key || c.el || '')}</small></button>`).join('\n\n')}</div>` });
 }
 function showCardDetail(card) {
   setLastReading({ type: 'Tarot', title: card.name, text: `${card.up}\n\nInvertida: ${card.rv}`, items: [card.name] });
@@ -1982,7 +1985,7 @@ function showCardDetail(card) {
 function runeReading(runes, title = 'Lectura de Runas') {
   const lines = runes.map((r, i) => `${i + 1}. ${r.rune.name} ${r.rev ? 'invertida' : ''}: ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`).join('\n\n');
   setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })) });
-  const body = runes.length === 1 ? `<div class="reading-layout"><div class="rune-big">${runes[0].rune.sym}</div><div class="result-card"><h3>${escapeHTML(runes[0].rune.name)} ${runes[0].rev ? 'invertida' : ''}</h3><p>${escapeHTML(runes[0].rev ? (runes[0].rune.rv || runes[0].rune.up) : runes[0].rune.up)}</p>${readingActions(lines,'Runas')}</div></div>` : `<div class="library-grid">${runes.map(r=>`<div class="mini-card rune-mini"><span class="symbol">${r.rune.sym}</span><strong>${escapeHTML(r.rune.name)}</strong><small>${r.rev ? 'Invertida' : 'Normal'}</small></div>`).join('\n\n')}</div><div class="result-card"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Runas')}</div>`;
+  const body = runes.length === 1 ? `<div class="reading-layout"><div class="rune-big${runes[0].rune.img ? ' has-art' : ''}">${runes[0].rune.img ? `<img src="${escapeHTML(runes[0].rune.img)}" alt="${escapeHTML(runes[0].rune.name)}"><span class="rune-glyph">${runes[0].rune.sym}</span>` : runes[0].rune.sym}</div><div class="result-card"><h3>${escapeHTML(runes[0].rune.name)} ${runes[0].rev ? 'invertida' : ''}</h3><p>${escapeHTML(runes[0].rev ? (runes[0].rune.rv || runes[0].rune.up) : runes[0].rune.up)}</p>${readingActions(lines,'Runas')}</div></div>` : `<div class="library-grid">${runes.map(r=>`<div class="mini-card rune-mini">${r.rune.img ? `<img src="${escapeHTML(thumbFor(r.rune.img))}" alt="${escapeHTML(r.rune.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.rune.sym}</span>`}<strong>${r.rune.sym} ${escapeHTML(r.rune.name)}</strong><small>${r.rev ? 'Invertida' : 'Normal'}</small></div>`).join('\n\n')}</div><div class="result-card"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(lines).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Runas')}</div>`;
   openModal({ icon:'ᚱ', title, subtitle:'Lectura completa.', body });
 }
 function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
@@ -2004,7 +2007,7 @@ function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.
       if (!slot) return;
       slot.className = 'reveal-slot rune-slot revealed cinematic-slot';
       ceremonyTone('rune'); ceremonyVibrate(30);
-      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-stone ${item.rev ? 'reversed' : ''}"><span class="symbol">${item.rune.sym}</span><strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
+      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-stone ${item.rune.img ? 'has-art' : ''} ${item.rev ? 'reversed' : ''}">${runeImage(item.rune)}<strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
       if (index === runes.length - 1) {
         const bag = $('#runeBag');
         if (bag) bag.classList.add('bag-rest');
@@ -2027,7 +2030,7 @@ function showRunas() {
   openModal({ icon:'ᚱ', title:'Runas', subtitle:'Runa rápida, tiradas y saquito místico con revelación progresiva.', body:`<div class="actions mb"><button class="btn primary" data-act="ceremony-runes" type="button">✨ Ritual guiado</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un mensaje simbólico breve.</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ Tres runas</strong><small>Pasado, presente y consejo.</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ Cinco runas</strong><small>Lectura más completa.</small></button><button class="choice" data-act="runes-library"><strong>📚 Biblioteca</strong><small>24 runas en 5 columnas.</small></button></div>` });
 }
 function showRunesLibrary() {
-  openModal({ icon:'ᚱ', title:'Biblioteca de Runas', subtitle:'24 runas del Futhark Antiguo.', body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}"><span class="symbol">${r.sym}</span><strong>${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'ᚱ', title:'Biblioteca de Runas', subtitle:'24 runas del Futhark Antiguo.', body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
 }
 function showRuneDetail(r) {
   setLastReading({ type:'Runas', title:r.name, text:`${r.up}\n\nInvertida: ${r.rv || 'Sin posición invertida específica.'}`, items:[{ kind:'runa', name:r.name, subtitle:r.up || '', image:r.img || '', symbol:r.sym || 'ᚱ' }] });
