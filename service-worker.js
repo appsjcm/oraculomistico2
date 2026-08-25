@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-voz-24';
+const CACHE_NAME = 'oraculo-v1-0-public-biblioteca-25';
 const APP_SHELL = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const APP_SHELL = [
   './js/v2-ritual.js',
   './js/v2-grimorio.js',
   './js/v2-voz.js',
+  './js/v2-biblioteca.js',
   './js/i18n.js',
   './js/data.js',
   './js/config.js',
