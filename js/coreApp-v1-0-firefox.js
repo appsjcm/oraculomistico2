@@ -2663,6 +2663,26 @@ function chatBubbleHTML(msg) {
   const who = msg.role === 'user' ? 'Tú' : 'Oráculo';
   return `<article class="chat-bubble ${msg.role}"><strong>${who}</strong><p>${escapeHTML(cleanInterpretation(msg.text)).replace(/\n/g,'<br>')}</p>${msg.actions || ''}</article>`;
 }
+/* El aviso de "canalizando" se guardaba como un mensaje más y quedaba
+   para siempre en el historial. Ahora es un indicador transitorio: el
+   Orbe pensando, que desaparece en cuanto llega la respuesta. */
+function mostrarPensando() {
+  const box = $('#chatMessages');
+  if (!box || box.querySelector('#omPensando')) return;
+  const nodo = document.createElement('div');
+  nodo.id = 'omPensando';
+  nodo.className = 'om-pensando';
+  nodo.setAttribute('aria-live', 'polite');
+  nodo.innerHTML = `
+    <span class="om-pensando-orbe" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="om-pensando-texto">El Oráculo está canalizando tu respuesta<b>.</b><b>.</b><b>.</b></span>`;
+  box.appendChild(nodo);
+  box.scrollTop = box.scrollHeight;
+}
+function ocultarPensando() {
+  document.getElementById('omPensando')?.remove();
+}
+
 function renderChatMessages() {
   const box = $('#chatMessages');
   if (!box) return;
@@ -2771,7 +2791,7 @@ async function processChatMessage(text) {
     return addChat('oracle', `Puedo seguir el hilo de tu última lectura: ${lastReading.title}. En modo simbólico veo esto:\n\n${clampText(lastReading.text, 700)}\n\nPara una interpretación conversacional completa, conecta Puter IA; mientras tanto puedo hacer otra tirada, guardar, leer en voz o crear PDF.`, `<div class="actions mt"><button class="btn compact" data-act="connect-ai">🤖 Conectar IA</button><button class="btn compact" data-act="speak-ai">🔊 Voz</button><button class="btn compact" data-act="pdf-options">📄 PDF</button></div>`);
   }
   if (localStorage.getItem(LS.puter) === 'true') {
-    addChat('oracle', `${getUserName() ? getUserName() + ', e' : 'E'}l oráculo está canalizando tu respuesta...`);
+    mostrarPensando();
     const memory = getChatMemoryContext(14);
     const userName = getUserName();
     const answer = await askAI(`Responde como Oráculo Místico en español. Sé cálido, útil y simbólico. No des consejos médicos, legales ni financieros. ${userName ? `La persona se llama ${userName}; úsalo de forma natural, sin repetirlo demasiado.` : ''} Recuerda el hilo reciente de la conversación y responde con continuidad. Ten en cuenta el perfil personal si existe: intención ${getProfile().intention || 'no indicada'}, signo/energía ${getProfile().sign || 'no indicado'}. Si conviene, recomienda o realiza una tirada de tarot, runa, luna, sueños, numerología o Grabovoi.
@@ -2784,7 +2804,8 @@ ${lastReading ? `${lastReading.title}\n${lastReading.text}${lastReading.ai ? '\n
 
 Último mensaje del usuario:
 ${clean}`);
-    const finalAnswer = answer || 'Ahora mismo la IA no respondió. Puedes pedirme una tirada directa: “hazme una tirada de tarot”.';
+    ocultarPensando();
+    const finalAnswer = answer || 'No he podido conectar con el Oráculo en este momento. Puedes pedirme una tirada directa: “hazme una tirada de tarot”.';
     addChat('oracle', finalAnswer, `<div class="actions mt"><button class="btn compact" data-act="speak-ai">🔊 Voz</button><button class="btn compact" data-chat-quick="hazme una tirada de tarot">🃏 Tarot</button><button class="btn compact" data-chat-quick="sácame una runa">ᚱ Runa</button></div>`);
     if (answer) {
       if (lastReading) lastReading.ai = finalAnswer;
