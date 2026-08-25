@@ -2965,12 +2965,12 @@ body.premium-native-engine-off #premiumNativeEngine,body.premium-native-engine-o
 
 /* v12.1 · Ilustraciones reales del mazo dentro del Native Tarot Engine */
 .premium-real-card .card-art,.premium-drawn-card .draw-art{position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(247,217,139,.20);background:rgba(0,0,0,.30);box-shadow:0 10px 26px rgba(0,0,0,.30)}
-.premium-real-card .card-art{aspect-ratio:2/3;margin-bottom:12px}
+.premium-real-card .card-art{aspect-ratio:3/4;margin-bottom:12px}
 .premium-real-card .card-art img,.premium-drawn-card .draw-art img{display:block;width:100%;height:100%;object-fit:contain;background:rgba(0,0,0,.22)}
 .premium-real-card.has-art{min-height:0}
 .premium-drawn-card.has-art{background:linear-gradient(180deg,rgba(247,217,139,.14),rgba(255,255,255,.05)),rgba(8,3,16,.56)}
 .premium-drawn-card.has-art .draw-position{margin-bottom:12px}
-.premium-drawn-card .draw-art{aspect-ratio:2/3;max-width:190px;margin:0 auto 14px}
+.premium-drawn-card .draw-art{aspect-ratio:3/4;max-width:210px;margin:0 auto 14px}
 body.premium-compact-cards .premium-real-card.has-art{min-height:0}
 body.premium-compact-cards .premium-real-card .card-art{margin-bottom:8px}
 @media (prefers-reduced-motion:reduce){.premium-drawn-card{animation:none}}

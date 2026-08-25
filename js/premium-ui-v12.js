@@ -1252,18 +1252,23 @@ const label=(f)=>f==="all"?"Todas":f==="mayor"?"Mayores":f.charAt(0).toUpperCase
 const DECK_BASE={M:0,B:22,C:36,E:50,O:64};
 const tidy=(v="")=>String(v).replace(/\s+/g," ").trim();
 const clampText=(t,n)=>{t=String(t||"");return t.length>n?t.slice(0,n-1).trimEnd()+"…":t};
-const cardArt=(c,cls)=>c.img?`<div class="${cls}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async"></div>`:"";
+const cardArt=(c,cls,src)=>{const url=src||c.img;return url?`<div class="${cls}"><img src="${escapeHTML(url)}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async"></div>`:""};
 const cardText=(c)=>c.meaning||c.keywords;
 async function enrichWithDeck(){
   try{
-    const mod=await import(new URL("js/data.js",document.baseURI).href);
+    const [mod,cfg]=await Promise.all([
+      import(new URL("js/data.js",document.baseURI).href),
+      import(new URL("js/config.js",document.baseURI).href).catch(()=>null)
+    ]);
     const deck=mod&&mod.ALL_TAROT;
     if(!Array.isArray(deck)||deck.length!==CARDS.length)return false;
+    const thumb=cfg&&cfg.thumbFor?cfg.thumbFor:(u=>u);
     CARDS.forEach(c=>{
       const base=DECK_BASE[c.id[0]],num=Number(c.id.slice(1));
       const real=deck[base+(c.id[0]==="M"?num:num-1)];
       if(!real)return;
       c.img=real.img||"";
+      c.thumb=thumb(c.img);
       c.meaning=tidy(real.up)||c.keywords;
     });
     return true;
@@ -1274,7 +1279,7 @@ const filteredCards=()=>{const q=activeQuery.trim().toLowerCase();return CARDS.f
    más de 30.000 px de scroll en móvil. */
 const PAGE_SIZE=12;let shownCards=PAGE_SIZE;
 const resetPaging=()=>{shownCards=PAGE_SIZE};
-const renderCards=()=>{const grid=$("#premiumRealCardGrid");if(!grid)return;const list=filteredCards();const count=$("#premiumCardCount"),current=$("#premiumCurrentFilter");if(count)count.textContent=String(list.length);if(current)current.textContent=label(activeFilter);if(!list.length){grid.innerHTML='<div class="premium-empty-state"><strong>No hay cartas con ese filtro.</strong><span>Prueba otra búsqueda o vuelve a “Todas”.</span></div>';return}const page=list.slice(0,shownCards);grid.innerHTML=page.map(c=>`<article class="premium-real-card${c.img?" has-art":""}" data-card-id="${escapeHTML(c.id)}" data-card-type="${escapeHTML(c.type)}">${c.img?cardArt(c,"card-art"):`<div class="card-sigil">${escapeHTML(c.symbol)}</div>`}<h3>${escapeHTML(c.name)}</h3><p>${escapeHTML(clampText(cardText(c),120))}</p><div class="card-meta"><span>${escapeHTML(c.suit)}</span><span>${escapeHTML(c.type==="mayor"?"Arcano Mayor":"Arcano Menor")}</span></div></article>`).join("");if(list.length>page.length){const rest=list.length-page.length;grid.insertAdjacentHTML("beforeend",`<button type="button" class="premium-load-more" data-premium-action="load-more-cards">Mostrar ${Math.min(PAGE_SIZE,rest)} cartas más<small>${page.length} de ${list.length}</small></button>`)}};
+const renderCards=()=>{const grid=$("#premiumRealCardGrid");if(!grid)return;const list=filteredCards();const count=$("#premiumCardCount"),current=$("#premiumCurrentFilter");if(count)count.textContent=String(list.length);if(current)current.textContent=label(activeFilter);if(!list.length){grid.innerHTML='<div class="premium-empty-state"><strong>No hay cartas con ese filtro.</strong><span>Prueba otra búsqueda o vuelve a “Todas”.</span></div>';return}const page=list.slice(0,shownCards);grid.innerHTML=page.map(c=>`<article class="premium-real-card${c.img?" has-art":""}" data-card-id="${escapeHTML(c.id)}" data-card-type="${escapeHTML(c.type)}">${c.img?cardArt(c,"card-art",c.thumb):`<div class="card-sigil">${escapeHTML(c.symbol)}</div>`}<h3>${escapeHTML(c.name)}</h3><p>${escapeHTML(clampText(cardText(c),120))}</p><div class="card-meta"><span>${escapeHTML(c.suit)}</span><span>${escapeHTML(c.type==="mayor"?"Arcano Mayor":"Arcano Menor")}</span></div></article>`).join("");if(list.length>page.length){const rest=list.length-page.length;grid.insertAdjacentHTML("beforeend",`<button type="button" class="premium-load-more" data-premium-action="load-more-cards">Mostrar ${Math.min(PAGE_SIZE,rest)} cartas más<small>${page.length} de ${list.length}</small></button>`)}};
 const updateStats=()=>{const v=$("#premiumVaultCount");if(v)v.textContent=String(getVault().length)};
 const shuffle=(a)=>{const n=[...a];for(let i=n.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[n[i],n[j]]=[n[j],n[i]]}return n};
 const spreadLabel=(c)=>c===1?"Mensaje central":c===3?"Pasado · Presente · Consejo":c===5?"Camino completo":`${c} cartas`;
