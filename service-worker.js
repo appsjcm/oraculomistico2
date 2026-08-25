@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-native-engine-12-1';
+const CACHE_NAME = 'oraculo-v1-0-public-deck-13';
 const APP_SHELL = [
   './',
   './index.html',
@@ -19,8 +19,6 @@ const APP_SHELL = [
   './docs/manual_usuario_oraculo_mistico_v1_0.pdf',
   './img/tarot-shuffle-hero.svg',
   './img/rune-pouch.svg',
-  './img/cards/am18.jpg',
-  './img/cards/ameb08.jpg',
   './assets/premium/aurora-shell.svg',
   './assets/premium/card-back-premium.svg',
   './assets/premium/constellation-panel.svg',

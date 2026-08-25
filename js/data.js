@@ -27,10 +27,10 @@ export const MAJOR_ARCANA = [
 ];
 
 const MINOR_FILENAMES = {
-    wands: { 'As':'ameb01.png','2':'ameb02.png','3':'ameb03.png','4':'ameb04.png','5':'ameb05.png','6':'ameb06.png','7':'ameb07.png','8':'ameb08.png','9':'ameb09.png','10':'ameb10.png','Sota':'ameb11.png','Caballero':'ameb12.png','Reina':'ameb14.png','Rey':'ameb13.png' },
-    cups: { 'As':'amec01.png','2':'amec02.png','3':'amec03.png','4':'amec04.png','5':'amec05.png','6':'amec06.png','7':'amec07.png','8':'amec08.png','9':'amec09.png','10':'amec10.png','Sota':'amec11.png','Caballero':'amec12.png','Reina':'amec14.png','Rey':'amec13.png' },
-    swords: { 'As':'amee01.png','2':'amee02.png','3':'amee03.png','4':'amee04.png','5':'amee05.png','6':'amee06.png','7':'amee07.png','8':'amee08.png','9':'amee09.png','10':'amee10.png','Sota':'amee11.png','Caballero':'amee12.png','Reina':'amee14.png','Rey':'amee13.png' },
-    pents: { 'As':'ameo01.png','2':'ameo02.png','3':'ameo03.png','4':'ameo04.png','5':'ameo05.png','6':'ameo06.png','7':'ameo07.png','8':'ameo08.png','9':'ameo09.png','10':'ameo10.png','Sota':'ameo11.png','Caballero':'ameo12.png','Reina':'ameo14.png','Rey':'ameo13.png' }
+    wands: { 'As':'ameb01.png','2':'ameb02.png','3':'ameb03.png','4':'ameb04.png','5':'ameb05.png','6':'ameb06.png','7':'ameb07.png','8':'ameb08.png','9':'ameb09.png','10':'ameb10.png','Sota':'ameb11.png','Caballero':'ameb12.png','Reina':'ameb13.png','Rey':'ameb14.png' },
+    cups: { 'As':'amec01.png','2':'amec02.png','3':'amec03.png','4':'amec04.png','5':'amec05.png','6':'amec06.png','7':'amec07.png','8':'amec08.png','9':'amec09.png','10':'amec10.png','Sota':'amec11.png','Caballero':'amec12.png','Reina':'amec13.png','Rey':'amec14.png' },
+    swords: { 'As':'amee01.png','2':'amee02.png','3':'amee03.png','4':'amee04.png','5':'amee05.png','6':'amee06.png','7':'amee07.png','8':'amee08.png','9':'amee09.png','10':'amee10.png','Sota':'amee11.png','Caballero':'amee12.png','Reina':'amee13.png','Rey':'amee14.png' },
+    pents: { 'As':'ameo01.png','2':'ameo02.png','3':'ameo03.png','4':'ameo04.png','5':'ameo05.png','6':'ameo06.png','7':'ameo07.png','8':'ameo08.png','9':'ameo09.png','10':'ameo10.png','Sota':'ameo11.png','Caballero':'ameo12.png','Reina':'ameo13.png','Rey':'ameo14.png' }
 };
 
 export const MINOR_ARCANA = (() => {
