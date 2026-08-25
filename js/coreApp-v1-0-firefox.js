@@ -1946,7 +1946,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
       if (!slot) return;
       slot.className = 'reveal-slot tarot-slot revealed cinematic-slot';
       ceremonyTone('reveal'); ceremonyVibrate(28);
-      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(item.position || `Carta ${index + 1}`)}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}</strong><small>${item.rev ? 'Invertida · carta girada 180°' : 'Al derecho'}</small></div>`;
+      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(item.position || `Carta ${index + 1}`)}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}${item.card.num ? `<span class="card-roman">${escapeHTML(item.card.num)}</span>` : ''}<strong>${escapeHTML(item.card.name)}</strong>${item.card.key ? `<span class="card-keys">${escapeHTML(item.card.key)}${item.card.el ? ' · ' + escapeHTML(item.card.el) : ''}</span>` : ''}<small>${item.rev ? 'Invertida · carta girada 180°' : 'Al derecho'}</small></div>`;
       if (index === cards.length - 1) {
         const board = $('#tarotShuffleBoard');
         if (board) board.classList.add('fade-out');
@@ -1972,6 +1972,19 @@ function drawTarotSpread(key = 'one') {
   const spread = getTarotSpread(key);
   drawTarot(spread.count, spread.title, spread.positions);
 }
+
+/* Puente para la capa V2: el ritual necesita las tiradas y el mazo, y
+   entregar las cartas que la persona ha elegido a la misma revelación
+   de siempre. Se expone lo mínimo; la lógica sigue viviendo aquí. */
+window.OraculoTarot = {
+  spreads: TAROT_SPREADS,
+  getSpread: getTarotSpread,
+  deck: ALL_TAROT,
+  drawSpread: drawTarotSpread,
+  revelar: animateTarotReading,
+  tasaInvertidas: chooseReversedRate,
+  esInvertida: isReversed
+};
 function renderSpreadButton(key, spread) {
   return `<button class="spread-card" data-act="spread-${escapeHTML(key)}" type="button"><span>${spread.icon || '🃏'}</span><strong>${escapeHTML(spread.title)}</strong><small>${spread.count} carta${spread.count > 1 ? 's' : ''}</small></button>`;
 }

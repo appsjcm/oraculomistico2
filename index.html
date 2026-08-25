@@ -41,15 +41,16 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-v2-shell-18">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-v2-shell-18">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-ritual-20">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-ritual-20">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-v2-shell-18">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-v2-shell-18">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-ritual-20">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-ritual-20">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-ritual-20">
   <script>
     (() => {
-      const build = '1.0-v2-shell-18';
+      const build = '1.0-ritual-20';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -67,9 +68,10 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-v2-shell-18"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-v2-shell-18"></script>
-  <script defer src="js/v2-shell.js?v=1.0-v2-shell-18"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-ritual-20"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-ritual-20"></script>
+  <script defer src="js/v2-shell.js?v=1.0-ritual-20"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-ritual-20"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -749,6 +751,7 @@
           <button class="om-row" data-action="tutorial-app" type="button"><span>🎓</span><b>Tutorial</b><small>Cómo sacar partido a cada oráculo</small></button>
           <button class="om-row" data-action="install-help" type="button"><span>📲</span><b>Instalar</b><small>Añadir Oráculo Místico a tu dispositivo</small></button>
           <button class="om-row" data-premium-action="toggle-immersive" type="button"><span>🌌</span><b>Modo inmersivo</b><small>Oculta la interfaz y deja solo la lectura</small></button>
+          <button class="om-row" id="omRitualToggle" data-om-ritual-toggle type="button" aria-pressed="true"><span>🕯️</span><b>Ritual del Tarot</b><small>Intención, conexión y elección antes de cada tirada</small></button>
         </div>
 
         <p class="om-group-label">Avanzado</p>
