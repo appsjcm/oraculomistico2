@@ -41,41 +41,36 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-biblioteca-25">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-movil-26">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-movil-26">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-biblioteca-25">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-biblioteca-25">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-biblioteca-25">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-movil-26">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-movil-26">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-movil-26">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-movil-26">
   <script>
+    /* Al cambiar de versión ya no se desregistra el service worker ni se
+       vacían todas las cachés: eso dejaba la app sin modo offline en cada
+       publicación y provocaba una segunda carga. El propio service worker
+       borra las cachés viejas al activarse, así que aquí basta con dejar
+       constancia de la versión instalada. */
     (() => {
-      const build = '1.0-biblioteca-25';
+      const build = '1.0-movil-26';
       const key = 'oraculo.publicBuild';
-      try {
-        if (localStorage.getItem(key) === build) return;
-        Promise.all([
-          'caches' in window ? caches.keys().then(keys => Promise.all(keys.map(name => caches.delete(name)))) : Promise.resolve(),
-          'serviceWorker' in navigator ? navigator.serviceWorker.getRegistrations().then(items => Promise.all(items.map(item => item.unregister()))) : Promise.resolve()
-        ]).finally(() => {
-          localStorage.setItem(key, build);
-          const url = new URL(location.href);
-          url.searchParams.set('build', build);
-          location.replace(url.toString());
-        });
-      } catch {}
+      try { localStorage.setItem(key, build); } catch {}
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/v2-shell.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/v2-voz.js?v=1.0-biblioteca-25"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-biblioteca-25"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-movil-26"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-shell.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-voz.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-movil-26"></script>
+  <script defer src="js/v2-movil.js?v=1.0-movil-26"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">

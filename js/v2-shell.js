@@ -182,10 +182,31 @@
     }
   }
 
+  /* Los accesos directos del instalador abren con ?ir=… */
+  function atenderAtajo() {
+    let destino = null;
+    try { destino = new URL(location.href).searchParams.get('ir'); } catch {}
+    if (!destino) return;
+    const ir = {
+      santuario: () => irA('santuario'),
+      dia:       () => document.querySelector('[data-action="daily"]')?.click(),
+      grimorio:  () => document.querySelector('[data-om-grimorio]')?.click(),
+      biblioteca:() => document.querySelector('[data-om-biblioteca]')?.click()
+    }[destino];
+    if (ir) setTimeout(ir, 420);
+    /* Se limpia la dirección para que al recargar no repita el atajo. */
+    try {
+      const u = new URL(location.href);
+      u.searchParams.delete('ir');
+      history.replaceState(null, '', u.toString());
+    } catch {}
+  }
+
   function iniciar() {
     aplicarTema(temaGuardado());
     enlazar();
     marcarNav('inicio');
+    atenderAtajo();
   }
 
   if (document.readyState === 'loading') {

@@ -458,3 +458,73 @@ body.om-sheet-lock { overflow: hidden; }
   .om-btn-primary:hover { transform: none; }
 }
 .premium-quick-actions[hidden] { display: none !important; }
+
+
+/* ============================================================
+   MÓVIL Y PWA · Fase 9
+   ============================================================ */
+
+/* Con el teclado abierto, la barra fija estorba: se aparta. */
+body.om-teclado .premium-bottom-nav,
+body.om-teclado .premium-oracle-fab,
+body.om-teclado .premium-settings-fab { display: none; }
+body.om-teclado .om-sheet-panel,
+body.om-teclado .om-ritual-panel { max-height: calc(var(--om-vv-alto, 100svh) - var(--om-s-4)); }
+
+/* Zonas seguras: la barra respeta el notch y el borde inferior. */
+.premium-bottom-nav {
+  padding-bottom: max(8px, var(--om-safe-bottom));
+  margin-left: var(--om-safe-left);
+  margin-right: var(--om-safe-right);
+}
+
+/* Aviso de versión nueva */
+.om-aviso {
+  position: fixed;
+  left: 50%; bottom: calc(96px + var(--om-safe-bottom));
+  z-index: 150;
+  display: flex; align-items: center; gap: var(--om-s-3);
+  width: min(440px, calc(100% - 2 * var(--om-s-4)));
+  padding: var(--om-s-3) var(--om-s-3) var(--om-s-3) var(--om-s-4);
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  border: 1px solid var(--om-line-gold);
+  border-radius: var(--om-r-full);
+  background: linear-gradient(160deg, var(--om-night), var(--om-void));
+  box-shadow: var(--om-shadow-3);
+  transition: transform var(--om-dur) var(--om-ease-out), opacity var(--om-dur) var(--om-ease);
+}
+.om-aviso.visible { transform: translate(-50%, 0); opacity: 1; }
+.om-aviso span { flex: 1; font-size: var(--om-t-sm); color: var(--om-ivory); }
+.om-aviso .om-btn { min-height: 40px; padding: 0 var(--om-s-4); font-size: var(--om-t-xs); }
+.om-aviso-cerrar {
+  width: 32px; height: 32px; flex: 0 0 auto;
+  border: 0; border-radius: 50%;
+  background: transparent; color: var(--om-ivory-3);
+  cursor: pointer;
+}
+.om-aviso-cerrar:hover { color: var(--om-ivory); }
+
+/* Banda de sin conexión */
+.om-banda-offline {
+  position: fixed;
+  left: 50%; top: calc(var(--om-safe-top) + 8px);
+  z-index: 150;
+  transform: translateX(-50%);
+  padding: 7px var(--om-s-4);
+  border: 1px solid var(--om-line-2);
+  border-radius: var(--om-r-full);
+  background: rgba(8, 7, 19, .92);
+  backdrop-filter: blur(var(--om-blur-sm));
+  color: var(--om-ivory-2);
+  font-size: var(--om-t-xs);
+  white-space: nowrap;
+}
+
+/* Carta sin descargar: se muestra el dorso, no un hueco roto. */
+.om-img-respaldo { opacity: .55; object-fit: cover !important; }
+
+@media (max-width: 480px) {
+  .om-aviso { flex-wrap: wrap; border-radius: var(--om-r-lg); }
+  .om-aviso span { flex: 1 1 100%; }
+}
