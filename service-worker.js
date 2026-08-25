@@ -1,9 +1,10 @@
-const CACHE_NAME = 'oraculo-v1-0-public-reversed-15';
+const CACHE_NAME = 'oraculo-v1-0-public-tokens-16';
 const APP_SHELL = [
   './',
   './index.html',
   './styles/core-remodel-v1-0-70.css',
   './styles/premium-home-v12.css',
+  './styles/tokens.css',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/i18n.js',

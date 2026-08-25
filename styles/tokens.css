@@ -1,0 +1,335 @@
+/* ============================================================
+   ORÁCULO MÍSTICO · SISTEMA DE DISEÑO
+   Fase 2 de la V2 Premium.
+
+   Fuente única de verdad para color, tipografía, espaciado,
+   radios, sombras, desenfoque y movimiento.
+
+   Se carga DESPUÉS de las demás hojas a propósito: así su
+   bloque :root manda sobre los :root heredados, mientras que
+   las clases de tema (body.theme-*) y los modos (high-contrast)
+   siguen ganando por especificidad. Nada del CSS existente
+   deja de funcionar.
+
+   Nomenclatura: --om-<familia>-<variante>
+   Al final se declaran los alias históricos (--gold, --text…)
+   para que las 3.593 líneas ya escritas sigan siendo válidas.
+   ============================================================ */
+
+:root {
+
+  /* ---------- 1. FONDOS ----------
+     Negro azulado profundo, azul noche y violeta muy oscuro. */
+  --om-void:        #080713;   /* fondo principal */
+  --om-abyss:       #05030b;   /* el más profundo, para bordes de pantalla */
+  --om-night:       #130d25;   /* azul noche, fondos secundarios */
+  --om-nebula:      #160b2d;   /* violeta muy oscuro, auras */
+
+  /* ---------- 2. SUPERFICIES (glassmorphism sutil) ----------
+     Tres niveles de elevación. Nunca más opacas que esto:
+     el vidrio debe insinuarse, no competir con el contenido. */
+  --om-surface-1:   rgba(255, 255, 255, .055);
+  --om-surface-2:   rgba(255, 255, 255, .078);
+  --om-surface-3:   rgba(255, 255, 255, .120);
+  --om-surface-ink: rgba(0, 0, 0, .28);        /* para superponer sobre imagen */
+
+  /* ---------- 3. TRAZOS ---------- */
+  --om-line-1:      rgba(255, 255, 255, .10);  /* divisiones discretas */
+  --om-line-2:      rgba(255, 255, 255, .14);  /* bordes de tarjeta */
+  --om-line-gold:   rgba(242, 204, 101, .28);  /* realce de lo importante */
+  --om-line-violet: rgba(141, 102, 255, .26);
+
+  /* ---------- 4. ACENTOS ----------
+     El oro es escaso por definición: se reserva a lo que de
+     verdad importa. El violeta es lo mágico; el azul lunar,
+     lo sereno. */
+  --om-gold:        #f2cc65;
+  --om-gold-warm:   #f4cf75;
+  --om-gold-deep:   #b8832d;
+  --om-gold-veil:   rgba(242, 204, 101, .14);
+  --om-violet:      #8d66ff;
+  --om-violet-lum:  #a98bff;
+  --om-violet-veil: rgba(141, 102, 255, .16);
+  --om-lunar:       #7fa8d9;
+  --om-rose:        #ec7cff;
+
+  /* ---------- 5. TEXTO (marfil) ---------- */
+  --om-ivory:       #fff7ea;                    /* principal */
+  --om-ivory-2:     rgba(255, 247, 234, .72);   /* secundario */
+  --om-ivory-3:     rgba(255, 247, 234, .48);   /* terciario, metadatos */
+  --om-on-gold:     #130d24;                    /* texto sobre oro */
+
+  /* ---------- 6. SEMÁNTICOS ----------
+     Separados del acento: informan de estado, no decoran. */
+  --om-ok:          #8cffc2;
+  --om-warn:        #f5c86a;
+  --om-danger:      #ff8f9a;
+
+  /* ---------- 7. ESCALA DE ESPACIADO ----------
+     Base 4. Usar estos valores en lugar de números sueltos. */
+  --om-s-1:  4px;
+  --om-s-2:  8px;
+  --om-s-3:  12px;
+  --om-s-4:  16px;
+  --om-s-5:  24px;
+  --om-s-6:  32px;
+  --om-s-7:  48px;
+  --om-s-8:  64px;
+
+  /* ---------- 8. RADIOS ---------- */
+  --om-r-sm:   12px;
+  --om-r-md:   18px;
+  --om-r-lg:   26px;
+  --om-r-xl:   34px;
+  --om-r-full: 999px;
+
+  /* ---------- 9. SOMBRAS Y HALOS ----------
+     Las sombras dan cuerpo; los halos, magia. El halo se usa
+     con cuentagotas o deja de significar nada. */
+  --om-shadow-1: 0 8px 24px rgba(0, 0, 0, .28);
+  --om-shadow-2: 0 18px 46px rgba(0, 0, 0, .34);
+  --om-shadow-3: 0 24px 70px rgba(0, 0, 0, .42);
+  --om-glow-gold:   0 0 42px rgba(242, 204, 101, .18);
+  --om-glow-violet: 0 0 46px rgba(141, 102, 255, .20);
+  --om-inset-top: inset 0 1px 0 rgba(255, 255, 255, .08);
+
+  /* ---------- 10. DESENFOQUE ---------- */
+  --om-blur-sm: 8px;
+  --om-blur-md: 18px;
+  --om-blur-lg: 28px;
+
+  /* ---------- 11. TIPOGRAFÍA ---------- */
+  --om-font-body:    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --om-font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --om-font-mono:    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --om-t-xs:  .78rem;
+  --om-t-sm:  .88rem;
+  --om-t-md:  1rem;
+  --om-t-lg:  1.15rem;
+  --om-t-xl:  1.45rem;
+  --om-t-2xl: 1.9rem;
+  --om-t-3xl: 2.6rem;
+
+  --om-lh-tight: 1.18;
+  --om-lh-body:  1.6;
+  --om-track-caps: .14em;   /* letter-spacing de etiquetas en mayúsculas */
+
+  /* ---------- 12. MOVIMIENTO ----------
+     Transiciones entre 200 y 600 ms: rápidas, nunca lentas.
+     Una sola curva para que todo se mueva con el mismo carácter. */
+  --om-dur-fast: 180ms;
+  --om-dur:      320ms;
+  --om-dur-slow: 560ms;
+  --om-ease:     cubic-bezier(.22, .85, .28, 1);
+  --om-ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  /* ---------- 13. ZONAS SEGURAS (notch) ---------- */
+  --om-safe-top:    env(safe-area-inset-top, 0px);
+  --om-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --om-safe-left:   env(safe-area-inset-left, 0px);
+  --om-safe-right:  env(safe-area-inset-right, 0px);
+
+
+  /* ============================================================
+     ALIAS HISTÓRICOS
+     Todo el CSS ya escrito sigue funcionando. Los valores son
+     idénticos a los actuales: esta fase no cambia el aspecto,
+     solo lo ordena.
+     ============================================================ */
+  --bg:      var(--om-void);
+  --bg2:     var(--om-night);
+  --panel:   var(--om-surface-2);
+  --panel2:  var(--om-surface-3);
+  --stroke:  var(--om-line-2);
+  --gold:    var(--om-gold);
+  --gold2:   var(--om-gold-deep);
+  --violet:  var(--om-violet);
+  --pink:    var(--om-rose);
+  --text:    var(--om-ivory);
+  --muted:   var(--om-ivory-2);
+  --danger:  var(--om-danger);
+  --ok:      var(--om-ok);
+  --shadow:  var(--om-shadow-3);
+  --radius:  var(--om-r-lg);
+  --radius2: var(--om-r-md);
+  --safe-top:    var(--om-safe-top);
+  --safe-bottom: var(--om-safe-bottom);
+
+  /* Estas tres se usaban sin estar definidas: los gradientes y
+     bordes que dependían de ellas no llegaban a pintarse. */
+  --cream:  var(--om-ivory);
+  --line:   var(--om-line-1);
+  --accent: var(--om-violet);
+
+  /* Capa premium */
+  --premium-bg-deep:      var(--om-abyss);
+  --premium-bg-aura:      var(--om-nebula);
+  --premium-gold:         var(--om-gold-warm);
+  --premium-gold-soft:    var(--om-line-gold);
+  --premium-violet:       var(--om-violet);
+  --premium-rose:         var(--om-rose);
+  --premium-glass:        var(--om-surface-2);
+  --premium-glass-strong: var(--om-surface-3);
+  --premium-accent-2:     var(--om-violet);
+  --premium-panel-radius: var(--om-r-xl);
+}
+
+
+/* ============================================================
+   TEMAS
+   Cambian solo tokens; la estructura no se toca. Se aplican con
+   el atributo data-theme en <html>. ARCANO es el predeterminado
+   y coincide con el aspecto actual, así que no hace falta
+   declararlo para que la app se vea como hoy.
+   ============================================================ */
+
+/* LUNAR · azul noche y plata */
+:root[data-theme="lunar"] {
+  --om-void:       #060a14;
+  --om-abyss:      #03060d;
+  --om-night:      #0d1626;
+  --om-nebula:     #101d33;
+  --om-gold:       #cfe0f2;
+  --om-gold-warm:  #e3edf9;
+  --om-gold-deep:  #7d97b5;
+  --om-gold-veil:  rgba(207, 224, 242, .12);
+  --om-line-gold:  rgba(207, 224, 242, .26);
+  --om-violet:     #7fa8d9;
+  --om-violet-lum: #9dc0e8;
+  --om-lunar:      #cfe0f2;
+  --om-ivory:      #f2f7fd;
+  --om-ivory-2:    rgba(242, 247, 253, .72);
+  --om-ivory-3:    rgba(242, 247, 253, .46);
+  --om-on-gold:    #0b1524;
+  --om-glow-gold:  0 0 42px rgba(207, 224, 242, .16);
+}
+
+/* CÓSMICO · azul y violeta */
+:root[data-theme="cosmico"] {
+  --om-void:       #070a1a;
+  --om-abyss:      #040612;
+  --om-night:      #0f1130;
+  --om-nebula:     #1a1447;
+  --om-gold:       #9fb4ff;
+  --om-gold-warm:  #b9c8ff;
+  --om-gold-deep:  #5c6fc4;
+  --om-gold-veil:  rgba(159, 180, 255, .13);
+  --om-line-gold:  rgba(159, 180, 255, .28);
+  --om-violet:     #a98bff;
+  --om-violet-lum: #c4aeff;
+  --om-ivory:      #f0f2ff;
+  --om-ivory-2:    rgba(240, 242, 255, .72);
+  --om-ivory-3:    rgba(240, 242, 255, .46);
+  --om-on-gold:    #0d1030;
+  --om-glow-gold:  0 0 42px rgba(159, 180, 255, .18);
+}
+
+/* BOSQUE · verde profundo y dorado */
+:root[data-theme="bosque"] {
+  --om-void:       #060f0b;
+  --om-abyss:      #030805;
+  --om-night:      #0b1a12;
+  --om-nebula:     #10251a;
+  --om-gold:       #e2c37a;
+  --om-gold-warm:  #edd394;
+  --om-gold-deep:  #9a7c3c;
+  --om-gold-veil:  rgba(226, 195, 122, .13);
+  --om-line-gold:  rgba(226, 195, 122, .28);
+  --om-violet:     #6fbf8e;
+  --om-violet-lum: #8fd4a8;
+  --om-lunar:      #8fd4a8;
+  --om-ivory:      #f4f6ec;
+  --om-ivory-2:    rgba(244, 246, 236, .72);
+  --om-ivory-3:    rgba(244, 246, 236, .46);
+  --om-on-gold:    #10251a;
+  --om-glow-gold:  0 0 42px rgba(226, 195, 122, .16);
+}
+
+/* ECLIPSE · negro, violeta y oro */
+:root[data-theme="eclipse"] {
+  --om-void:       #050409;
+  --om-abyss:      #020104;
+  --om-night:      #0d0716;
+  --om-nebula:     #1b0d2e;
+  --om-gold:       #e8b84b;
+  --om-gold-warm:  #f2c96b;
+  --om-gold-deep:  #a06f1c;
+  --om-gold-veil:  rgba(232, 184, 75, .14);
+  --om-line-gold:  rgba(232, 184, 75, .30);
+  --om-violet:     #9b5cff;
+  --om-violet-lum: #b98cff;
+  --om-ivory:      #f7f0ff;
+  --om-ivory-2:    rgba(247, 240, 255, .72);
+  --om-ivory-3:    rgba(247, 240, 255, .46);
+  --om-on-gold:    #150a24;
+  --om-glow-gold:  0 0 46px rgba(232, 184, 75, .20);
+}
+
+
+/* ============================================================
+   PREFERENCIAS DEL SISTEMA
+   ============================================================ */
+
+/* Menos movimiento: se conserva el cambio de estado, se quita
+   el desplazamiento. Las animaciones ambientales desaparecen. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --om-dur-fast: 1ms;
+    --om-dur:      1ms;
+    --om-dur-slow: 1ms;
+  }
+}
+
+/* Más contraste: se refuerzan trazos y texto secundario. */
+@media (prefers-contrast: more) {
+  :root {
+    --om-line-1:  rgba(255, 255, 255, .22);
+    --om-line-2:  rgba(255, 255, 255, .32);
+    --om-ivory-2: rgba(255, 247, 234, .92);
+    --om-ivory-3: rgba(255, 247, 234, .74);
+  }
+}
+
+
+/* ============================================================
+   FOCO VISIBLE
+   Había una sola regla en todo el proyecto: quien navegaba con
+   teclado no sabía dónde estaba. Un anillo dorado consistente,
+   solo para foco por teclado.
+   ============================================================ */
+/* Red de seguridad para cualquier elemento enfocable. */
+:focus-visible {
+  outline: 2px solid var(--om-gold);
+  outline-offset: 3px;
+}
+
+/* Selectores explícitos: se evita :where() a propósito, porque su
+   especificidad cero deja que cualquier regla de componente lo anule. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--om-gold);
+  outline-offset: 3px;
+  border-radius: var(--om-r-sm);
+}
+
+/* Los campos de búsqueda premium anulaban el contorno por completo. */
+.premium-search-box input:focus-visible,
+.premium-engine-search input:focus-visible {
+  outline: 2px solid var(--om-gold);
+  outline-offset: 2px;
+}
+
+/* El puntero no debe dejar anillo. */
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+summary:focus:not(:focus-visible),
+[tabindex]:focus:not(:focus-visible) {
+  outline: none;
+}

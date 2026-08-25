@@ -41,11 +41,14 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-reversed-15">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-reversed-15">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-tokens-16">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-tokens-16">
+  <!-- El sistema de diseño se carga el último a propósito: su :root manda
+       sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-tokens-16">
   <script>
     (() => {
-      const build = '1.0-reversed-15';
+      const build = '1.0-tokens-16';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -63,8 +66,8 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-reversed-15"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-reversed-15"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-tokens-16"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-tokens-16"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
