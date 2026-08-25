@@ -574,3 +574,17 @@ body.theme-light .oracle-dream-special p,body.theme-light .oracle-grabovoi-speci
 .numerology-pair{display:flex;align-items:center;justify-content:center;gap:5px;min-width:76px;min-height:64px;padding:8px;border-radius:20px;background:rgba(242,204,101,.11);border:1px solid rgba(242,204,101,.27);color:var(--gold);font-size:1.65rem;font-weight:950}
 .numerology-pair span{color:var(--muted);font-size:1rem}
 @media(max-width:700px){.numerology-results,.synastry-grid{grid-template-columns:1fr}.synastry-summary{grid-template-columns:1fr}.synastry-link{padding:2px}.numerology-card{grid-template-columns:62px 1fr}.numerology-number{width:58px;height:58px;font-size:1.7rem}}
+
+/* v13 · Mazo e ilustraciones propias.
+   Las cartas y runas nuevas son 3:4; el recorte a 2:3 les cortaba el marco. */
+.mini-card img{aspect-ratio:3/4;object-fit:cover}
+.rune-mini{min-height:174px}
+.rune-mini .symbol{font-size:2.7rem}
+.rune-big.has-art{position:relative;padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28)}
+.rune-big.has-art img{display:block;width:100%;max-width:320px;aspect-ratio:3/4;object-fit:contain}
+.rune-big.has-art .rune-glyph{position:absolute;right:12px;bottom:10px;font-size:1.6rem;line-height:1;color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.75)}
+.rune-stone.has-art{background:rgba(8,6,18,.55);border-color:rgba(247,217,139,.26);padding:10px;gap:6px}
+.rune-stone.has-art .rune-img{display:block;width:100%;max-width:190px;aspect-ratio:3/4;object-fit:contain;border-radius:14px}
+.rune-stone.has-art strong,.rune-stone.has-art small{color:rgba(255,248,223,.94)}
+.rune-stone.has-art small{color:rgba(255,248,223,.66)}
+.rune-stone.has-art .glyph-badge{position:absolute;top:14px;right:16px;font-size:1.5rem;line-height:1;color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.8)}
