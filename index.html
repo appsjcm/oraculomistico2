@@ -41,17 +41,17 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-voz-24">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-biblioteca-25">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-voz-24">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-voz-24">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-voz-24">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-biblioteca-25">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-biblioteca-25">
   <script>
     (() => {
-      const build = '1.0-voz-24';
+      const build = '1.0-biblioteca-25';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -69,12 +69,13 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-voz-24"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-voz-24"></script>
-  <script defer src="js/v2-shell.js?v=1.0-voz-24"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-voz-24"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-voz-24"></script>
-  <script defer src="js/v2-voz.js?v=1.0-voz-24"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/v2-shell.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/v2-voz.js?v=1.0-biblioteca-25"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-biblioteca-25"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -715,7 +716,7 @@
     <button data-om-nav="inicio" type="button" aria-current="page"><span aria-hidden="true">✦</span><small>Inicio</small></button>
     <button data-om-nav="santuario" type="button"><span aria-hidden="true">🔮</span><small>Santuario</small></button>
     <button data-om-grimorio type="button"><span aria-hidden="true">📖</span><small>Grimorio</small></button>
-    <button data-module="map" type="button"><span aria-hidden="true">📚</span><small>Biblioteca</small></button>
+    <button data-om-biblioteca type="button"><span aria-hidden="true">📚</span><small>Biblioteca</small></button>
     <button data-om-nav="perfil" type="button"><span aria-hidden="true">☾</span><small>Perfil</small></button>
   </nav>
 

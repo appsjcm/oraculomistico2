@@ -451,3 +451,114 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   .om-pensando-orbe i, .om-pensando-texto b, .om-voz-onda, .om-voz-nucleo { animation: none !important; }
   .om-pensando-texto b { opacity: 1; }
 }
+
+
+/* ============================================================
+   LA BIBLIOTECA MÍSTICA · Fase 8
+   ============================================================ */
+.om-bib-panel { width: min(760px, 100%); max-height: 92svh; }
+.om-bib-cats {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding: 0 var(--om-s-5) var(--om-s-2);
+  scrollbar-width: none;
+}
+.om-bib-cats::-webkit-scrollbar { display: none; }
+.om-bib-cat {
+  display: inline-flex; align-items: center; gap: 6px;
+  flex: 0 0 auto; min-height: 40px; padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: var(--om-surface-1); color: var(--om-ivory-3);
+  font-size: var(--om-t-sm); cursor: pointer; white-space: nowrap;
+}
+.om-bib-cat.activo { border-color: var(--om-gold); color: var(--om-gold); background: var(--om-gold-veil); }
+.om-biblioteca .om-grim-buscar { display: flex; gap: var(--om-s-2); align-items: center; }
+.om-biblioteca .om-grim-buscar input { flex: 1; }
+
+.om-bib-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: var(--om-s-3);
+}
+.om-bib-ficha {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: var(--om-s-3);
+  text-align: center;
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
+  background: var(--om-surface-1); color: var(--om-ivory);
+  cursor: pointer;
+  transition: transform var(--om-dur-fast) var(--om-ease), border-color var(--om-dur-fast) var(--om-ease);
+}
+.om-bib-ficha:hover, .om-bib-ficha:focus-visible { transform: translateY(-3px); border-color: var(--om-line-gold); }
+.om-bib-ficha img {
+  width: 100%; aspect-ratio: 3/4; object-fit: contain;
+  border-radius: var(--om-r-sm); background: var(--om-surface-ink);
+}
+.om-bib-simbolo {
+  width: 100%; aspect-ratio: 3/4;
+  display: grid; place-items: center;
+  font-size: 2rem;
+  border-radius: var(--om-r-sm);
+  background: var(--om-surface-2); color: var(--om-gold);
+}
+.om-bib-ficha strong { font-size: var(--om-t-sm); line-height: 1.25; }
+.om-bib-ficha small { font-size: var(--om-t-xs); color: var(--om-ivory-3); line-height: 1.3; }
+.om-bib-estrella {
+  position: absolute; top: 6px; right: 8px;
+  font-style: normal; font-size: .8rem; color: var(--om-gold);
+  text-shadow: 0 1px 6px rgba(0,0,0,.7);
+}
+
+/* Ficha abierta · lectura cómoda */
+.om-bib-detalle { display: flex; flex-direction: column; align-items: center; gap: var(--om-s-3); text-align: center; }
+.om-bib-volver {
+  align-self: flex-start;
+  min-height: 40px; padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: transparent; color: var(--om-ivory-2);
+  font-size: var(--om-t-sm); cursor: pointer;
+}
+.om-bib-volver:hover { border-color: var(--om-gold); color: var(--om-gold); }
+.om-bib-lamina {
+  width: min(220px, 62%); aspect-ratio: 3/4; object-fit: contain;
+  border-radius: var(--om-r-md);
+  border: 1px solid var(--om-line-gold);
+  background: var(--om-surface-ink);
+  box-shadow: var(--om-shadow-2);
+}
+.om-bib-simbolo-grande {
+  width: 108px; height: 108px;
+  display: grid; place-items: center;
+  font-size: 3rem; color: var(--om-gold);
+  border-radius: 50%;
+  background: var(--om-surface-2);
+  border: 1px solid var(--om-line-gold);
+}
+.om-bib-etiqueta {
+  margin: 0; font: 600 var(--om-t-xs)/1 var(--om-font-mono);
+  letter-spacing: .1em; color: var(--om-gold);
+}
+.om-bib-detalle h3 {
+  margin: 0; font-family: var(--om-font-display); font-weight: 400;
+  font-size: var(--om-t-2xl); color: var(--om-ivory); text-wrap: balance;
+}
+.om-bib-sub { margin: 0; font-size: var(--om-t-sm); color: var(--om-ivory-3); }
+.om-bib-seccion {
+  width: 100%; max-width: 62ch;
+  text-align: left;
+  padding: var(--om-s-4);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+}
+.om-bib-seccion h4 {
+  margin: 0 0 6px;
+  font-size: var(--om-t-xs); letter-spacing: var(--om-track-caps);
+  text-transform: uppercase; color: var(--om-gold);
+}
+.om-bib-seccion p { margin: 0; font-size: var(--om-t-md); line-height: var(--om-lh-body); color: var(--om-ivory-2); }
+
+@media (max-width: 480px) {
+  .om-bib-cats { padding-left: var(--om-s-4); padding-right: var(--om-s-4); }
+  .om-bib-rejilla { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: var(--om-s-2); }
+  .om-bib-lamina { width: 72%; }
+}
