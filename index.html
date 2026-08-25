@@ -41,17 +41,17 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-grimorio-22">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-voz-24">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-grimorio-22">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-grimorio-22">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-grimorio-22">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-grimorio-22">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-voz-24">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-voz-24">
   <script>
     (() => {
-      const build = '1.0-grimorio-22';
+      const build = '1.0-voz-24';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -69,11 +69,12 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-grimorio-22"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-grimorio-22"></script>
-  <script defer src="js/v2-shell.js?v=1.0-grimorio-22"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-grimorio-22"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-grimorio-22"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-voz-24"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-voz-24"></script>
+  <script defer src="js/v2-shell.js?v=1.0-voz-24"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-voz-24"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-voz-24"></script>
+  <script defer src="js/v2-voz.js?v=1.0-voz-24"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -742,7 +743,7 @@
         <p class="om-group-label">Oráculo y voz</p>
         <div class="om-rows">
           <button class="om-row" data-action="connect-ai" type="button"><span>🤖</span><b>Conectar IA</b><small>Ampliar lecturas con inteligencia artificial</small></button>
-          <button class="om-row" data-action="preview-avatar" type="button"><span>🪄</span><b>La Voz del Oráculo</b><small>Avatar animado y ajustes de voz</small></button>
+          <button class="om-row" data-om-voz type="button"><span>🪄</span><b>La Voz del Oráculo</b><small>Reproducir, pausar, silenciar y velocidad</small></button>
           <button class="om-row" data-action="control-center" type="button"><span>🧭</span><b>Centro de control</b><small>Buscar, estado y privacidad</small></button>
           <button class="om-row" data-premium-action="open-palette" type="button"><span>⌘</span><b>Buscar</b><small>Ir a cualquier módulo o acción por su nombre</small></button>
         </div>

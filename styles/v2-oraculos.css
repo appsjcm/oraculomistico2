@@ -356,3 +356,98 @@
   .om-grim-buscar, .om-grim-pie-acciones { padding-left: var(--om-s-4); padding-right: var(--om-s-4); }
   .om-cal { gap: 3px; }
 }
+
+
+/* ============================================================
+   CHAT Y VOZ · Fase 7
+   ============================================================ */
+
+/* El Oráculo pensando: transitorio, no un mensaje más del historial. */
+.om-pensando {
+  display: flex; align-items: center; gap: var(--om-s-3);
+  padding: var(--om-s-3) var(--om-s-4);
+  margin-top: var(--om-s-2);
+  border: 1px solid var(--om-line-violet);
+  border-radius: var(--om-r-md);
+  background: var(--om-violet-veil);
+}
+.om-pensando-orbe {
+  position: relative; flex: 0 0 auto;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(24,16,48,.96), rgba(8,5,18,.98));
+  box-shadow: inset 0 0 14px rgba(141,102,255,.5), 0 0 22px rgba(141,102,255,.28);
+}
+.om-pensando-orbe i {
+  position: absolute; inset: -5px;
+  border-radius: 50%;
+  border: 1px solid var(--om-line-violet);
+  animation: omPulsoOrbe 2.4s ease-out infinite;
+}
+.om-pensando-orbe i:nth-child(2) { animation-delay: .8s; }
+.om-pensando-orbe i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes omPulsoOrbe {
+  0%   { transform: scale(.72); opacity: .8 }
+  100% { transform: scale(1.5); opacity: 0 }
+}
+.om-pensando-texto { font-size: var(--om-t-sm); color: var(--om-ivory-2); }
+.om-pensando-texto b { animation: omPuntos 1.4s infinite; opacity: 0; font-weight: 400; }
+.om-pensando-texto b:nth-child(2) { animation-delay: .2s; }
+.om-pensando-texto b:nth-child(3) { animation-delay: .4s; }
+@keyframes omPuntos { 0%, 60%, 100% { opacity: 0 } 30% { opacity: 1 } }
+
+/* Panel de La Voz del Oráculo */
+.om-voz-panel { position: fixed; inset: 0; z-index: 130; }
+.om-voz-panel[hidden] { display: none !important; }
+.om-voz-caja { width: min(520px, 100%); }
+.om-voz-caja .om-sheet-body { display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+.om-voz-orbe {
+  position: relative;
+  width: 118px; height: 118px;
+  display: grid; place-items: center;
+  margin: var(--om-s-3) 0 var(--om-s-2);
+}
+.om-voz-nucleo {
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255,255,255,.55), transparent 42%),
+    radial-gradient(circle at 50% 50%, rgba(28,18,56,.96), rgba(8,5,18,.98));
+  box-shadow: inset 0 0 20px rgba(141,102,255,.45), var(--om-glow-violet);
+}
+.om-voz-onda {
+  position: absolute; inset: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--om-line-gold);
+  opacity: 0;
+}
+[data-estado="hablando"] .om-voz-onda { animation: omOnda 1.8s ease-out infinite; }
+[data-estado="hablando"] .om-voz-onda:nth-child(3) { animation-delay: .6s; }
+[data-estado="hablando"] .om-voz-onda:nth-child(4) { animation-delay: 1.2s; }
+[data-estado="pensando"] .om-voz-nucleo { animation: omLatido 2.2s ease-in-out infinite; }
+@keyframes omOnda   { 0% { transform: scale(.62); opacity: .7 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes omLatido { 0%,100% { transform: scale(1) } 50% { transform: scale(1.08) } }
+
+.om-voz-estado { margin: 0 0 var(--om-s-4); font-size: var(--om-t-sm); color: var(--om-ivory-2); }
+.om-voz-botones { display: flex; flex-wrap: wrap; gap: var(--om-s-2); justify-content: center; }
+.om-voz-botones .om-btn:disabled { opacity: .38; cursor: not-allowed; }
+.om-voz-velocidad { display: flex; align-items: center; gap: var(--om-s-3); width: 100%; }
+.om-voz-velocidad input { flex: 1; accent-color: var(--om-gold); }
+.om-voz-velocidad output {
+  min-width: 3.6ch;
+  font: 600 var(--om-t-sm)/1 var(--om-font-mono);
+  color: var(--om-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El Orbe de la portada acompaña el estado de la voz. */
+body[data-om-orbe="pensando"] .om-orb-core { animation-duration: 2.2s; }
+body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
+
+@media (prefers-reduced-motion: reduce) {
+  .om-pensando-orbe i, .om-pensando-texto b, .om-voz-onda, .om-voz-nucleo { animation: none !important; }
+  .om-pensando-texto b { opacity: 1; }
+}
