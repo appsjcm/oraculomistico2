@@ -7,11 +7,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Oráculo Místico v1.0 · Native Tarot Engine</title>
+  <title>Oráculo Místico</title>
   <meta name="description" content="Oráculo Místico: tarot, runas, luna, sueños, numerología completa, sinastría, diario local, voz y Chat Ritual.">
   <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, sinastría, diario místico, lectura simbólica">
   <link rel="canonical" href="https://appsjcm.github.io/oraculomistico2/">
-  <meta property="og:title" content="Oráculo Místico v1.0 · Native Tarot Engine">
+  <meta property="og:title" content="Oráculo Místico">
   <meta property="og:description" content="Tarot, runas, luna, sueños, numerología, sinastría, diario y voz en una experiencia simbólica.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://appsjcm.github.io/oraculomistico2/">
@@ -19,7 +19,7 @@
   <meta property="og:locale" content="es_ES">
   <meta property="og:image" content="https://appsjcm.github.io/oraculomistico2/icon-512.png">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Oráculo Místico v1.0 · Native Tarot Engine">
+  <meta name="twitter:title" content="Oráculo Místico">
   <meta name="twitter:description" content="App simbólica de tarot, runas, luna, sueños y diario místico.">
   <meta name="twitter:image" content="https://appsjcm.github.io/oraculomistico2/icon-512.png">
   <link rel="preconnect" href="https://js.puter.com" crossorigin>
@@ -41,14 +41,15 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-tokens-16">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-tokens-16">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-v2-shell-18">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-v2-shell-18">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-tokens-16">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-v2-shell-18">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-v2-shell-18">
   <script>
     (() => {
-      const build = '1.0-tokens-16';
+      const build = '1.0-v2-shell-18';
       const key = 'oraculo.publicBuild';
       try {
         if (localStorage.getItem(key) === build) return;
@@ -66,8 +67,9 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-tokens-16"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-tokens-16"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-v2-shell-18"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-v2-shell-18"></script>
+  <script defer src="js/v2-shell.js?v=1.0-v2-shell-18"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -84,45 +86,112 @@
     <button id="openGuideBtn" class="icon-pill" type="button">✨ <span data-i18n="guide">Guía</span></button>
     <div class="brand" aria-label="Oráculo Místico">
       <span class="brand-orb">🔮</span>
-      <span><strong>Oráculo Místico</strong><small>Premium v1.0</small></span>
+      <span><strong>Oráculo Místico</strong><small>El Santuario</small></span>
     </div>
     <button id="gearBtn" class="gear" type="button" aria-label="Ajustes" data-i18n="settings">⚙️</button>
   </header>
 
   <main id="home" class="app-shell premium-shell">
-    <section class="hero card-glass premium-hero">
-      <div class="hero-kicker" id="userGreeting" data-i18n="greeting">Bienvenida al santuario</div>
-
-      <div class="premium-orb-stage" aria-hidden="true">
-        <div class="premium-orb-ring"></div>
-        <div class="premium-orb-core">🔮</div>
-        <span class="premium-spark s1">✦</span>
-        <span class="premium-spark s2">✧</span>
-        <span class="premium-spark s3">✦</span>
+    <!-- ============ PORTADA ============ -->
+    <section class="om-cover" aria-labelledby="omCoverTitle">
+      <div class="om-sky" aria-hidden="true">
+        <div class="om-moon"></div>
+        <div class="om-nebula"></div>
+        <div class="om-stars"></div>
+        <div class="om-motes"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       </div>
 
-      <div class="premium-deck-preview" aria-hidden="true">
-        <img src="assets/premium/card-back-premium.svg" alt="">
-        <img src="assets/premium/card-back-premium.svg" alt="">
-        <img src="assets/premium/card-back-premium.svg" alt="">
+      <!-- El Orbe del Oráculo -->
+      <button id="omOrb" class="om-orb" type="button" aria-describedby="omOrbHint">
+        <span class="om-orb-body" aria-hidden="true">
+          <span class="om-orb-core"></span>
+          <span class="om-orb-swirl"></span>
+          <span class="om-orb-sheen"></span>
+        </span>
+        <span class="om-orb-ring" aria-hidden="true"></span>
+        <span class="sr-only">Abrir el Santuario</span>
+      </button>
+
+      <div class="om-cover-text">
+        <p class="om-kicker" id="userGreeting" data-i18n="greeting">Bienvenida al santuario</p>
+        <h1 id="omCoverTitle" class="om-wordmark">Oráculo Místico</h1>
+        <p class="om-tagline">Las respuestas están más cerca de lo que imaginas.</p>
       </div>
 
-      <h1 data-i18n="heroTitle">Encuentra una lectura simbólica clara y personal.</h1>
-      <p data-i18n="heroText">Tarot, runas, luna, sueños, numerología, sinastría y biblioteca mística en una experiencia sencilla.</p>
+      <div class="om-cover-actions hero-actions">
+        <button class="om-btn om-btn-primary" data-om-nav="santuario" type="button">Entrar al Oráculo</button>
+        <button class="om-btn om-btn-quiet" data-action="daily" type="button">Mensaje del día</button>
+        <button class="om-btn om-btn-quiet" data-om-nav="santuario" type="button">Explorar</button>
+      </div>
 
-      <div class="status-row premium-status-row">
+      <div class="status-row om-status" id="omOrbHint">
         <span id="iaStatusChip" class="chip">🤖 <span data-i18n="aiSymbolic">IA: modo simbólico</span></span>
         <span id="intentionChip" class="chip">🧭 <span data-i18n="intentionFree">Intención: libre</span></span>
         <span id="platformStatusChip" class="chip">📱 <span data-i18n="installable">Web instalable</span></span>
       </div>
+    </section>
 
-      <div class="hero-actions premium-hero-actions">
-        <button class="btn primary premium-main-cta" data-action="first-reading" type="button">✨ <span data-i18n="firstReadings">Iniciar lectura</span></button>
-        <button class="btn ghost" data-module="tarot" type="button">🃏 <span data-i18n="tarot">Tarot</span></button>
-        <button class="btn ghost" data-module="biblioteca" type="button">📚 <span data-i18n="library">Biblioteca</span></button>
-        <button class="btn ghost" data-action="connect-ai" type="button">🤖 <span data-i18n="connectAI">Conectar IA</span></button>
+    <!-- ============ EL SANTUARIO ============
+         Cada tarjeta conserva el atributo que ya usaba el motor
+         (data-module / data-action): cambia la presentación, no el
+         comportamiento. -->
+    <section class="om-sanctuary" id="omSanctuary" aria-labelledby="omSanctuaryTitle">
+      <header class="om-section-head">
+        <p class="om-eyebrow">El Santuario</p>
+        <h2 id="omSanctuaryTitle">Elige por dónde entrar</h2>
+        <p class="om-section-sub">Ocho caminos hacia la misma pregunta.</p>
+      </header>
+
+      <div class="om-altars">
+        <button class="om-altar" data-module="tarot" type="button" style="--om-altar-hue: 42">
+          <span class="om-altar-icon" aria-hidden="true">🃏</span>
+          <span class="om-altar-name">Tarot</span>
+          <span class="om-altar-desc">78 cartas, tiradas y ritual completo</span>
+        </button>
+        <button class="om-altar" data-module="runas" type="button" style="--om-altar-hue: 205">
+          <span class="om-altar-icon" aria-hidden="true">ᚱ</span>
+          <span class="om-altar-name">Runas</span>
+          <span class="om-altar-desc">El Futhark antiguo, piedra a piedra</span>
+        </button>
+        <button class="om-altar" data-module="luna" type="button" style="--om-altar-hue: 220">
+          <span class="om-altar-icon" aria-hidden="true">🌙</span>
+          <span class="om-altar-name">Luna</span>
+          <span class="om-altar-desc">Fase actual y su lectura simbólica</span>
+        </button>
+        <button class="om-altar" data-module="suenos" type="button" style="--om-altar-hue: 265">
+          <span class="om-altar-icon" aria-hidden="true">💭</span>
+          <span class="om-altar-name">Sueños</span>
+          <span class="om-altar-desc">Escribe lo soñado y encuentra sus símbolos</span>
+        </button>
+        <button class="om-altar" data-module="numerologia" type="button" style="--om-altar-hue: 38">
+          <span class="om-altar-icon" aria-hidden="true">🔢</span>
+          <span class="om-altar-name">Numerología</span>
+          <span class="om-altar-desc">Tu perfil numérico y la sinastría</span>
+        </button>
+        <button class="om-altar" data-module="grabovoi" type="button" style="--om-altar-hue: 30">
+          <span class="om-altar-icon" aria-hidden="true">📜</span>
+          <span class="om-altar-name">Grabovoi</span>
+          <span class="om-altar-desc">Secuencias numéricas y cómo usarlas</span>
+        </button>
+        <button class="om-altar om-altar-wide" data-module="chat" type="button" style="--om-altar-hue: 275">
+          <span class="om-altar-icon" aria-hidden="true">🕯️</span>
+          <span class="om-altar-name">Consultar al Oráculo</span>
+          <span class="om-altar-desc">Conversación guiada, con voz si la quieres</span>
+        </button>
+        <button class="om-altar om-altar-wide" data-module="biblioteca" type="button" style="--om-altar-hue: 45">
+          <span class="om-altar-icon" aria-hidden="true">📖</span>
+          <span class="om-altar-name">Mi Grimorio</span>
+          <span class="om-altar-desc">Tus lecturas guardadas y el diario</span>
+        </button>
       </div>
     </section>
+
+    <!-- ============ PANELES AVANZADOS ============
+         Los diecisiete paneles acumulados de las versiones v2 a v12.
+         Siguen en el documento, con todas sus acciones enlazadas: solo
+         dejan de ocupar la portada. Se abren desde Perfil → Paneles
+         avanzados, y cualquier acción que apunte aquí los despliega sola. -->
+    <div id="omAdvanced" class="om-advanced" hidden>
 
     <section class="premium-focus-row" aria-label="Experiencia premium">
       <button class="premium-feature-card" data-module="tarot" type="button">
@@ -626,6 +695,8 @@
       <button class="module-card" data-action="settings" type="button"><span>⚙️</span><strong data-i18n="settings">Ajustes</strong><small data-i18n="settingsSub">Voz, avatar y visual</small></button>
     </section>
 
+    </div><!-- /#omAdvanced -->
+
     <section class="daily card-glass premium-daily">
       <div>
         <strong>🌟 <span data-i18n="dailyMessage">Mensaje del día</span></strong>
@@ -635,13 +706,61 @@
     </section>
   </main>
 
-  <nav class="premium-bottom-nav" aria-label="Navegación rápida">
-    <button data-action="first-reading" type="button"><span>✨</span><small>Inicio</small></button>
-    <button data-module="tarot" type="button"><span>🃏</span><small>Tarot</small></button>
-    <button data-module="biblioteca" type="button"><span>📚</span><small>Diario</small></button>
-    <button data-module="luna" type="button"><span>🌙</span><small>Luna</small></button>
-    <button data-action="settings" type="button"><span>⚙️</span><small>Ajustes</small></button>
+  <nav class="premium-bottom-nav om-nav" aria-label="Navegación principal">
+    <button data-om-nav="inicio" type="button" aria-current="page"><span aria-hidden="true">✦</span><small>Inicio</small></button>
+    <button data-om-nav="santuario" type="button"><span aria-hidden="true">🔮</span><small>Santuario</small></button>
+    <button data-module="biblioteca" type="button"><span aria-hidden="true">📖</span><small>Grimorio</small></button>
+    <button data-module="map" type="button"><span aria-hidden="true">📚</span><small>Biblioteca</small></button>
+    <button data-om-nav="perfil" type="button"><span aria-hidden="true">☾</span><small>Perfil</small></button>
   </nav>
+
+  <!-- ============ PERFIL ============
+       Recoge todo lo técnico que antes saturaba la portada. Cada botón
+       conserva la acción que ya existía en el motor. -->
+  <div id="omProfile" class="om-sheet" hidden>
+    <div class="om-sheet-backdrop" data-om-nav="cerrar-perfil"></div>
+    <div class="om-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="omProfileTitle">
+      <header class="om-sheet-head">
+        <h2 id="omProfileTitle">Perfil</h2>
+        <button class="om-sheet-close" data-om-nav="cerrar-perfil" type="button" aria-label="Cerrar perfil">✕</button>
+      </header>
+      <div class="om-sheet-body">
+
+        <p class="om-group-label">Apariencia</p>
+        <div class="om-themes" role="group" aria-label="Tema visual">
+          <button class="om-theme" data-om-theme="arcano" type="button"><i style="--a:#f2cc65;--b:#080713"></i><span>Arcano</span></button>
+          <button class="om-theme" data-om-theme="lunar" type="button"><i style="--a:#cfe0f2;--b:#060a14"></i><span>Lunar</span></button>
+          <button class="om-theme" data-om-theme="cosmico" type="button"><i style="--a:#9fb4ff;--b:#070a1a"></i><span>Cósmico</span></button>
+          <button class="om-theme" data-om-theme="bosque" type="button"><i style="--a:#e2c37a;--b:#060f0b"></i><span>Bosque</span></button>
+          <button class="om-theme" data-om-theme="eclipse" type="button"><i style="--a:#e8b84b;--b:#050409"></i><span>Eclipse</span></button>
+        </div>
+
+        <p class="om-group-label">Oráculo y voz</p>
+        <div class="om-rows">
+          <button class="om-row" data-action="connect-ai" type="button"><span>🤖</span><b>Conectar IA</b><small>Ampliar lecturas con inteligencia artificial</small></button>
+          <button class="om-row" data-action="preview-avatar" type="button"><span>🪄</span><b>La Voz del Oráculo</b><small>Avatar animado y ajustes de voz</small></button>
+          <button class="om-row" data-action="control-center" type="button"><span>🧭</span><b>Centro de control</b><small>Buscar, estado y privacidad</small></button>
+          <button class="om-row" data-premium-action="open-palette" type="button"><span>⌘</span><b>Buscar</b><small>Ir a cualquier módulo o acción por su nombre</small></button>
+        </div>
+
+        <p class="om-group-label">Aplicación</p>
+        <div class="om-rows">
+          <button class="om-row" data-action="settings" type="button"><span>⚙️</span><b>Ajustes completos</b><small>Voz, avatar, visual e idioma</small></button>
+          <button class="om-row" data-action="tutorial-app" type="button"><span>🎓</span><b>Tutorial</b><small>Cómo sacar partido a cada oráculo</small></button>
+          <button class="om-row" data-action="install-help" type="button"><span>📲</span><b>Instalar</b><small>Añadir Oráculo Místico a tu dispositivo</small></button>
+          <button class="om-row" data-premium-action="toggle-immersive" type="button"><span>🌌</span><b>Modo inmersivo</b><small>Oculta la interfaz y deja solo la lectura</small></button>
+        </div>
+
+        <p class="om-group-label">Avanzado</p>
+        <div class="om-rows">
+          <button class="om-row" data-om-nav="paneles" type="button"><span>🧪</span><b>Paneles avanzados</b><small>Las herramientas de las versiones anteriores</small></button>
+          <a class="om-row" href="privacy.html"><span>🔒</span><b>Privacidad</b><small>Qué se guarda y qué se envía fuera</small></a>
+          <a class="om-row" href="docs/manual_usuario_oraculo_mistico_v1_0.pdf" target="_blank" rel="noopener"><span>📄</span><b>Manual</b><small>Guía completa en PDF</small></a>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <div id="premiumFocusVeil" class="premium-focus-veil" aria-hidden="true"></div>
 
@@ -686,7 +805,8 @@
 
 
   
-  <section class="premium-quick-actions" aria-label="Accesos rápidos">
+  <!-- Duplica el Santuario y el Perfil: se recoge con los paneles avanzados. -->
+  <section class="premium-quick-actions" aria-label="Accesos rápidos" id="omQuickActions" hidden>
     <span class="premium-section-kicker">✦ Accesos rápidos</span>
   <div class="premium-smart-dock" aria-label="Dock premium">
     <button type="button" data-premium-action="tarot-reading">🃏 Tarot</button>
