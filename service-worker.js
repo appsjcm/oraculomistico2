@@ -1,12 +1,14 @@
-const CACHE_NAME = 'oraculo-v1-0-public-tokens-16';
+const CACHE_NAME = 'oraculo-v1-0-public-v2-shell-18';
 const APP_SHELL = [
   './',
   './index.html',
   './styles/core-remodel-v1-0-70.css',
   './styles/premium-home-v12.css',
   './styles/tokens.css',
+  './styles/v2.css',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
+  './js/v2-shell.js',
   './js/i18n.js',
   './js/data.js',
   './js/config.js',

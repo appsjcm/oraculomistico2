@@ -1,0 +1,460 @@
+/* ============================================================
+   ORÁCULO MÍSTICO · CAPA V2
+   Fase 3: portada cinematográfica, el Orbe, el Santuario,
+   navegación y Perfil. Todo se apoya en tokens.css.
+   ============================================================ */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Suelo sólido: si las imágenes de fondo fallan, hay tierra firme. */
+body { background-color: var(--om-void); }
+
+
+/* ============================================================
+   1 · PORTADA
+   ============================================================ */
+.om-cover {
+  position: relative;
+  min-height: min(100svh, 860px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--om-s-5);
+  padding: calc(var(--om-s-8) + var(--om-safe-top)) var(--om-s-4) var(--om-s-7);
+  text-align: center;
+  isolation: isolate;
+}
+
+/* --- Cielo ambiental --- */
+.om-sky { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+
+.om-moon {
+  position: absolute;
+  top: 6%; left: 50%;
+  width: min(62vw, 460px); aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255,252,244,.13), rgba(255,252,244,.05) 46%, transparent 62%);
+  filter: blur(2px);
+}
+
+.om-nebula {
+  position: absolute; inset: -14% -20% auto -20%;
+  height: 78%;
+  background:
+    radial-gradient(ellipse 52% 44% at 22% 24%, var(--om-violet-veil), transparent 68%),
+    radial-gradient(ellipse 46% 40% at 78% 16%, var(--om-gold-veil), transparent 66%);
+  filter: blur(28px);
+}
+
+/* Estrellas: dos capas de puntos, sin un solo nodo extra. */
+.om-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1.2px 1.2px at 78% 12%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1.6px 1.6px at 34% 42%, rgba(255,255,255,.38), transparent),
+    radial-gradient(1.2px 1.2px at 62% 58%, rgba(255,255,255,.42), transparent),
+    radial-gradient(1.3px 1.3px at 88% 46%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1.1px 1.1px at 22% 72%, rgba(255,255,255,.40), transparent),
+    radial-gradient(1.5px 1.5px at 52% 82%, rgba(255,255,255,.30), transparent),
+    radial-gradient(1.2px 1.2px at 92% 78%, rgba(255,255,255,.34), transparent);
+  animation: omTwinkle 9s ease-in-out infinite;
+}
+@keyframes omTwinkle { 0%,100% { opacity: .75 } 50% { opacity: 1 } }
+
+/* Motas doradas: nueve, no doscientas. */
+.om-motes { position: absolute; inset: 0; }
+.om-motes i {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--om-gold);
+  opacity: .30;
+  animation: omDrift 26s linear infinite;
+}
+.om-motes i:nth-child(1) { left: 14%; top: 82%; animation-delay: -2s;  }
+.om-motes i:nth-child(2) { left: 27%; top: 88%; animation-delay: -7s;  width: 2px; height: 2px; }
+.om-motes i:nth-child(3) { left: 41%; top: 78%; animation-delay: -12s; }
+.om-motes i:nth-child(4) { left: 56%; top: 90%; animation-delay: -4s;  width: 4px; height: 4px; opacity: .20; }
+.om-motes i:nth-child(5) { left: 68%; top: 84%; animation-delay: -16s; }
+.om-motes i:nth-child(6) { left: 79%; top: 92%; animation-delay: -9s;  width: 2px; height: 2px; }
+.om-motes i:nth-child(7) { left: 88%; top: 76%; animation-delay: -20s; }
+.om-motes i:nth-child(8) { left: 34%; top: 94%; animation-delay: -14s; opacity: .22; }
+.om-motes i:nth-child(9) { left: 62%; top: 74%; animation-delay: -23s; width: 2px; height: 2px; }
+@keyframes omDrift {
+  0%   { transform: translateY(0) translateX(0);      opacity: 0 }
+  12%  { opacity: .32 }
+  88%  { opacity: .18 }
+  100% { transform: translateY(-58vh) translateX(16px); opacity: 0 }
+}
+
+/* --- El Orbe del Oráculo --- */
+.om-orb {
+  position: relative;
+  width: clamp(150px, 34vw, 210px);
+  aspect-ratio: 1;
+  border: 0; padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: transform var(--om-dur) var(--om-ease);
+}
+.om-orb-body {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.55), transparent 34%),
+    radial-gradient(circle at 62% 68%, var(--om-violet-veil), transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(20,14,38,.94), rgba(6,4,14,.98) 72%);
+  box-shadow:
+    inset 0 0 44px rgba(141,102,255,.30),
+    inset 0 -14px 34px rgba(0,0,0,.60),
+    var(--om-glow-violet);
+  overflow: hidden;
+}
+.om-orb-core {
+  position: absolute; inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--om-gold-veil), transparent 66%);
+  filter: blur(6px);
+  animation: omBreathe 7s ease-in-out infinite;
+}
+.om-orb-swirl {
+  position: absolute; inset: -18%;
+  background:
+    conic-gradient(from 0deg,
+      transparent 0deg,
+      var(--om-violet-veil) 70deg,
+      transparent 140deg,
+      var(--om-gold-veil) 230deg,
+      transparent 300deg);
+  filter: blur(14px);
+  animation: omSwirl 34s linear infinite;
+}
+.om-orb-sheen {
+  position: absolute; left: 18%; top: 12%;
+  width: 42%; height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 40% 40%, rgba(255,255,255,.42), transparent 70%);
+  filter: blur(3px);
+}
+.om-orb-ring {
+  position: absolute; inset: -9%;
+  border-radius: 50%;
+  border: 1px solid var(--om-line-gold);
+  opacity: .55;
+  transition: transform var(--om-dur-slow) var(--om-ease-out), opacity var(--om-dur) var(--om-ease);
+}
+@keyframes omBreathe { 0%,100% { transform: scale(1); opacity: .8 } 50% { transform: scale(1.09); opacity: 1 } }
+@keyframes omSwirl   { to { transform: rotate(360deg) } }
+
+.om-orb:hover, .om-orb:focus-visible { transform: translateY(-4px); }
+.om-orb:hover .om-orb-ring, .om-orb:focus-visible .om-orb-ring { transform: scale(1.06); opacity: .9; }
+.om-orb:active { transform: translateY(-1px) scale(.985); }
+
+/* --- Texto de portada --- */
+.om-cover-text { display: flex; flex-direction: column; gap: var(--om-s-3); align-items: center; }
+.om-kicker {
+  margin: 0;
+  font-size: var(--om-t-xs);
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-gold);
+}
+.om-wordmark {
+  margin: 0;
+  font-family: var(--om-font-display);
+  font-weight: 400;
+  font-size: clamp(2.3rem, 8.4vw, 4.1rem);
+  line-height: var(--om-lh-tight);
+  letter-spacing: .012em;
+  color: var(--om-ivory);
+  text-wrap: balance;
+}
+.om-tagline {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--om-t-md);
+  line-height: var(--om-lh-body);
+  color: var(--om-ivory-2);
+  text-wrap: balance;
+}
+
+/* --- Botones --- */
+.om-cover-actions { display: flex; flex-wrap: wrap; gap: var(--om-s-3); justify-content: center; }
+.om-btn {
+  min-height: 48px;
+  padding: 0 var(--om-s-5);
+  border-radius: var(--om-r-full);
+  font: 600 var(--om-t-sm)/1 var(--om-font-body);
+  cursor: pointer;
+  transition: transform var(--om-dur-fast) var(--om-ease),
+              background-color var(--om-dur-fast) var(--om-ease),
+              border-color var(--om-dur-fast) var(--om-ease);
+}
+.om-btn:active { transform: translateY(1px); }
+.om-btn-primary {
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--om-gold), var(--om-gold-warm));
+  color: var(--om-on-gold);
+  box-shadow: var(--om-shadow-2), var(--om-glow-gold);
+}
+.om-btn-primary:hover { transform: translateY(-2px); }
+.om-btn-quiet {
+  border: 1px solid var(--om-line-2);
+  background: var(--om-surface-1);
+  color: var(--om-ivory-2);
+  backdrop-filter: blur(var(--om-blur-sm));
+}
+.om-btn-quiet:hover { background: var(--om-surface-2); border-color: var(--om-line-gold); color: var(--om-ivory); }
+
+.om-status { display: flex; flex-wrap: wrap; gap: var(--om-s-2); justify-content: center; opacity: .82; }
+
+
+/* ============================================================
+   2 · EL SANTUARIO
+   ============================================================ */
+.om-sanctuary {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--om-s-7) var(--om-s-4) var(--om-s-8);
+  scroll-margin-top: var(--om-s-6);
+}
+.om-section-head { text-align: center; margin-bottom: var(--om-s-6); }
+.om-eyebrow {
+  margin: 0 0 var(--om-s-2);
+  font-size: var(--om-t-xs);
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-gold);
+}
+.om-section-head h2 {
+  margin: 0 0 var(--om-s-2);
+  font-family: var(--om-font-display);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 4.6vw, 2.4rem);
+  line-height: var(--om-lh-tight);
+  color: var(--om-ivory);
+  text-wrap: balance;
+}
+.om-section-sub { margin: 0; color: var(--om-ivory-3); font-size: var(--om-t-sm); }
+
+.om-altars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--om-s-3);
+}
+.om-altar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--om-s-2);
+  min-height: 168px;
+  padding: var(--om-s-5);
+  text-align: left;
+  border: 1px solid var(--om-line-2);
+  border-radius: var(--om-r-lg);
+  background:
+    linear-gradient(165deg, var(--om-surface-2), var(--om-surface-1)),
+    radial-gradient(circle at 82% 0%, hsl(var(--om-altar-hue, 42) 70% 60% / .10), transparent 58%);
+  color: var(--om-ivory);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--om-dur) var(--om-ease),
+              border-color var(--om-dur) var(--om-ease),
+              box-shadow var(--om-dur) var(--om-ease);
+}
+.om-altar::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% -20%, hsl(var(--om-altar-hue, 42) 80% 66% / .16), transparent 62%);
+  opacity: 0;
+  transition: opacity var(--om-dur) var(--om-ease);
+  pointer-events: none;
+}
+.om-altar:hover, .om-altar:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--om-line-gold);
+  box-shadow: var(--om-shadow-2);
+}
+.om-altar:hover::after, .om-altar:focus-visible::after { opacity: 1; }
+.om-altar:active { transform: translateY(-1px); }
+.om-altar-wide { grid-column: span 2; min-height: 132px; }
+
+.om-altar-icon {
+  font-size: 1.7rem;
+  line-height: 1;
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  border-radius: var(--om-r-sm);
+  background: var(--om-surface-2);
+  border: 1px solid var(--om-line-1);
+}
+.om-altar-name { font-size: var(--om-t-lg); font-weight: 600; }
+.om-altar-desc { font-size: var(--om-t-sm); color: var(--om-ivory-3); line-height: 1.45; }
+
+
+/* ============================================================
+   3 · PANELES AVANZADOS
+   ============================================================ */
+/* El atributo hidden manda: una regla de clase con display lo anularía. */
+.om-advanced[hidden] { display: none !important; }
+.om-advanced-visible { animation: omFadeIn var(--om-dur-slow) var(--om-ease-out) both; }
+@keyframes omFadeIn { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+
+
+/* ============================================================
+   4 · PERFIL
+   ============================================================ */
+.om-sheet { position: fixed; inset: 0; z-index: 120; }
+.om-sheet-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(4, 3, 9, .62);
+  backdrop-filter: blur(var(--om-blur-sm));
+  opacity: 0;
+  transition: opacity var(--om-dur) var(--om-ease);
+}
+.om-sheet-open .om-sheet-backdrop { opacity: 1; }
+.om-sheet-panel {
+  position: absolute;
+  left: 50%; bottom: 0;
+  width: min(560px, 100%);
+  max-height: 88svh;
+  transform: translate(-50%, 100%);
+  display: flex; flex-direction: column;
+  border: 1px solid var(--om-line-2);
+  border-bottom: 0;
+  border-radius: var(--om-r-xl) var(--om-r-xl) 0 0;
+  background: linear-gradient(180deg, var(--om-night), var(--om-void));
+  box-shadow: var(--om-shadow-3);
+  transition: transform var(--om-dur) var(--om-ease-out);
+}
+.om-sheet-open .om-sheet-panel { transform: translate(-50%, 0); }
+.om-sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--om-s-5) var(--om-s-5) var(--om-s-3);
+  border-bottom: 1px solid var(--om-line-1);
+}
+.om-sheet-head h2 {
+  margin: 0;
+  font-family: var(--om-font-display);
+  font-weight: 400;
+  font-size: var(--om-t-xl);
+  color: var(--om-ivory);
+}
+.om-sheet-close {
+  width: 40px; height: 40px;
+  border-radius: var(--om-r-full);
+  border: 1px solid var(--om-line-2);
+  background: var(--om-surface-1);
+  color: var(--om-ivory-2);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.om-sheet-close:hover { background: var(--om-surface-2); color: var(--om-ivory); }
+.om-sheet-body {
+  overflow-y: auto;
+  padding: var(--om-s-4) var(--om-s-5) calc(var(--om-s-7) + var(--om-safe-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+body.om-sheet-lock { overflow: hidden; }
+
+.om-group-label {
+  margin: var(--om-s-5) 0 var(--om-s-3);
+  font-size: var(--om-t-xs);
+  letter-spacing: var(--om-track-caps);
+  text-transform: uppercase;
+  color: var(--om-gold);
+}
+.om-group-label:first-child { margin-top: var(--om-s-2); }
+
+.om-rows { display: flex; flex-direction: column; gap: var(--om-s-2); }
+.om-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px var(--om-s-3);
+  align-items: center;
+  min-height: 56px;
+  padding: var(--om-s-3);
+  text-align: left;
+  text-decoration: none;
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+  color: var(--om-ivory);
+  cursor: pointer;
+  transition: background-color var(--om-dur-fast) var(--om-ease), border-color var(--om-dur-fast) var(--om-ease);
+}
+.om-row:hover { background: var(--om-surface-2); border-color: var(--om-line-gold); }
+.om-row > span { grid-row: 1 / 3; font-size: 1.25rem; text-align: center; }
+.om-row > b { font-size: var(--om-t-sm); font-weight: 600; }
+.om-row > small { font-size: var(--om-t-xs); color: var(--om-ivory-3); line-height: 1.4; }
+
+.om-themes { display: flex; flex-wrap: wrap; gap: var(--om-s-2); }
+.om-theme {
+  display: flex; align-items: center; gap: var(--om-s-2);
+  min-height: 44px;
+  padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-full);
+  background: var(--om-surface-1);
+  color: var(--om-ivory-2);
+  font-size: var(--om-t-sm);
+  cursor: pointer;
+  transition: border-color var(--om-dur-fast) var(--om-ease), color var(--om-dur-fast) var(--om-ease);
+}
+.om-theme i {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--a), var(--b));
+  border: 1px solid var(--om-line-2);
+}
+.om-theme[aria-pressed="true"] { border-color: var(--om-gold); color: var(--om-ivory); }
+
+
+/* ============================================================
+   5 · NAVEGACIÓN
+   ============================================================ */
+.om-nav [data-om-nav].om-nav-active { color: var(--om-gold); }
+.om-nav [data-om-nav].om-nav-active span { transform: translateY(-1px); }
+
+
+/* ============================================================
+   6 · RESPONSIVE
+   ============================================================ */
+@media (max-width: 720px) {
+  .om-altars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .om-altar { min-height: 150px; padding: var(--om-s-4); }
+  .om-altar-wide { grid-column: span 2; min-height: 112px; }
+  .om-altar-icon { width: 40px; height: 40px; font-size: 1.45rem; }
+  .om-cover { min-height: 92svh; padding-bottom: var(--om-s-6); }
+}
+@media (max-width: 380px) {
+  .om-altars { grid-template-columns: 1fr; }
+  .om-altar-wide { grid-column: span 1; }
+}
+
+
+/* ============================================================
+   7 · MENOS MOVIMIENTO
+   Se conserva la atmósfera, se detiene el movimiento.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .om-stars, .om-orb-core, .om-orb-swirl { animation: none; }
+  .om-motes { display: none; }
+  .om-advanced-visible { animation: none; }
+  .om-orb:hover, .om-orb:focus-visible,
+  .om-altar:hover, .om-altar:focus-visible,
+  .om-btn-primary:hover { transform: none; }
+}
+.premium-quick-actions[hidden] { display: none !important; }
