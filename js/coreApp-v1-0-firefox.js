@@ -25,7 +25,8 @@ const LS = {
   focusMode: 'oraculo.focusMode.v1',
   errorLog: 'oraculo.errorLog.v1',
   migration: 'oraculo.migrationVersion.v1',
-  performanceMode: 'oraculo.performanceMode.v1'
+  performanceMode: 'oraculo.performanceMode.v1',
+  birthDate: 'oraculo.birthDate.v1'
 };
 
 let lastReading = null;
@@ -2242,22 +2243,14 @@ function letterValue(ch) {
   return clean >= 'A' && clean <= 'Z' ? ((clean.charCodeAt(0) - 65) % 9) + 1 : 0;
 }
 function reduceNum(n) { while (n > 9 && ![11,22,33].includes(n)) n = String(n).split('').reduce((a,b)=>a+Number(b),0); return n || 0; }
-const NUMEROLOGY_MEANINGS = {
-  1:{ title:'Iniciativa', gift:'independencia, decisión y capacidad para abrir camino', challenge:'impaciencia, aislamiento o exceso de control', advice:'lidera con claridad y deja espacio para escuchar' },
-  2:{ title:'Cooperación', gift:'sensibilidad, diplomacia y atención a los vínculos', challenge:'indecisión, dependencia o evitar el conflicto', advice:'cuida tus límites sin perder la empatía' },
-  3:{ title:'Expresión', gift:'creatividad, comunicación y alegría compartida', challenge:'dispersión, superficialidad o dificultad para terminar', advice:'da forma concreta a una idea antes de empezar otra' },
-  4:{ title:'Estructura', gift:'constancia, orden y capacidad para construir', challenge:'rigidez, exceso de carga o miedo al cambio', advice:'crea una base estable que también permita flexibilidad' },
-  5:{ title:'Movimiento', gift:'adaptación, curiosidad y deseo de experimentar', challenge:'inquietud, impulsividad o rechazo de los compromisos', advice:'elige cambios con propósito y no solo por escapar de la rutina' },
-  6:{ title:'Cuidado', gift:'responsabilidad, armonía y sentido de comunidad', challenge:'perfeccionismo, sobreprotección o cargar con todo', advice:'acompaña sin asumir lo que corresponde a otras personas' },
-  7:{ title:'Profundidad', gift:'análisis, intuición y búsqueda de significado', challenge:'distancia emocional, duda o exceso de pensamiento', advice:'combina reflexión con una acción sencilla y comprobable' },
-  8:{ title:'Realización', gift:'organización, ambición equilibrada y manejo de recursos', challenge:'dureza, obsesión por el resultado o luchas de poder', advice:'mide el éxito también por su impacto y sostenibilidad' },
-  9:{ title:'Integración', gift:'compasión, visión amplia y capacidad para cerrar ciclos', challenge:'idealización, nostalgia o dificultad para soltar', advice:'transforma la experiencia en servicio sin olvidarte de ti' },
-  11:{ title:'Inspiración', gift:'intuición intensa, sensibilidad y capacidad de inspirar', challenge:'nerviosismo, sobrecarga emocional o expectativas elevadas', advice:'aterriza la intuición en hábitos y límites saludables' },
-  22:{ title:'Construcción maestra', gift:'visión grande y capacidad para materializarla paso a paso', challenge:'presión, miedo a la magnitud o control excesivo', advice:'divide la visión en etapas realistas y compartidas' },
-  33:{ title:'Servicio consciente', gift:'compasión, enseñanza y cuidado transformador', challenge:'sacrificio personal, culpa o exigencia imposible', advice:'ayuda desde el equilibrio, no desde el agotamiento' }
-};
+/* Los significados viven ahora en i18n: antes estaban fijos en
+   espanol y la app en otro idioma mostraba media ficha traducida.
+   La clave numerica no cambia, asi que las lecturas guardadas
+   siguen siendo validas. */
+const NUMEROLOGY_KEYS = [1,2,3,4,5,6,7,8,9,11,22,33];
 function numerologyMeaning(number) {
-  return NUMEROLOGY_MEANINGS[number] || { title:'Potencial abierto', gift:'aprendizaje y observación', challenge:'falta de información suficiente', advice:'usa el resultado como punto de reflexión' };
+  const k = NUMEROLOGY_KEYS.includes(Number(number)) ? Number(number) : 0;
+  return { title:t(`nuM${k}T`), gift:t(`nuM${k}G`), challenge:t(`nuM${k}C`), advice:t(`nuM${k}A`) };
 }
 function normalizeNumerologyName(name = '') {
   return String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
@@ -2292,84 +2285,111 @@ function numerologyCard(label, number, description) {
   const meaning = numerologyMeaning(number);
   return `<article class="result-card numerology-card">
     <div class="numerology-number">${number}</div>
-    <div><h3>${escapeHTML(label)} · ${escapeHTML(meaning.title)}</h3><p>${escapeHTML(description)}</p><p><strong>Fortaleza:</strong> ${escapeHTML(meaning.gift)}.</p><p><strong>Reto:</strong> ${escapeHTML(meaning.challenge)}.</p></div>
+    <div><h3>${escapeHTML(label)} · ${escapeHTML(meaning.title)}</h3><p>${escapeHTML(description)}</p><p><strong>${escapeHTML(t('nuStrength'))}:</strong> ${escapeHTML(meaning.gift)}.</p><p><strong>${escapeHTML(t('nuChallenge'))}:</strong> ${escapeHTML(meaning.challenge)}.</p></div>
   </article>`;
 }
+/* La fecha de nacimiento no se guardaba en ninguna parte: habia
+   que reescribirla en cada visita. Se conserva en local, junto al
+   nombre que ya se guardaba, y nunca sale del dispositivo. */
+function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || ''; } catch { return ''; } }
+function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
+
 function showNumerologia() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
-  openModal({ icon:'🔢', title:'Numerología', subtitle:'Perfil personal y sinastría numerológica.', body:`
-    <div class="numerology-intro result-card"><h3>Lectura personal</h3><p>Explora ocho números principales calculados a partir del nombre completo y la fecha de nacimiento.</p></div>
-    <div class="form-grid mt"><div class="field"><label>Nombre completo</label>${inputWithMic('numName', `value="${n}" placeholder="Nombre y apellidos"`)}</div><div class="field"><label>Fecha de nacimiento</label><input id="numDate" class="input" type="date"></div></div>
-    <div class="actions mt"><button class="btn primary" data-act="calc-num">Crear lectura personal</button></div>
+  const d = escapeHTML(getBirthDate());
+  openModal({ icon:'🔢', title:t('nuTitle'), subtitle:t('nuSub'), body:`
+    <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuPersonal'))}</h3><p>${escapeHTML(t('nuPersonalIntro'))}</p></div>
+    <div class="form-grid mt"><div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('numName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div><div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="numDate" class="input" type="date" value="${d}"></div></div>
+    <div class="actions mt"><button class="btn primary" data-act="calc-num">${escapeHTML(t('nuMake'))}</button></div>
     <hr class="soft-line">
-    <div class="numerology-intro result-card"><h3>Sinastría entre dos personas</h3><p>Compara tendencias de identidad, necesidades internas y forma de relacionarse. No determina el futuro ni mide el valor de una relación.</p></div>
+    <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuSynTitle'))}</h3><p>${escapeHTML(t('nuSynIntro'))}</p></div>
     <div class="synastry-grid mt">
-      <div class="result-card"><h3>Persona A</h3><div class="field"><label>Nombre completo</label><input id="synNameA" class="input" value="${n}" placeholder="Nombre y apellidos"></div><div class="field mt"><label>Fecha de nacimiento</label><input id="synDateA" class="input" type="date"></div></div>
-      <div class="result-card"><h3>Persona B</h3><div class="field"><label>Nombre completo</label><input id="synNameB" class="input" placeholder="Nombre y apellidos"></div><div class="field mt"><label>Fecha de nacimiento</label><input id="synDateB" class="input" type="date"></div></div>
+      <div class="result-card"><h3>${escapeHTML(t('nuPersonA'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameA" class="input" value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateA" class="input" type="date" value="${d}"></div></div>
+      <div class="result-card"><h3>${escapeHTML(t('nuPersonB'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameB" class="input" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateB" class="input" type="date"></div></div>
     </div>
-    <div class="actions mt"><button class="btn primary" data-act="calc-synastry">Crear sinastría</button></div>
-    <p class="notice mt">La numerología se presenta como herramienta simbólica y reflexiva. No es un método científico ni sustituye decisiones personales o profesionales.</p>` });
+    <div class="actions mt"><button class="btn primary" data-act="calc-synastry">${escapeHTML(t('nuSynMake'))}</button></div>
+    <p class="notice mt">${escapeHTML(t('nuNotice'))}</p>` });
 }
+
 function calcNumerologia() {
   const name = $('#numName')?.value?.trim() || '';
   const date = $('#numDate')?.value || '';
-  if (!name || !date) return toast('Escribe el nombre completo y la fecha de nacimiento.');
+  if (!name || !date) return toast(t('nuNeedNameDate'));
   const profile = calculateNumerologyProfile(name, date);
-  if (!profile) return toast('Revisa la fecha de nacimiento.');
+  if (!profile) return toast(t('nuCheckDate'));
+  setBirthDate(date);
+  const year = new Date().getFullYear();
   const fields = [
-    ['Camino de vida', profile.life, 'Aprendizaje principal y dirección general de la experiencia.'],
-    ['Expresión', profile.expression, 'Talentos, capacidades y forma natural de actuar.'],
-    ['Alma', profile.soul, 'Necesidades internas, motivaciones y deseos profundos.'],
-    ['Personalidad', profile.personality, 'Primera impresión y forma de presentarse ante el entorno.'],
-    ['Día natal', profile.birthday, 'Recurso concreto que tiende a aparecer de manera espontánea.'],
-    ['Actitud', profile.attitude, 'Respuesta inicial ante situaciones, cambios y relaciones.'],
-    ['Madurez', profile.maturity, 'Cualidad que gana importancia con la experiencia.'],
-    ['Año personal', profile.personalYear, `Tema simbólico predominante durante ${new Date().getFullYear()}.`]
+    [t('nuLife'), profile.life, t('nuLifeD')],
+    [t('nuExpr'), profile.expression, t('nuExprD')],
+    [t('nuSoul'), profile.soul, t('nuSoulD')],
+    [t('nuPers'), profile.personality, t('nuPersD')],
+    [t('nuBday'), profile.birthday, t('nuBdayD')],
+    [t('nuAtt'), profile.attitude, t('nuAttD')],
+    [t('nuMat'), profile.maturity, t('nuMatD')],
+    [t('nuYear'), profile.personalYear, t('nuYearD', { year })]
   ];
-  const text = `LECTURA NUMEROLÓGICA DE ${name}\nFecha: ${date}\n\n${fields.map(([label, number, description]) => {
+  const text = `${t('nuReading').toUpperCase()} · ${name}\n${date}\n\n${fields.map(([label, number, description]) => {
     const meaning = numerologyMeaning(number);
-    return `${label}: ${number} · ${meaning.title}\n${description}\nFortaleza: ${meaning.gift}.\nReto: ${meaning.challenge}.\nConsejo: ${meaning.advice}.`;
-  }).join('\n\n')}\n\nSíntesis: combina estos números como tendencias complementarias. Ninguno define por sí solo la personalidad ni el destino.`;
-  setLastReading({ type:'Numerología', title:`Numerología de ${name}`, text, items:[], meta:{ numbers:profile, name, birthDate:date } });
-  openModal({ icon:'🔢', title:'Lectura numerológica', subtitle:`${name} · ${date}`, body:`
+    return `${label}: ${number} · ${meaning.title}\n${description}\n${t('nuStrength')}: ${meaning.gift}.\n${t('nuChallenge')}: ${meaning.challenge}.\n${t('nuAdvice')}: ${meaning.advice}.`;
+  }).join('\n\n')}\n\n${t('nuSynthesisText')}`;
+  setLastReading({ type:'Numerología', title:`${t('nuTitle')} · ${name}`, text, items:[], meta:{ numbers:profile, name, birthDate:date } });
+  openModal({ icon:'🔢', title:t('nuReading'), subtitle:`${name} · ${date}`, body:`
     <div class="numerology-results">${fields.map(([label, number, description]) => numerologyCard(label, number, description)).join('')}</div>
-    <div class="result-card mt"><h3>Síntesis práctica</h3><p>Observa qué fortalezas se repiten y qué retos necesitan equilibrio. Los números maestros 11, 22 y 33 se conservan como matices de mayor intensidad, no como categorías superiores.</p>${readingActions(text,'Numerología')}</div>` });
+    <div class="result-card mt"><h3>${escapeHTML(t('nuSynthesis'))}</h3><p>${escapeHTML(t('nuSynthesisText'))}</p>${readingActions(text,'Numerología')}</div>` });
+}
+/* Un maestro es la octava alta de su raiz: 11 y 2 no son opuestos.
+   Para medir distancia se compara la raiz, no la cifra. */
+function numRoot(n) {
+  let x = Number(n) || 0;
+  while (x > 9) x = String(x).split('').reduce((a, b) => a + Number(b), 0);
+  return x || 9;
+}
+/* Los numeros del 1 al 9 forman un ciclo: 1 y 9 son vecinos, no
+   los extremos. La distancia lineal los daba por contrarios. */
+function numDistance(a, b) {
+  const x = numRoot(a), y = numRoot(b);
+  const d = Math.abs(x - y);
+  return Math.min(d, 9 - d);
 }
 function synastryTheme(a, b) {
-  if (a === b) return 'Existe una fuerte sensación de reconocimiento: ambos pueden comprender el ritmo del otro, aunque también amplificar el mismo reto.';
-  const distance = Math.abs(reduceNum(a) - reduceNum(b));
-  if (distance <= 2) return 'Los ritmos son cercanos y favorecen acuerdos naturales; conviene evitar asumir que ambos necesitan exactamente lo mismo.';
-  if (distance <= 5) return 'Las diferencias pueden complementarse bien cuando se expresan con claridad y se reparten responsabilidades.';
-  return 'Los ritmos son contrastantes: la relación puede ampliar perspectivas, pero necesita paciencia, traducción emocional y acuerdos explícitos.';
+  if (a === b) return t('synSame');
+  if (numRoot(a) === numRoot(b)) return t('synOctave');
+  const d = numDistance(a, b);
+  if (d <= 1) return t('synClose');
+  if (d <= 3) return t('synComplement');
+  return t('synContrast');
 }
 function calculateSynastry() {
   const nameA = $('#synNameA')?.value?.trim() || '';
   const dateA = $('#synDateA')?.value || '';
   const nameB = $('#synNameB')?.value?.trim() || '';
   const dateB = $('#synDateB')?.value || '';
-  if (!nameA || !dateA || !nameB || !dateB) return toast('Completa los nombres y fechas de las dos personas.');
+  if (!nameA || !dateA || !nameB || !dateB) return toast(t('nuNeedBoth'));
   const a = calculateNumerologyProfile(nameA, dateA);
   const b = calculateNumerologyProfile(nameB, dateB);
-  if (!a || !b) return toast('Revisa las fechas de nacimiento.');
+  if (!a || !b) return toast(t('nuCheckDate'));
+  setBirthDate(dateA);
   const relationship = reduceNum(a.life + b.life);
-  const relationMeaning = numerologyMeaning(relationship);
+  const m = numerologyMeaning(relationship);
   const sections = [
-    ['Dirección compartida', a.life, b.life, synastryTheme(a.life, b.life)],
-    ['Comunicación y acción', a.expression, b.expression, synastryTheme(a.expression, b.expression)],
-    ['Necesidades emocionales', a.soul, b.soul, synastryTheme(a.soul, b.soul)],
-    ['Convivencia e imagen externa', a.personality, b.personality, synastryTheme(a.personality, b.personality)]
+    [t('synDirection'), a.life, b.life, synastryTheme(a.life, b.life)],
+    [t('synCommunication'), a.expression, b.expression, synastryTheme(a.expression, b.expression)],
+    [t('synEmotional'), a.soul, b.soul, synastryTheme(a.soul, b.soul)],
+    [t('synCoexistence'), a.personality, b.personality, synastryTheme(a.personality, b.personality)]
   ];
-  const advice = `La vibración conjunta ${relationship} (${relationMeaning.title}) favorece ${relationMeaning.gift}. El cuidado principal está en ${relationMeaning.challenge}. Consejo: ${relationMeaning.advice}.`;
-  const text = `SINASTRÍA NUMEROLÓGICA\n${nameA}: camino ${a.life}, expresión ${a.expression}, alma ${a.soul}, personalidad ${a.personality}.\n${nameB}: camino ${b.life}, expresión ${b.expression}, alma ${b.soul}, personalidad ${b.personality}.\n\n${sections.map(([label, nA, nB, interpretation]) => `${label}: ${nA} y ${nB}\n${interpretation}`).join('\n\n')}\n\nNúmero de la relación: ${relationship} · ${relationMeaning.title}\n${advice}\n\nEsta lectura describe tendencias simbólicas; no determina compatibilidad real ni sustituye la comunicación entre las personas.`;
-  setLastReading({ type:'Numerología · Sinastría', title:`Sinastría: ${nameA} y ${nameB}`, text, items:[], meta:{ synastry:{ a, b, relationship }, numbers:{ life:relationship, expression:reduceNum(a.expression + b.expression), personalYear:reduceNum(a.personalYear + b.personalYear) } } });
-  openModal({ icon:'💞', title:'Sinastría numerológica', subtitle:`${nameA} y ${nameB}`, body:`
+  const advice = t('synAdvice', { n: relationship, title: m.title, gift: m.gift, challenge: m.challenge, advice: m.advice });
+  const linea = (nm, x) => `${nm}: ${t('nuLife')} ${x.life}, ${t('nuExpr')} ${x.expression}, ${t('nuSoul')} ${x.soul}, ${t('nuPers')} ${x.personality}.`;
+  const text = `${t('synTitle').toUpperCase()}\n${linea(nameA, a)}\n${linea(nameB, b)}\n\n${sections.map(([label, nA, nB, interp]) => `${label}: ${nA} · ${nB}\n${interp}`).join('\n\n')}\n\n${t('synRelNumber')}: ${relationship} · ${m.title}\n${advice}\n\n${t('synNotice')}`;
+  setLastReading({ type:'Numerología · Sinastría', title:`${t('synTitle')}: ${nameA} · ${nameB}`, text, items:[], meta:{ synastry:{ a, b, relationship }, numbers:{ life:relationship, expression:reduceNum(a.expression + b.expression), personalYear:reduceNum(a.personalYear + b.personalYear) } } });
+  openModal({ icon:'💞', title:t('synTitle'), subtitle:`${nameA} · ${nameB}`, body:`
     <div class="synastry-summary">
       <div class="result-card center"><small>${escapeHTML(nameA)}</small><div class="numerology-number">${a.life}</div><strong>${escapeHTML(numerologyMeaning(a.life).title)}</strong></div>
-      <div class="synastry-link"><span>∞</span><small>Relación ${relationship}</small></div>
+      <div class="synastry-link"><span>∞</span><small>${escapeHTML(t('synRelation'))} ${relationship}</small></div>
       <div class="result-card center"><small>${escapeHTML(nameB)}</small><div class="numerology-number">${b.life}</div><strong>${escapeHTML(numerologyMeaning(b.life).title)}</strong></div>
     </div>
-    <div class="numerology-results mt">${sections.map(([label, nA, nB, interpretation]) => `<article class="result-card numerology-card"><div class="numerology-pair">${nA}<span>·</span>${nB}</div><div><h3>${escapeHTML(label)}</h3><p>${escapeHTML(interpretation)}</p></div></article>`).join('')}</div>
-    <div class="result-card mt"><h3>Número de la relación: ${relationship} · ${escapeHTML(relationMeaning.title)}</h3><p>${escapeHTML(advice)}</p><p class="notice">La sinastría es una lectura simbólica. Una relación saludable depende de comunicación, respeto, consentimiento y acciones reales.</p>${readingActions(text,'Numerología · Sinastría')}</div>` });
+    <div class="numerology-results mt">${sections.map(([label, nA, nB, interp]) => `<article class="result-card numerology-card"><div class="numerology-pair">${nA}<span>·</span>${nB}</div><div><h3>${escapeHTML(label)}</h3><p>${escapeHTML(interp)}</p></div></article>`).join('')}</div>
+    <div class="result-card mt"><h3>${escapeHTML(t('synRelNumber'))}: ${relationship} · ${escapeHTML(m.title)}</h3><p>${escapeHTML(advice)}</p><p class="notice">${escapeHTML(t('synNotice'))}</p>${readingActions(text,'Numerología · Sinastría')}</div>` });
 }
 
 async function loadGrabovoi() {
