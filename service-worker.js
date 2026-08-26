@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-catala-41-fase-14-num-grab';
+const CACHE_NAME = 'oraculo-v1-0-public-catala-41-fase-14-subjects';
 const APP_SHELL = [
   './',
   './index.html',
