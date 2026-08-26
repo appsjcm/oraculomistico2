@@ -10,9 +10,9 @@
    ============================================================ */
 
 import { CONTENIDO as ES } from './es.js';
-import { nombreDeCarta, PALOS, RANGOS, MAYORES } from './nombres.js';
+import { nombreDeCarta, codigoPorNombre, esArcanoMayor, PALOS, RANGOS, MAYORES } from './nombres.js';
 
-export { nombreDeCarta, PALOS, RANGOS, MAYORES };
+export { nombreDeCarta, codigoPorNombre, esArcanoMayor, PALOS, RANGOS, MAYORES };
 
 const CARGADORES = {
   ca: () => import('./ca.js'),

@@ -83,14 +83,49 @@
     };
     const cartas = entradas.flatMap(e => e.cartas);
     const tipos  = entradas.map(e => e.tipo).filter(Boolean);
-    const mayores = cartas.filter(c => !/ de /.test(c));
+    /* Antes un arcano mayor se reconocia porque su nombre no llevaba
+       " de ". En cuanto la app se leia en otro idioma, "Ace of Wands"
+       pasaba por mayor y la estadistica quedaba invertida. Ahora se
+       resuelve por el codigo de la carta, que no depende del idioma. */
+    const esMayor = window.OraculoArcanos?.esArcanoMayor;
+    const mayores = esMayor ? cartas.filter(c => esMayor(c)) : cartas.filter(c => !/ de /.test(c));
     return {
       total: entradas.length,
       favoritas: entradas.filter(e => e.favorito).length,
       cartaMasRepetida: cuenta(cartas),
       arcanoDominante: cuenta(mayores),
-      tipoMasFrecuente: cuenta(tipos)
+      tipoMasFrecuente: cuenta(tipos),
+      ...ritmo(entradas)
     };
+  }
+
+  /* Constancia real, calculada sobre las marcas de tiempo guardadas.
+     Un dia cuenta una vez aunque tenga varias lecturas. */
+  function ritmo(entradas) {
+    const dias = new Set();
+    entradas.forEach(e => {
+      if (!e.marca) return;
+      const d = new Date(e.marca);
+      if (!isFinite(d)) return;
+      dias.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+    });
+    if (!dias.size) return { diasActivos: 0, racha: 0, rachaMax: 0, primera: null };
+    const clave = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const cursor = new Date(); cursor.setHours(12, 0, 0, 0);
+    /* La racha viva admite que hoy aun no haya lectura: se cuenta
+       desde ayer para no romperla a media manana. */
+    if (!dias.has(clave(cursor))) cursor.setDate(cursor.getDate() - 1);
+    let racha = 0;
+    while (dias.has(clave(cursor))) { racha++; cursor.setDate(cursor.getDate() - 1); }
+    const ordenadas = [...dias].map(k => { const [a, m, d] = k.split('-').map(Number); return new Date(a, m, d, 12); })
+      .sort((x, y) => x - y);
+    let rachaMax = 1, run = 1;
+    for (let i = 1; i < ordenadas.length; i++) {
+      const salto = Math.round((ordenadas[i] - ordenadas[i - 1]) / 86400000);
+      run = salto === 1 ? run + 1 : 1;
+      if (run > rachaMax) rachaMax = run;
+    }
+    return { diasActivos: dias.size, racha, rachaMax, primera: ordenadas[0] };
   }
 
   function calendario(entradas, base = new Date()) {
@@ -180,13 +215,25 @@
         <p>${esc(tr('jEmptyText'))}</p></div>`;
     }
     const c = calendario(todas);
-    const nombreMes = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(new Date(c.ano, c.mes, 1));
+    /* El mes y los dias de la semana salian siempre en espanol,
+       aunque la app estuviera en otro idioma. Se piden al locale. */
+    const loc = window.OraculoI18n?.locale?.() || 'es-ES';
+    const nombreMes = new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(new Date(c.ano, c.mes, 1));
+    const inicialesDia = (() => {
+      const fmt = new Intl.DateTimeFormat(loc, { weekday: 'short' });
+      /* 2024-01-01 fue lunes: sirve de ancla para una semana que
+         empieza en lunes, como ya hacia el calendario. */
+      return Array.from({ length: 7 }, (_, i) => {
+        const et = fmt.format(new Date(2024, 0, 1 + i));
+        return et.replace(/\.$/, '').slice(0, 2);
+      });
+    })();
     const celdas = [
       ...Array.from({ length: c.hueco }, () => '<i class="om-cal-hueco"></i>'),
       ...Array.from({ length: c.dias }, (_, i) => {
         const d = i + 1, n = c.porDia.get(d) || 0;
-        return `<i class="om-cal-dia${n ? ' con' : ''}${d === c.hoy ? ' hoy' : ''}"${n ? ` title="${n} lectura${n > 1 ? 's' : ''}"` : ''}>
-                  <b>${d}</b>${n ? `<u aria-label="${n} lecturas"></u>` : ''}</i>`;
+        return `<i class="om-cal-dia${n ? ' con' : ''}${d === c.hoy ? ' hoy' : ''}"${n ? ` title="${n} ${n > 1 ? tr('gEntries') : tr('gEntry')}"` : ''}>
+                  <b>${d}</b>${n ? `<u aria-label="${n} ${n > 1 ? tr('gEntries') : tr('gEntry')}"></u>` : ''}</i>`;
       })
     ].join('');
 
@@ -196,13 +243,15 @@
 
     return `<div class="om-viaje">
         <p class="om-grim-cuenta">${nombreMes[0].toUpperCase() + nombreMes.slice(1)}</p>
-        <div class="om-cal-semana" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+        <div class="om-cal-semana" aria-hidden="true">${inicialesDia.map(d => `<span>${esc(d)}</span>`).join('')}</div>
         <div class="om-cal">${celdas}</div>
         <div class="om-viaje-datos">
-          <div class="om-viaje-dato"><span>${esc(tr('jSaved'))}</span><b>${s.total}</b><small>${s.favoritas} favorita${s.favoritas === 1 ? '' : 's'}</small></div>
+          <div class="om-viaje-dato"><span>${esc(tr('jSaved'))}</span><b>${s.total}</b><small>${s.favoritas} ${s.favoritas === 1 ? tr('gFavorite') : tr('gFavs')}</small></div>
           ${tarjeta(tr('jMostCard'), s.cartaMasRepetida)}
           ${tarjeta(tr('jMainArcana'), s.arcanoDominante)}
           ${tarjeta(tr('jMostType'), s.tipoMasFrecuente)}
+          <div class="om-viaje-dato"><span>${esc(tr('jStreak'))}</span><b>${s.racha}</b><small>${esc(s.rachaMax === 1 ? tr('jStreakBest1') : tr('jStreakBest', { n: s.rachaMax }))}</small></div>
+          <div class="om-viaje-dato"><span>${esc(tr('jActiveDays'))}</span><b>${s.diasActivos}</b><small>${s.primera ? esc(tr('jSince', { date: new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', year: 'numeric' }).format(s.primera) })) : ''}</small></div>
         </div>
         <p class="om-grim-pie">${esc(tr('jNote'))}</p>
       </div>`;

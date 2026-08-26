@@ -9,11 +9,11 @@
 import {
   CODIGOS, TENDENCIAS, ELEMENTO_DE_PALO, elementoDe,
   cargarIdioma, contenido, estadoIdiomas, huecosDetectados,
-  nombreDeCarta, PALOS, RANGOS, MAYORES
+  nombreDeCarta, codigoPorNombre, esArcanoMayor, PALOS, RANGOS, MAYORES
 } from './tarot/catalogo.js';
 import { CONTENIDO as ES } from './tarot/es.js';
 
-export { CODIGOS, TENDENCIAS, ELEMENTO_DE_PALO, elementoDe, cargarIdioma, contenido, estadoIdiomas, huecosDetectados, nombreDeCarta, PALOS, RANGOS, MAYORES };
+export { CODIGOS, TENDENCIAS, ELEMENTO_DE_PALO, elementoDe, cargarIdioma, contenido, estadoIdiomas, huecosDetectados, nombreDeCarta, codigoPorNombre, esArcanoMayor, PALOS, RANGOS, MAYORES };
 
 /** Compatibilidad: el catálogo español, como estaba. */
 export const ARCANOS = ES;
