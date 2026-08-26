@@ -30,11 +30,16 @@ export const RANGOS = {
 };
 
 /* Cómo se une el rango con el palo en cada lengua. */
+/* Catala i frances eliden la preposicio davant de vocal: "Rei d'Ors",
+   no "Rei de Ors". Sense aixo els noms sortien mal escrits. */
+const VOCAL = /^[aeiouàáâãäèéêëìíîïòóôõöùúûüAEIOUÀÁÂÃÄÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜ]/;
+const elidir = (r, p) => VOCAL.test(p) ? `${r} d’${p}` : `${r} de ${p}`;
+
 const UNION = {
   es: (r, p) => `${r} de ${p}`,
-  ca: (r, p) => `${r} de ${p}`,
+  ca: elidir,
   en: (r, p) => `${r} of ${p}`,
-  fr: (r, p) => `${r} de ${p}`,
+  fr: elidir,
   de: (r, p) => `${r} der ${p}`,
   zh: (r, p) => `${p}${r}`
 };
@@ -78,7 +83,12 @@ function construirIndice() {
   return m;
 }
 function normalizar(s) {
-  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  /* Els apostrofs recte i corb son el mateix caracter per a qui
+     escriu: una entrada antiga pot portar qualsevol dels dos. */
+  return String(s).normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u2018\u2019\u02bc\u0060\u00b4\u0027]/g, "'")
+    .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 /** Codigo de una carta a partir de su nombre en cualquier idioma. */
 export function codigoPorNombre(nombre) {
