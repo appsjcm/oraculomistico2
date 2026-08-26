@@ -9,6 +9,10 @@
 (() => {
   'use strict';
 
+  /* El mismo sistema i18n del motor, no uno nuevo. Si aun no ha
+     cargado, se devuelve la clave para no romper el pintado. */
+  const tr = (k, v) => window.OraculoI18n?.t?.(k, v) ?? k;
+
   const $ = (s, r = document) => r.querySelector(s);
   const LS_VELOCIDAD = 'oraculo.v2.voz.velocidad';
   const LS_SILENCIO  = 'oraculo.v2.voz.silencio';
@@ -62,7 +66,7 @@
     const pausada = !!(s && s.paused);
     const bPausa = panel.querySelector('[data-voz="pausa"]');
     if (bPausa) {
-      bPausa.textContent = pausada ? '▶ Reanudar' : '⏸ Pausar';
+      bPausa.textContent = pausada ? '▶ ' + tr('vResume') : '⏸ ' + tr('vPause');
       bPausa.disabled = !hablando && !pausada;
     }
     const bParar = panel.querySelector('[data-voz="parar"]');
@@ -71,7 +75,7 @@
     if (bSil) {
       const sil = silenciada();
       bSil.setAttribute('aria-pressed', String(sil));
-      bSil.textContent = sil ? '🔇 Silenciada' : '🔊 Con voz';
+      bSil.textContent = sil ? '🔇 ' + tr('vMuted') : '🔊 ' + tr('vWithVoice');
     }
   }
 
@@ -88,8 +92,8 @@
       <div class="om-sheet-backdrop" data-voz="cerrar"></div>
       <div class="om-sheet-panel om-voz-caja" role="dialog" aria-modal="true" aria-labelledby="omVozTitulo">
         <header class="om-sheet-head">
-          <h2 id="omVozTitulo">La Voz del Oráculo</h2>
-          <button class="om-sheet-close" data-voz="cerrar" type="button" aria-label="Cerrar">✕</button>
+          <h2 id="omVozTitulo">${tr('vTitle')}</h2>
+          <button class="om-sheet-close" data-voz="cerrar" type="button" aria-label="${tr('close')}">✕</button>
         </header>
         <div class="om-sheet-body">
           <div class="om-voz-orbe" aria-hidden="true">
@@ -98,26 +102,26 @@
             <span class="om-voz-onda"></span>
             <span class="om-voz-onda"></span>
           </div>
-          <p class="om-voz-estado" aria-live="polite">La voz espera en silencio.</p>
+          <p class="om-voz-estado" aria-live="polite">${tr('vSilent')}</p>
 
           <div class="om-voz-botones">
-            <button class="om-btn om-btn-quiet" data-voz="probar" type="button">▶ Probar</button>
-            <button class="om-btn om-btn-quiet" data-voz="pausa" type="button">⏸ Pausar</button>
-            <button class="om-btn om-btn-quiet" data-voz="parar" type="button">■ Parar</button>
-            <button class="om-btn om-btn-quiet" data-voz="silencio" type="button" aria-pressed="false">🔊 Con voz</button>
+            <button class="om-btn om-btn-quiet" data-voz="probar" type="button">▶ ${tr('vTest')}</button>
+            <button class="om-btn om-btn-quiet" data-voz="pausa" type="button">⏸ ${tr('vPause')}</button>
+            <button class="om-btn om-btn-quiet" data-voz="parar" type="button">■ ${tr('vStop')}</button>
+            <button class="om-btn om-btn-quiet" data-voz="silencio" type="button" aria-pressed="false">🔊 ${tr('vWithVoice')}</button>
           </div>
 
-          <p class="om-group-label">Velocidad</p>
+          <p class="om-group-label">${tr('vSpeed')}</p>
           <div class="om-voz-velocidad">
             <input id="omVozVel" type="range" min="0.6" max="1.6" step="0.05" value="${vel}"
-                   aria-label="Velocidad de la voz">
+                   aria-label="${tr('vSpeedLabel')}">
             <output for="omVozVel" id="omVozVelOut">${vel.toFixed(2)}×</output>
           </div>
-          <p class="om-grim-pie">La voz es opcional. Silenciada, el Oráculo sigue respondiendo por escrito.</p>
+          <p class="om-grim-pie">${tr('vOptional')}</p>
 
           <div class="om-rows" style="margin-top:var(--om-s-4)">
-            <button class="om-row" data-act="voice-library" type="button"><span>🗣️</span><b>Elegir voz</b><small>Voces disponibles en este dispositivo</small></button>
-            <button class="om-row" data-act="preview-avatar" type="button"><span>🪄</span><b>Avatar del Oráculo</b><small>El rostro animado que acompaña a la voz</small></button>
+            <button class="om-row" data-act="voice-library" type="button"><span>🗣️</span><b>${tr('vPickVoice')}</b><small>${tr('vPickVoiceSub')}</small></button>
+            <button class="om-row" data-act="preview-avatar" type="button"><span>🪄</span><b>${tr('vAvatar')}</b><small>${tr('vAvatarSub')}</small></button>
           </div>
         </div>
       </div>`;
@@ -147,8 +151,8 @@
     const s = sintesis();
     if (!s) return;
     s.cancel();
-    const frase = new SpeechSynthesisUtterance('Te escucho. Pregunta lo que necesites saber.');
-    frase.lang = 'es-ES';
+    const frase = new SpeechSynthesisUtterance(tr('vGreeting'));
+    frase.lang = window.OraculoI18n?.locale?.() || 'es-ES';
     frase.rate = leerNum(LS_VELOCIDAD, 1);
     frase.volume = silenciada() ? 0 : 1;
     s.speak(frase);
@@ -160,7 +164,7 @@
     if (sil) sintesis()?.cancel();
     pintarControles();
     const est = $('.om-voz-estado');
-    if (est) est.textContent = sil ? 'Voz silenciada. Las respuestas siguen llegando por escrito.' : 'La voz vuelve a estar disponible.';
+    if (est) est.textContent = sil ? tr('vMutedNote') : tr('vBackNote');
   }
 
   document.addEventListener('click', (ev) => {

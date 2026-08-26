@@ -12,6 +12,10 @@
 (() => {
   'use strict';
 
+  /* El mismo sistema i18n del motor, no uno nuevo. Si aun no ha
+     cargado, se devuelve la clave para no romper el pintado. */
+  const tr = (k, v) => window.OraculoI18n?.t?.(k, v) ?? k;
+
   const $ = (s, r = document) => r.querySelector(s);
   const LS_FAV = 'oraculo.v2.biblioteca.favoritos';
 
@@ -25,11 +29,11 @@
   let categoria = 'tarot', consulta = '', soloFavoritos = false, abierto = null, grabovoi = null;
 
   const CATEGORIAS = [
-    { id: 'tarot',    nombre: 'Tarot',      icono: '🃏' },
-    { id: 'runas',    nombre: 'Runas',      icono: 'ᚱ'  },
-    { id: 'luna',     nombre: 'Luna',       icono: '🌙' },
-    { id: 'suenos',   nombre: 'Sueños',     icono: '💭' },
-    { id: 'grabovoi', nombre: 'Grabovoi',   icono: '📜' }
+    { id: 'tarot',    clave: 'bCatTarot',    icono: '🃏' },
+    { id: 'runas',    clave: 'bCatRunes',    icono: 'ᚱ'  },
+    { id: 'luna',     clave: 'bCatMoon',     icono: '🌙' },
+    { id: 'suenos',   clave: 'bCatDreams',   icono: '💭' },
+    { id: 'grabovoi', clave: 'bCatGrabovoi', icono: '📜' }
   ];
 
   /* ---------- Fuentes ----------
@@ -43,12 +47,12 @@
       return (S.tarot || []).map((c, i) => ({
         id: `tarot-${i}`,
         titulo: c.name,
-        etiqueta: c.num ? `Arcano ${c.num}` : (c.key || ''),
+        etiqueta: c.num ? `${tr('bMajor')} ${c.num}` : (c.key || ''),
         subtitulo: [c.key, c.el].filter(Boolean).join(' · '),
         imagen: c.img || '',
         secciones: [
-          ['Al derecho', c.up],
-          ['Invertida', c.rv]
+          [tr('bUpright'), c.up],
+          [tr('bReversed'), c.rv]
         ].filter(x => x[1]),
         busca: `${c.name} ${c.num || ''} ${c.key || ''} ${c.el || ''} ${c.up || ''} ${c.rv || ''}`
       }));
@@ -58,9 +62,9 @@
         id: `runa-${i}`,
         titulo: r.name,
         etiqueta: r.sym,
-        subtitulo: 'Futhark antiguo',
+        subtitulo: tr('bFuthark'),
         imagen: r.img || '',
-        secciones: [['Significado', r.up], ['Invertida', r.rv]].filter(x => x[1]),
+        secciones: [[tr('bMeaning'), r.up], [tr('bReversed'), r.rv]].filter(x => x[1]),
         busca: `${r.name} ${r.sym} ${r.up || ''} ${r.rv || ''}`
       }));
     }
@@ -69,9 +73,9 @@
         id: `luna-${i}`,
         titulo: m.name,
         etiqueta: m.sym,
-        subtitulo: 'Fase lunar',
+        subtitulo: tr('bMoonPhase'),
         imagen: '',
-        secciones: [['Significado', m.meaning], ['Ritual simbólico', m.ritual], ['Afirmación', m.affirmation]].filter(x => x[1]),
+        secciones: [[tr('bMeaning'), m.meaning], [tr('bRitual'), m.ritual], [tr('bAffirm'), m.affirmation]].filter(x => x[1]),
         busca: `${m.name} ${m.meaning || ''} ${m.ritual || ''}`
       }));
     }
@@ -80,9 +84,9 @@
         id: `sueno-${i}`,
         titulo: clave.charAt(0).toUpperCase() + clave.slice(1),
         etiqueta: '💭',
-        subtitulo: 'Símbolo onírico',
+        subtitulo: tr('bDreamSymbol'),
         imagen: '',
-        secciones: [['Qué suele señalar', texto]],
+        secciones: [[tr('bDreamSign'), texto]],
         busca: `${clave} ${texto}`
       }));
     }
@@ -90,13 +94,13 @@
       if (!grabovoi) return null;                  // aún cargando
       return grabovoi.map((g, i) => ({
         id: `grab-${i}`,
-        titulo: g.nombre || g.titulo || g.categoria || 'Secuencia',
+        titulo: g.nombre || g.titulo || g.categoria || tr('bSequence'),
         etiqueta: g.codigo || (Array.isArray(g.codigos) ? g.codigos[0] : ''),
-        subtitulo: g.categoria || 'Secuencia numérica',
+        subtitulo: g.categoria || tr('bSequence'),
         imagen: '',
         secciones: [
-          ['Código', g.codigo || (Array.isArray(g.codigos) ? g.codigos.join(' · ') : '')],
-          ['Descripción', g.descripcion || '']
+          [tr('bCode'), g.codigo || (Array.isArray(g.codigos) ? g.codigos.join(' · ') : '')],
+          [tr('bDescription'), g.descripcion || '']
         ].filter(x => x[1]),
         busca: `${g.nombre || ''} ${g.categoria || ''} ${g.codigo || ''} ${g.descripcion || ''}`
       }));
@@ -134,7 +138,7 @@
 
     const lista = entradas(categoria);
     if (lista === null) {
-      cuerpo.innerHTML = `<p class="om-grim-cuenta">Abriendo el volumen de secuencias…</p>`;
+      cuerpo.innerHTML = `<p class="om-grim-cuenta">${esc(tr('bLoading'))}</p>`;
       return;
     }
     const fav = leerFav();
@@ -148,16 +152,16 @@
     if (!vista.length) {
       cuerpo.innerHTML = soloFavoritos
         ? `<div class="om-vacio"><span aria-hidden="true">✦</span>
-             <h3>Todavía no has marcado ningún conocimiento como favorito.</h3>
-             <p>Toca la estrella de cualquier ficha para tenerla siempre a mano.</p></div>`
+             <h3>${esc(tr('bEmptyFavTitle'))}</h3>
+             <p>${esc(tr('bEmptyFavText'))}</p></div>`
         : `<div class="om-vacio"><span aria-hidden="true">🔍</span>
-             <h3>Nada coincide con esa búsqueda.</h3>
-             <p>Prueba con el nombre de una carta, una runa o un símbolo.</p></div>`;
+             <h3>${esc(tr('bEmptySearchTitle'))}</h3>
+             <p>${esc(tr('bEmptySearchText'))}</p></div>`;
       return;
     }
 
     cuerpo.innerHTML = `
-      <p class="om-grim-cuenta">${vista.length} ficha${vista.length > 1 ? 's' : ''}${soloFavoritos ? ' favorita' + (vista.length > 1 ? 's' : '') : ''}</p>
+      <p class="om-grim-cuenta">${vista.length} ${esc(vista.length > 1 ? tr('bCards') : tr('bCard'))}</p>
       <div class="om-bib-rejilla">
         ${vista.map(e => `
           <button class="om-bib-ficha" data-bib="abrir" data-id="${esc(e.id)}" type="button">
@@ -166,7 +170,7 @@
               : `<span class="om-bib-simbolo" aria-hidden="true">${esc(e.etiqueta || '✦')}</span>`}
             <strong>${esc(e.titulo)}</strong>
             <small>${esc(e.subtitulo || '')}</small>
-            ${fav.has(e.id) ? '<i class="om-bib-estrella" aria-label="Favorita">★</i>' : ''}
+            ${fav.has(e.id) ? `<i class="om-bib-estrella" aria-label="${esc(tr('gFavorite'))}">★</i>` : ''}
           </button>`).join('')}
       </div>`;
   }
@@ -176,7 +180,7 @@
     const esFav = fav.has(e.id);
     return `
       <article class="om-bib-detalle">
-        <button class="om-bib-volver" data-bib="volver" type="button">‹ Volver</button>
+        <button class="om-bib-volver" data-bib="volver" type="button">‹ ${esc(tr('bBack'))}</button>
         ${e.imagen ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy">`
                    : `<div class="om-bib-simbolo-grande" aria-hidden="true">${esc(e.etiqueta || '✦')}</div>`}
         ${e.etiqueta && e.imagen ? `<p class="om-bib-etiqueta">${esc(e.etiqueta)}</p>` : ''}
@@ -184,7 +188,7 @@
         ${e.subtitulo ? `<p class="om-bib-sub">${esc(e.subtitulo)}</p>` : ''}
         ${e.secciones.map(([t, c]) => `<section class="om-bib-seccion"><h4>${esc(t)}</h4><p>${esc(c)}</p></section>`).join('')}
         <button class="om-btn ${esFav ? 'om-btn-primary' : 'om-btn-quiet'}" data-bib="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${esFav}">
-          ${esFav ? '★ En tus favoritos' : '☆ Guardar en favoritos'}
+          ${esFav ? '★ ' + esc(tr('bInFav')) : '☆ ' + esc(tr('bSaveFav'))}
         </button>
       </article>`;
   }
@@ -202,16 +206,16 @@
       <div class="om-sheet-backdrop" data-bib="cerrar"></div>
       <div class="om-sheet-panel om-bib-panel" role="dialog" aria-modal="true" aria-labelledby="omBibTitulo">
         <header class="om-sheet-head">
-          <h2 id="omBibTitulo">Biblioteca Mística</h2>
-          <button class="om-sheet-close" data-bib="cerrar" type="button" aria-label="Cerrar">✕</button>
+          <h2 id="omBibTitulo">${tr('bTitle')}</h2>
+          <button class="om-sheet-close" data-bib="cerrar" type="button" aria-label="${esc(tr('close'))}">✕</button>
         </header>
         <div class="om-bib-cats" role="tablist">
-          ${CATEGORIAS.map(c => `<button class="om-bib-cat${categoria === c.id ? ' activo' : ''}" data-bib="categoria" data-valor="${c.id}" role="tab" aria-selected="${categoria === c.id}" type="button"><span aria-hidden="true">${c.icono}</span>${c.nombre}</button>`).join('')}
+          ${CATEGORIAS.map(c => `<button class="om-bib-cat${categoria === c.id ? ' activo' : ''}" data-bib="categoria" data-valor="${c.id}" role="tab" aria-selected="${categoria === c.id}" type="button"><span aria-hidden="true">${c.icono}</span>${esc(tr(c.clave))}</button>`).join('')}
         </div>
         <div class="om-grim-buscar">
-          <label class="sr-only" for="omBibBuscar">Buscar en la Biblioteca</label>
-          <input id="omBibBuscar" class="om-ritual-input" type="search" placeholder="Buscar carta, runa, símbolo…" value="${esc(consulta)}">
-          <button class="om-grim-chip${soloFavoritos ? ' activo' : ''}" data-bib="favoritos" type="button" aria-pressed="${soloFavoritos}">★ Favoritos</button>
+          <label class="sr-only" for="omBibBuscar">${tr('bSearchLabel')}</label>
+          <input id="omBibBuscar" class="om-ritual-input" type="search" placeholder="${esc(tr('bSearch'))}" value="${esc(consulta)}">
+          <button class="om-grim-chip${soloFavoritos ? ' activo' : ''}" data-bib="favoritos" type="button" aria-pressed="${soloFavoritos}">★ ${esc(tr('bFavOnly'))}</button>
         </div>
         <div class="om-sheet-body om-grim-body" id="omBibBody"></div>
       </div>`;

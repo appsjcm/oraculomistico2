@@ -12,6 +12,10 @@
 (() => {
   'use strict';
 
+  /* El mismo sistema i18n del motor, no uno nuevo. Si aun no ha
+     cargado, se devuelve la clave para no romper el pintado. */
+  const tr = (k, v) => window.OraculoI18n?.t?.(k, v) ?? k;
+
   const $ = (s, r = document) => r.querySelector(s);
 
   /* Almacenes conocidos. Solo DIARIO se escribe. */
@@ -124,7 +128,7 @@
       lista = lista.filter(e => `${e.titulo} ${e.tipo} ${e.texto} ${e.nota} ${e.cartas.join(' ')}`.toLowerCase().includes(q));
     }
 
-    const tipos = ['todas', 'favoritas', ...new Set(todas.map(e => e.tipo))].slice(0, 9);
+    const tipos = [tr('gAll'), tr('gFavs'), ...new Set(todas.map(e => e.tipo))].slice(0, 9);
     const cuerpo = raiz.querySelector('.om-grim-body');
     if (!cuerpo) return;
 
@@ -137,14 +141,14 @@
     if (!total) {
       return `<div class="om-vacio">
           <span aria-hidden="true">📖</span>
-          <h3>Tu Grimorio todavía está esperando su primera historia.</h3>
-          <p>Cada lectura que guardes quedará aquí, con su fecha y lo que preguntaste.</p>
-          <button class="om-btn om-btn-primary" data-grim="primera-lectura" type="button">Hacer mi primera lectura</button>
+          <h3>${esc(tr('gEmptyTitle'))}</h3>
+          <p>${esc(tr('gEmptyText'))}</p>
+          <button class="om-btn om-btn-primary" data-grim="primera-lectura" type="button">${esc(tr('gEmptyCta'))}</button>
         </div>`;
     }
     const chips = tipos.map(t => `<button class="om-grim-chip${filtro === t ? ' activo' : ''}" data-grim="filtro" data-valor="${esc(t)}" type="button">${esc(t[0].toUpperCase() + t.slice(1))}</button>`).join('');
     const items = lista.map(e => {
-      const f = e.marca ? `${FECHA.format(new Date(e.marca))} · ${HORA.format(new Date(e.marca))}` : 'Sin fecha';
+      const f = e.marca ? `${FECHA.format(new Date(e.marca))} · ${HORA.format(new Date(e.marca))}` : tr('gNoDate');
       return `<article class="om-grim-item${e.favorito ? ' favorita' : ''}">
         <header>
           <span class="om-grim-tipo">${esc(e.tipo)}</span>
@@ -156,24 +160,24 @@
         ${e.nota ? `<p class="om-grim-nota">${esc(e.nota)}</p>` : ''}
         <footer>
           ${e.editable
-            ? `<button class="om-grim-accion" data-grim="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${e.favorito}">${e.favorito ? '★ Favorita' : '☆ Favorita'}</button>
-               <button class="om-grim-accion om-grim-borrar" data-grim="borrar" data-id="${esc(e.id)}" type="button">Eliminar</button>`
-            : `<span class="om-grim-origen">de ${esc(e.origen)}</span>`}
+            ? `<button class="om-grim-accion" data-grim="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${e.favorito}">${e.favorito ? '★ ' + tr('gFavorite') : '☆ ' + tr('gFavorite')}</button>
+               <button class="om-grim-accion om-grim-borrar" data-grim="borrar" data-id="${esc(e.id)}" type="button">${esc(tr('gDelete'))}</button>`
+            : `<span class="om-grim-origen">${esc(tr('gFrom'))} ${esc(e.origen)}</span>`}
         </footer>
       </article>`;
     }).join('');
 
     return `<div class="om-grim-filtros">${chips}</div>
-      <p class="om-grim-cuenta">${lista.length} de ${total} entrada${total > 1 ? 's' : ''}</p>
-      <div class="om-grim-lista">${items || '<p class="om-grim-cuenta">Nada coincide con esa búsqueda.</p>'}</div>`;
+      <p class="om-grim-cuenta">${lista.length} ${tr('rOf')} ${total} ${total > 1 ? tr('gEntries') : tr('gEntry')}</p>
+      <div class="om-grim-lista">${items || `<p class="om-grim-cuenta">${esc(tr('gNoMatch'))}</p>`}</div>`;
   }
 
   function pintarViaje(todas) {
     const s = estadisticas(todas);
     if (!s.total) {
       return `<div class="om-vacio"><span aria-hidden="true">🗺️</span>
-        <h3>Tu viaje empieza con la primera lectura.</h3>
-        <p>Aquí verás en qué días consultaste y qué símbolos vuelven.</p></div>`;
+        <h3>${esc(tr('jEmptyTitle'))}</h3>
+        <p>${esc(tr('jEmptyText'))}</p></div>`;
     }
     const c = calendario(todas);
     const nombreMes = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(new Date(c.ano, c.mes, 1));
@@ -187,7 +191,7 @@
     ].join('');
 
     const tarjeta = (etiqueta, dato) => dato
-      ? `<div class="om-viaje-dato"><span>${esc(etiqueta)}</span><b>${esc(dato[0])}</b><small>${dato[1]} ${dato[1] > 1 ? 'veces' : 'vez'}</small></div>`
+      ? `<div class="om-viaje-dato"><span>${esc(etiqueta)}</span><b>${esc(dato[0])}</b><small>${dato[1]} ${dato[1] > 1 ? tr('jTimes') : tr('jTime')}</small></div>`
       : '';
 
     return `<div class="om-viaje">
@@ -195,12 +199,12 @@
         <div class="om-cal-semana" aria-hidden="true"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
         <div class="om-cal">${celdas}</div>
         <div class="om-viaje-datos">
-          <div class="om-viaje-dato"><span>Lecturas guardadas</span><b>${s.total}</b><small>${s.favoritas} favorita${s.favoritas === 1 ? '' : 's'}</small></div>
-          ${tarjeta('Carta más repetida', s.cartaMasRepetida)}
-          ${tarjeta('Arcano dominante', s.arcanoDominante)}
-          ${tarjeta('Consulta más frecuente', s.tipoMasFrecuente)}
+          <div class="om-viaje-dato"><span>${esc(tr('jSaved'))}</span><b>${s.total}</b><small>${s.favoritas} favorita${s.favoritas === 1 ? '' : 's'}</small></div>
+          ${tarjeta(tr('jMostCard'), s.cartaMasRepetida)}
+          ${tarjeta(tr('jMainArcana'), s.arcanoDominante)}
+          ${tarjeta(tr('jMostType'), s.tipoMasFrecuente)}
         </div>
-        <p class="om-grim-pie">Son patrones de tu propio uso, no predicciones.</p>
+        <p class="om-grim-pie">${esc(tr('jNote'))}</p>
       </div>`;
   }
 
@@ -217,21 +221,21 @@
       <div class="om-sheet-backdrop" data-grim="cerrar"></div>
       <div class="om-sheet-panel om-grim-panel" role="dialog" aria-modal="true" aria-labelledby="omGrimTitulo">
         <header class="om-sheet-head">
-          <h2 id="omGrimTitulo">Mi Grimorio</h2>
-          <button class="om-sheet-close" data-grim="cerrar" type="button" aria-label="Cerrar">✕</button>
+          <h2 id="omGrimTitulo">${tr('gTitle')}</h2>
+          <button class="om-sheet-close" data-grim="cerrar" type="button" aria-label="${esc(tr('close'))}">✕</button>
         </header>
         <div class="om-grim-tabs" role="tablist">
-          <button class="om-grim-tab${pestana === 'lecturas' ? ' activo' : ''}" data-grim="pestana" data-valor="lecturas" role="tab" aria-selected="${pestana === 'lecturas'}" type="button">Mis lecturas</button>
-          <button class="om-grim-tab${pestana === 'viaje' ? ' activo' : ''}" data-grim="pestana" data-valor="viaje" role="tab" aria-selected="${pestana === 'viaje'}" type="button">Mi Viaje</button>
+          <button class="om-grim-tab${pestana === 'lecturas' ? ' activo' : ''}" data-grim="pestana" data-valor="lecturas" role="tab" aria-selected="${pestana === 'lecturas'}" type="button">${tr('gTabReadings')}</button>
+          <button class="om-grim-tab${pestana === 'viaje' ? ' activo' : ''}" data-grim="pestana" data-valor="viaje" role="tab" aria-selected="${pestana === 'viaje'}" type="button">${tr('gTabJourney')}</button>
         </div>
         <div class="om-grim-buscar">
-          <label class="sr-only" for="omGrimBuscar">Buscar en el Grimorio</label>
-          <input id="omGrimBuscar" class="om-ritual-input" type="search" placeholder="Buscar por carta, tipo o palabra…" value="${esc(consulta)}">
+          <label class="sr-only" for="omGrimBuscar">${tr('gSearchLabel')}</label>
+          <input id="omGrimBuscar" class="om-ritual-input" type="search" placeholder="${esc(tr('gSearch'))}" value="${esc(consulta)}">
         </div>
         <div class="om-sheet-body om-grim-body"></div>
         <footer class="om-grim-pie-acciones">
-          <button class="om-btn om-btn-quiet" data-grim="exportar" type="button">Exportar copia</button>
-          <button class="om-btn om-btn-quiet" data-grim="importar" type="button">Importar copia</button>
+          <button class="om-btn om-btn-quiet" data-grim="exportar" type="button">${tr('gExport')}</button>
+          <button class="om-btn om-btn-quiet" data-grim="importar" type="button">${tr('gImport')}</button>
           <input id="omGrimArchivo" type="file" accept="application/json" hidden>
         </footer>
       </div>`;
@@ -290,9 +294,9 @@
     lector.onload = () => {
       let datos;
       try { datos = JSON.parse(lector.result); }
-      catch { return alert('Ese archivo no parece una copia del Grimorio.'); }
+      catch { return alert(tr('gBadFile')); }
       const almacenes = datos?.almacenes;
-      if (!almacenes || typeof almacenes !== 'object') return alert('La copia no contiene datos reconocibles.');
+      if (!almacenes || typeof almacenes !== 'object') return alert(tr('gNoData'));
 
       let anadidas = 0;
       Object.entries(almacenes).forEach(([clave, entrante]) => {
@@ -305,8 +309,8 @@
       });
       pintar();
       alert(anadidas
-        ? `Se han añadido ${anadidas} entrada${anadidas > 1 ? 's' : ''}. No se ha sustituido nada de lo que ya tenías.`
-        : 'La copia no traía entradas nuevas: tu Grimorio ya las tenía todas.');
+        ? tr('gImported', { n: anadidas })
+        : tr('gNothingNew'));
     };
     lector.readAsText(archivo);
   }

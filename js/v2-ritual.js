@@ -11,6 +11,9 @@
   'use strict';
 
   const $  = (s, r = document) => r.querySelector(s);
+  /* El mismo sistema i18n del motor, no uno nuevo. */
+  const tr = (k, v) => window.OraculoI18n?.t?.(k, v) ?? k;
+
   const LS_RITUAL = 'oraculo.v2.ritual';       // 'on' | 'off'
   const LS_INTENCION = 'oraculo.intention';    // ya existía: se respeta
 
@@ -46,7 +49,7 @@
         <div class="om-ritual-steps" aria-hidden="true">
           ${[1, 2, 3].map(i => `<i class="${i < paso ? 'hecho' : i === paso ? 'activo' : ''}"></i>`).join('')}
         </div>
-        <button class="om-ritual-cerrar" data-ritual="cancelar" type="button" aria-label="Salir del ritual">✕</button>
+        <button class="om-ritual-cerrar" data-ritual="cancelar" type="button" aria-label="${esc(tr('rExit'))}">✕</button>
         ${html}
       </div>`;
     raiz.hidden = false;
@@ -76,16 +79,16 @@
     estado = { clave, spread, intencion: previa, elegidas: [] };
 
     abrir(`
-      <p class="om-ritual-eyebrow">Paso 1 de 3</p>
-      <h2 id="omRitualTitulo">Formula tu intención</h2>
-      <p class="om-ritual-sub">Escríbela si quieres. También puedes entrar en silencio: la lectura funciona igual.</p>
-      <label class="sr-only" for="omRitualPregunta">Tu pregunta</label>
+      <p class="om-ritual-eyebrow">${esc(tr('rStep', { n: 1 }))}</p>
+      <h2 id="omRitualTitulo">${esc(tr('rIntentTitle'))}</h2>
+      <p class="om-ritual-sub">${esc(tr('rIntentText'))}</p>
+      <label class="sr-only" for="omRitualPregunta">${esc(tr('rIntentTitle'))}</label>
       <textarea id="omRitualPregunta" class="om-ritual-input" rows="3"
-        placeholder="¿Qué necesito ver ahora mismo?">${esc(previa)}</textarea>
-      <p class="om-ritual-nota">Se guarda solo en este dispositivo.</p>
+        placeholder="${esc(tr('rIntentPlaceholder'))}">${esc(previa)}</textarea>
+      <p class="om-ritual-nota">${esc(tr('rIntentNote'))}</p>
       <div class="om-ritual-acciones">
-        <button class="om-btn om-btn-primary om-ritual-cta" data-ritual="a-paso-2" type="button">Continuar</button>
-        <button class="om-btn om-btn-quiet" data-ritual="sin-pregunta" type="button">Entrar en silencio</button>
+        <button class="om-btn om-btn-primary om-ritual-cta" data-ritual="a-paso-2" type="button">${esc(tr('rContinue'))}</button>
+        <button class="om-btn om-btn-quiet" data-ritual="sin-pregunta" type="button">${esc(tr('rSilent'))}</button>
       </div>
       <p class="om-ritual-pie">${esc(spread.title)} · ${spread.count} carta${spread.count > 1 ? 's' : ''}</p>
     `, 1);
@@ -96,15 +99,15 @@
   function paso2() {
     if (!estado) return;
     abrir(`
-      <p class="om-ritual-eyebrow">Paso 2 de 3</p>
-      <h2 id="omRitualTitulo">Conecta</h2>
+      <p class="om-ritual-eyebrow">${esc(tr('rStep', { n: 2 }))}</p>
+      <h2 id="omRitualTitulo">${esc(tr('rConnectTitle'))}</h2>
       <div class="om-breath" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p class="om-ritual-sub om-breath-text">Respira. Piensa en tu pregunta.</p>
+      <p class="om-ritual-sub om-breath-text">${esc(tr('rBreathe'))}</p>
       ${estado.intencion ? `<p class="om-ritual-eco">“${esc(estado.intencion)}”</p>` : ''}
       <div class="om-ritual-acciones">
-        <button class="om-btn om-btn-primary om-ritual-cta" data-ritual="a-paso-3" type="button">Estoy listo</button>
+        <button class="om-btn om-btn-primary om-ritual-cta" data-ritual="a-paso-3" type="button">${esc(tr('rReady'))}</button>
       </div>
-      <p class="om-ritual-pie">No hay prisa, pero tampoco espera obligatoria.</p>
+      <p class="om-ritual-pie">${esc(tr('rNoRush'))}</p>
     `, 2);
   }
 
@@ -116,19 +119,19 @@
       const giro = (i - (total - 1) / 2) * 1.6;
       return `<button class="om-carta" data-ritual="elegir" data-i="${i}" type="button"
                 style="--giro:${giro.toFixed(2)}deg; --retardo:${(i * 26)}ms"
-                aria-label="Carta ${i + 1} de ${total}, boca abajo">
+                aria-label="${esc(tr('rCardOf', { i: i + 1, n: total }))}">
                 <span class="om-carta-dorso" aria-hidden="true"></span>
               </button>`;
     }).join('');
 
     abrir(`
-      <p class="om-ritual-eyebrow">Paso 3 de 3</p>
-      <h2 id="omRitualTitulo">Elige tus cartas</h2>
-      <p class="om-ritual-sub">Toca ${estado.spread.count === 1 ? 'una carta' : `${estado.spread.count} cartas`} sin pensarlo demasiado.</p>
-      <p class="om-ritual-contador" id="omRitualContador" aria-live="polite">0 de ${estado.spread.count}</p>
+      <p class="om-ritual-eyebrow">${esc(tr('rStep', { n: 3 }))}</p>
+      <h2 id="omRitualTitulo">${esc(tr('rChooseTitle'))}</h2>
+      <p class="om-ritual-sub">${esc(estado.spread.count === 1 ? tr('rChooseOne') : tr('rChooseMany', { n: estado.spread.count }))}</p>
+      <p class="om-ritual-contador" id="omRitualContador" aria-live="polite">0 ${tr('rOf')} ${estado.spread.count}</p>
       <div class="om-mesa" id="omMesa">${cartas}</div>
       <div class="om-ritual-acciones">
-        <button class="om-btn om-btn-quiet" data-ritual="al-azar" type="button">Que elija el Oráculo</button>
+        <button class="om-btn om-btn-quiet" data-ritual="al-azar" type="button">${esc(tr('rOracleChooses'))}</button>
       </div>
     `, 3);
   }
@@ -140,11 +143,11 @@
 
     boton.classList.add('om-carta-tomada');
     boton.disabled = true;
-    boton.setAttribute('aria-label', 'Carta elegida');
+    boton.setAttribute('aria-label', tr('rChosen'));
     estado.elegidas.push(Number(boton.dataset.i));
 
     const cont = $('#omRitualContador');
-    if (cont) cont.textContent = `${estado.elegidas.length} de ${objetivo}`;
+    if (cont) cont.textContent = `${estado.elegidas.length} ${tr('rOf')} ${objetivo}`;
 
     if (estado.elegidas.length >= objetivo) {
       const mesa = $('#omMesa');

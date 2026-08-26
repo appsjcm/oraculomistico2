@@ -11,6 +11,10 @@
 (() => {
   'use strict';
 
+  /* El mismo sistema i18n del motor, no uno nuevo. Si aun no ha
+     cargado, se devuelve la clave para no romper el pintado. */
+  const tr = (k, v) => window.OraculoI18n?.t?.(k, v) ?? k;
+
   const $ = (s, r = document) => r.querySelector(s);
 
   /* ============================================================
@@ -84,9 +88,9 @@
     aviso.className = 'om-aviso';
     aviso.setAttribute('role', 'status');
     aviso.innerHTML = `
-      <span>Hay una versión nueva del Oráculo.</span>
-      <button class="om-btn om-btn-primary" data-om-actualizar type="button">Actualizar</button>
-      <button class="om-aviso-cerrar" data-om-aviso-cerrar type="button" aria-label="Ahora no">✕</button>`;
+      <span>${tr('mNewVersion')}</span>
+      <button class="om-btn om-btn-primary" data-om-actualizar type="button">${tr('mUpdate')}</button>
+      <button class="om-aviso-cerrar" data-om-aviso-cerrar type="button" aria-label="${tr('mNotNow')}">✕</button>`;
     document.body.appendChild(aviso);
     requestAnimationFrame(() => aviso.classList.add('visible'));
   }
@@ -136,7 +140,7 @@
         b.id = 'omSinConexion';
         b.className = 'om-banda-offline';
         b.setAttribute('role', 'status');
-        b.textContent = 'Sin conexión · las lecturas siguen funcionando';
+        b.textContent = tr('mOffline');
         document.body.appendChild(b);
       } else if (navigator.onLine) {
         $('#omSinConexion')?.remove();
