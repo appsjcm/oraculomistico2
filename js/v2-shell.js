@@ -215,3 +215,29 @@
     iniciar();
   }
 })();
+
+/* ============================================================
+   Fase 13A · El Tarot sigue al idioma de la app
+   Al cambiar de idioma se recarga el contenido de las cartas y
+   se repinta lo que esté abierto, sin recargar la aplicación.
+   ============================================================ */
+(() => {
+  'use strict';
+  let ultimo = null;
+
+  async function sincronizar() {
+    const idioma = window.OraculoI18n?.idioma?.();
+    if (!idioma || idioma === ultimo) return;
+    ultimo = idioma;
+    try { await window.OraculoArcanos?.usarIdioma?.(idioma); } catch {}
+    /* Si la Biblioteca o el Grimorio están abiertos, se repintan. */
+    document.dispatchEvent(new CustomEvent('om:idioma', { detail: { idioma } }));
+  }
+
+  document.addEventListener('om:idioma-cambiado', sincronizar);
+  /* El selector de idioma vive en Ajustes, dentro del motor: se
+     observa el atributo lang del documento, que i18n actualiza. */
+  new MutationObserver(sincronizar).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sincronizar, { once: true });
+  else setTimeout(sincronizar, 300);
+})();

@@ -1,4 +1,3 @@
-import { ARCANOS, contenidoPorIndice, ELEMENTOS, validar as validarArcanos } from "./tarot-content.js";
 // data.js - Arcanos Mayores, Menores, Runas, Fases Lunares
 import { imgObj } from './config.js';
 
@@ -160,31 +159,63 @@ export const MOON_PHASES = [
     { sym:'🌘', name:'Luna Menguante', meaning:'Descanso e integración.', ritual:'Baño de sal marina.', affirmation:'Descanso y me restauro.' }
 ];
 
-/* ============================================================
-   Fase 12 · Contenido de los 78 Arcanos
-   El mazo no se duplica: se enriquece. Cada carta recibe sus
-   conceptos clave, energía, consejo, luz, sombra, significados
-   y correspondencias desde tarot-content.js, que es donde vive
-   el texto. Aquí solo se acoplan.
-   ============================================================ */
-ALL_TAROT.forEach((carta, i) => {
-    const c = contenidoPorIndice(i);
-    if (!c) return;
-    carta.codigo = (i < 22 ? 'M' + String(i).padStart(2, '0') : null) || carta.codigo;
-    carta.keywords = c.keywords;
-    carta.energy = c.energy;
-    carta.advice = c.advice;
-    carta.light = c.light;
-    carta.shadow = c.shadow;
-    /* up y rv siguen existiendo para todo el código anterior; los
-       nuevos textos son más largos y estructurados. */
-    carta.uprightMeaning = c.upright;
-    carta.reversedMeaning = c.reversed;
-    carta.love = c.love;
-    carta.work = c.work;
-    carta.personalGrowth = c.growth;
-    carta.yesNo = c.yesNo;
-    carta.astrology = c.astrology;
-});
 
-export { ARCANOS, ELEMENTOS, validarArcanos };
+/* ============================================================
+   Fase 13A · Contenido de los Arcanos por idioma
+   El mazo no se duplica: se enriquece. El nombre y el texto de
+   cada carta vienen del catálogo en el idioma activo, con el
+   español como respaldo. Aplicar el idioma es reescribir esos
+   campos sobre el mismo mazo, no crear otro.
+   ============================================================ */
+import {
+    ARCANOS, contenidoPorIndice, codigoPorIndice, ELEMENTOS,
+    ELEMENTOS_TRAD, TENDENCIA_TRAD, cargarIdioma, nombreDeCarta,
+    validar as validarArcanos, estadoIdiomas, elementoDe} from './tarot-content.js';
+
+/** El elemento en código, deducido del palo. Los mayores conservan el suyo. */
+const ELEMENTO_CODIGO = { B: 'fire', C: 'water', E: 'air', O: 'earth' };
+
+/** Vuelca sobre el mazo el contenido del idioma indicado. */
+export function aplicarIdiomaTarot(idioma = 'es') {
+    ALL_TAROT.forEach((carta, i) => {
+        const codigo = codigoPorIndice(i);
+        const c = contenidoPorIndice(i, idioma);
+        if (!codigo || !c) return;
+
+        carta.codigo = codigo;
+        carta.name = nombreDeCarta(codigo, idioma);
+        carta.keywords = c.keywords;
+        carta.key = Array.isArray(c.keywords) ? c.keywords.join(', ') : carta.key;
+        carta.energy = c.energy;
+        carta.advice = c.advice;
+        carta.light = c.light;
+        carta.shadow = c.shadow;
+        carta.uprightMeaning = c.upright;
+        carta.reversedMeaning = c.reversed;
+        carta.up = c.upright;
+        carta.rv = c.reversed;
+        carta.love = c.love;
+        carta.work = c.work;
+        carta.personalGrowth = c.growth;
+        carta.yesNo = c.yesNo;
+        carta.yesNoLabel = (TENDENCIA_TRAD[idioma] || TENDENCIA_TRAD.es)[c.yesNo] || c.yesNo;
+        carta.astrology = c.astrology;
+
+        const cod = elementoDe(codigo);
+        if (cod) {
+            carta.elemento = cod;
+            carta.el = (ELEMENTOS_TRAD[idioma] || ELEMENTOS_TRAD.es)[cod];
+        }
+    });
+}
+
+/** Carga el idioma y lo aplica. */
+export async function usarIdiomaTarot(idioma = 'es') {
+    await cargarIdioma(idioma);
+    aplicarIdiomaTarot(idioma);
+    return idioma;
+}
+
+aplicarIdiomaTarot('es');
+
+export { ARCANOS, ELEMENTOS, ELEMENTOS_TRAD, TENDENCIA_TRAD, validarArcanos, estadoIdiomas, nombreDeCarta };

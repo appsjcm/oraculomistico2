@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-arcanos-31';
+const CACHE_NAME = 'oraculo-v1-0-public-idiomas-33';
 const APP_SHELL = [
   './',
   './index.html',
@@ -18,6 +18,14 @@ const APP_SHELL = [
   './js/v2-movil.js',
   './js/i18n.js',
   './js/tarot-content.js',
+  './js/tarot/catalogo.js',
+  './js/tarot/nombres.js',
+  './js/tarot/es.js',
+  './js/tarot/en.js',
+  './js/tarot/ca.js',
+  './js/tarot/fr.js',
+  './js/tarot/de.js',
+  './js/tarot/zh.js',
   './js/data.js',
   './js/config.js',
   './grabovoi_db.json',
