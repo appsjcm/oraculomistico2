@@ -229,6 +229,8 @@ export function applyAppTranslations(root = document) {
    ============================================================ */
 const V2_STRINGS = {
   es: {
+    jStreak:'Racha actual', jStreakBest:'mejor: {n} días seguidos', jStreakBest1:'mejor: 1 día',
+    jActiveDays:'Días con lectura', jSince:'desde el {date}',
     /* --- Fase 13B - Numerologia y Sinastria --- */
     nuTitle:'Numerología', nuSub:'Perfil personal y sinastría numerológica.',
     nuPersonal:'Lectura personal',
@@ -316,6 +318,8 @@ const V2_STRINGS = {
     omPanels: 'Plafons avançats', omPanelsSub: 'Les eines de les versions anteriors'
   },
   en: {
+    jStreak:'Current streak', jStreakBest:'best: {n} days in a row', jStreakBest1:'best: 1 day',
+    jActiveDays:'Days with a reading', jSince:'since {date}',
     /* --- Phase 13B - Numerology and synastry --- */
     nuTitle:'Numerology', nuSub:'Personal profile and numerological synastry.',
     nuPersonal:'Personal reading',

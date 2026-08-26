@@ -1,4 +1,5 @@
 import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES, ARCANOS, ELEMENTOS, validarArcanos, usarIdiomaTarot, estadoIdiomas, TENDENCIA_TRAD } from './data.js';
+import { codigoPorNombre, esArcanoMayor } from './tarot-content.js';
 import { thumbFor } from './config.js';
 import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
 
@@ -2027,7 +2028,10 @@ window.OraculoArcanos = {
   validar: (idiomas) => validarArcanos(ALL_TAROT, idiomas || ['es','ca','en','fr','de','zh']),
   usarIdioma: usarIdiomaTarot,
   estadoIdiomas,
-  etiquetaTendencia: (cod, l) => (TENDENCIA_TRAD[l] || TENDENCIA_TRAD.es)[cod] || cod
+  etiquetaTendencia: (cod, l) => (TENDENCIA_TRAD[l] || TENDENCIA_TRAD.es)[cod] || cod,
+  /* Un nombre guardado puede venir de cualquier idioma. */
+  codigoPorNombre,
+  esArcanoMayor
 };
 
 window.OraculoSaber = {

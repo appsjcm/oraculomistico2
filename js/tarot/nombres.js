@@ -59,3 +59,36 @@ export function nombreDeCarta(codigo, idioma = 'es') {
   if (!rango || !palo) return codigo;
   return (UNION[L] || UNION.es)(rango, palo);
 }
+
+/* Indice inverso: de nombre a codigo, en los seis idiomas a la vez.
+   Hace falta porque una entrada guardada conserva el nombre en el
+   idioma en que se creo, y el Grimorio puede leerse en otro. */
+let INDICE = null;
+function construirIndice() {
+  const m = new Map();
+  const codigos = [];
+  for (let i = 0; i <= 21; i++) codigos.push('M' + String(i).padStart(2, '0'));
+  for (const p of ['B', 'C', 'E', 'O']) for (let i = 1; i <= 14; i++) codigos.push(p + String(i).padStart(2, '0'));
+  for (const idioma of Object.keys(MAYORES)) {
+    for (const c of codigos) {
+      const n = nombreDeCarta(c, idioma);
+      if (n && n !== c) m.set(normalizar(n), c);
+    }
+  }
+  return m;
+}
+function normalizar(s) {
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+/** Codigo de una carta a partir de su nombre en cualquier idioma. */
+export function codigoPorNombre(nombre) {
+  if (!nombre) return null;
+  if (!INDICE) INDICE = construirIndice();
+  return INDICE.get(normalizar(nombre)) || null;
+}
+/** ¿Es un arcano mayor? Antes se miraba si el nombre llevaba " de ",
+    lo que fallaba en cuanto la app dejaba de estar en espanol. */
+export function esArcanoMayor(nombre) {
+  const c = codigoPorNombre(nombre);
+  return c ? c[0] === 'M' : false;
+}
