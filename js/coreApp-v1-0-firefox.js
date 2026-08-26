@@ -27,7 +27,8 @@ const LS = {
   errorLog: 'oraculo.errorLog.v1',
   migration: 'oraculo.migrationVersion.v1',
   performanceMode: 'oraculo.performanceMode.v1',
-  birthDate: 'oraculo.birthDate.v1'
+  birthDate: 'oraculo.birthDate.v1',
+  effects3d: 'oraculo.3d.preference.v14'
 };
 
 let lastReading = null;
@@ -1918,6 +1919,13 @@ function openCeremonyIntro(kind = 'tarot') {
     </div>` });
 }
 function getAppVersionLabel() { return 'v1.0'; }
+function get3dPreference() { try { return localStorage.getItem(LS.effects3d) || 'auto'; } catch { return 'auto'; } }
+function set3dPreference(value = 'auto') {
+  const allowed = ['auto', 'high', 'balanced', 'reduced', 'off'];
+  const next = allowed.includes(value) ? value : 'auto';
+  try { localStorage.setItem(LS.effects3d, next); } catch {}
+  window.Oraculo3D?.setPreference?.(next);
+}
 function appHealthCheck() {
   const voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices().length : 0;
   openModal({ icon:'🧪', title:'Estado de la app', subtitle:getAppVersionLabel(), body:`
@@ -2000,6 +2008,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
   ceremonyVibrate([18, 40, 18]);
   openModal({ icon:'🃏', title, subtitle:'Experiencia ritual con revelación espectacular carta a carta.', body:`
     <div class="draw-experience spectacular-stage tarot-stage">
+      <div class="om-3d-stage om-3d-ritual" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div>
       <div class="ritual-particles">${Array.from({length:12}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
       <div class="channeling card-glow ritual-banner"><span class="orb-pulse">🔮</span><div><h3>El oráculo invoca tu tirada...</h3><p>Respira hondo y siente cómo el mazo se abre ante ti. Cada carta aparecerá como un portal simbólico.</p></div></div>
       <div id="tarotShuffleBoard" class="shuffle-board tarot-board deluxe-board"><div class="altar-ring"></div><img src="img/tarot-shuffle-hero.svg" alt="Mezcla de cartas del oráculo" class="shuffle-hero tarot-hero">${cards.map((c, i) => `<div class="card-back shuffle-card deluxe-card" style="--i:${i}"><div class="card-back-inner"><span class="back-logo">🔮</span><strong>Oráculo</strong><small>${c.rev ? 'Invertida' : 'Directa'}</small></div></div>`).join('')}</div>
@@ -2096,6 +2105,7 @@ function showTarot() {
   const normalKeys = Object.keys(TAROT_SPREADS).filter(k => !TAROT_SPREADS[k].premium);
   const premiumKeys = Object.keys(TAROT_SPREADS).filter(k => TAROT_SPREADS[k].premium);
   openModal({ icon:'🃏', title:'Tarot', subtitle:'Elige la tirada y deja que las cartas se mezclen y se revelen una a una.', body:`
+    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotTable" aria-label="Mesa de Lectura"></div>
     <div class="field"><label>Pregunta opcional</label>${inputWithMic('tarotPrompt', 'placeholder="¿Qué necesito saber hoy?"')}</div>
     <div class="actions mt"><button class="btn primary" data-act="ceremony-tarot" type="button">✨ Ritual guiado</button><button class="btn" data-module="runas" type="button">ᚱ Tiradas de Runas</button><button class="btn" data-act="tarot-library" type="button">📚 Biblioteca 78 cartas</button></div>
     <div class="spread-grid mt">${normalKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
@@ -2110,7 +2120,7 @@ function showTarotLibrary(filter = 'all') {
 }
 function showCardDetail(card) {
   setLastReading({ type: 'Tarot', title: card.name, text: `${card.up}\n\nInvertida: ${card.rv}`, items: [card.name] });
-  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>Al derecho</h3><p>${escapeHTML(card.up)}</p><h3>Invertida</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
+  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div><div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>Al derecho</h3><p>${escapeHTML(card.up)}</p><h3>Invertida</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
 }
 
 function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
@@ -2152,7 +2162,7 @@ function drawRunes(count = 1, title = 'Runa rápida') {
   animateRuneReading(runes, title, reversedRate);
 }
 function showRunas() {
-  openModal({ icon:'ᚱ', title:'Runas', subtitle:'Runa rápida, tiradas y saquito místico con revelación progresiva.', body:`<div class="actions mb"><button class="btn primary" data-act="ceremony-runes" type="button">✨ Ritual guiado</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un mensaje simbólico breve.</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ Tres runas</strong><small>Pasado, presente y consejo.</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ Cinco runas</strong><small>Lectura más completa.</small></button><button class="choice" data-act="runes-library"><strong>📚 Biblioteca</strong><small>24 runas en 5 columnas.</small></button></div>` });
+  openModal({ icon:'ᚱ', title:'Runas', subtitle:'Runa rápida, tiradas y saquito místico con revelación progresiva.', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="runes" aria-label="Runas de Obsidiana"></div><div class="actions mb"><button class="btn primary" data-act="ceremony-runes" type="button">✨ Ritual guiado</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un mensaje simbólico breve.</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ Tres runas</strong><small>Pasado, presente y consejo.</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ Cinco runas</strong><small>Lectura más completa.</small></button><button class="choice" data-act="runes-library"><strong>📚 Biblioteca</strong><small>24 runas en 5 columnas.</small></button></div>` });
 }
 function showRunesLibrary() {
   openModal({ icon:'ᚱ', title:'Biblioteca de Runas', subtitle:'24 runas del Futhark Antiguo.', body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
@@ -2206,7 +2216,7 @@ function showLuna() {
   const { fase: phase, iluminacion, edad, creciente } = faseLunar();
   const proxima = proximaFasePrincipal();
   const dias = semanaLunar();
-  const body = `<div class="om-luna">
+  const body = `<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="moon" aria-label="Luna Celestial"></div><div class="om-luna">
       <div class="om-luna-astro" role="img" aria-label="${escapeHTML(phase.name)}, ${iluminacion}% iluminada">
         <div class="om-luna-disco" style="--ilum:${iluminacion}%; --lado:${creciente ? 'right' : 'left'}"></div>
       </div>
@@ -2267,7 +2277,7 @@ function analyzeDreamElement(dream = '', foundSymbols = []) {
   return scores[0];
 }
 function showSuenos() {
-  openModal({ icon:'💭', title:'Sueños', subtitle:'Interpretación simbólica y suave.', body:`<div class="field"><label>Describe tu sueño</label>${textareaWithMic('dreamText', 'placeholder="Escribe o dicta lo que recuerdes..."')}</div><div class="form-grid mt"><div class="field"><label>Emoción principal</label><select id="dreamMood"><option>Curiosidad</option><option>Tranquilidad</option><option>Miedo</option><option>Alegría</option><option>Confusión</option></select></div><div class="field"><label>Tipo de lectura</label><select id="dreamType"><option>Simbólica</option><option>Emocional</option><option>Práctica</option><option>Espiritual suave</option></select></div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(s=>`<button class="tab" data-add-symbol="${s}">${s}</button>`).join('\n\n')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">Interpretar sueño</button></div>` });
+  openModal({ icon:'💭', title:'Sueños', subtitle:'Interpretación simbólica y suave.', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="Espejo de los Sueños"></div><div class="field"><label>Describe tu sueño</label>${textareaWithMic('dreamText', 'placeholder="Escribe o dicta lo que recuerdes..."')}</div><div class="form-grid mt"><div class="field"><label>Emoción principal</label><select id="dreamMood"><option>Curiosidad</option><option>Tranquilidad</option><option>Miedo</option><option>Alegría</option><option>Confusión</option></select></div><div class="field"><label>Tipo de lectura</label><select id="dreamType"><option>Simbólica</option><option>Emocional</option><option>Práctica</option><option>Espiritual suave</option></select></div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(s=>`<button class="tab" data-add-symbol="${s}">${s}</button>`).join('\n\n')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">Interpretar sueño</button></div>` });
 }
 function dreamReading() {
   const dream = $('#dreamText')?.value || '';
@@ -2341,6 +2351,7 @@ function showNumerologia() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
   const d = escapeHTML(getBirthDate());
   openModal({ icon:'🔢', title:t('nuTitle'), subtitle:t('nuSub'), body:`
+    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio Celestial"></div>
     <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuPersonal'))}</h3><p>${escapeHTML(t('nuPersonalIntro'))}</p></div>
     <div class="form-grid mt"><div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('numName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div><div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="numDate" class="input" type="date" value="${d}"></div></div>
     <div class="actions mt"><button class="btn primary" data-act="calc-num">${escapeHTML(t('nuMake'))}</button></div>
@@ -2638,6 +2649,7 @@ function showBiblioteca(filter = 'all') {
   else if (filter !== 'all') list = list.filter(d => String(d.type || '').toLowerCase().includes(filter.toLowerCase()));
   if (q) list = list.filter(d => `${d.title} ${d.type} ${d.text} ${d.note || ''}`.toLowerCase().includes(q));
   openModal({ icon:'📚', title:'Biblioteca Mística', subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
+    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="library" aria-label="Biblioteca Arcana"></div>
     <div class="form-grid"><div class="field"><label>Buscar en el diario</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label>Filtrar tipo</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
     <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar texto</button><button class="btn" data-act="export-diary-pdf">Crear PDF</button><button class="btn" data-act="backup-data">Copia de seguridad</button><button class="btn danger" data-act="clear-diary">Vaciar biblioteca</button></div>
     <div class="diary-list mt">${list.map(item=>`<article class="diary-item ${item.favorite?'favorite':''}"><div class="split"><h3>${item.favorite?'⭐ ':''}${escapeHTML(item.title)}</h3><small>${new Date(item.date || Date.now()).toLocaleDateString()}</small></div><small class="pill">${escapeHTML(item.type || 'Lectura')}</small>${item.note ? `<p class="diary-note"><strong>Nota:</strong> ${escapeHTML(item.note)}</p>` : ''}<p>${escapeHTML(clampText(item.text,260))}</p><div class="actions mt"><button class="btn compact" data-fav-diary="${item.id}">${item.favorite?'Quitar ⭐':'Favorita ⭐'}</button><button class="btn compact" data-note-diary="${item.id}">Nota</button><button class="btn compact" data-copy-diary="${item.id}">Copiar</button><button class="btn compact" data-delete-diary="${item.id}">Borrar</button></div></article>`).join('\n\n') || '<p class="subtle">Todavía no hay lecturas guardadas con ese filtro.</p>'}</div>` });
@@ -2648,6 +2660,7 @@ function showSettings() {
   const prefs = storeGet(LS.prefs, {});
   const voice = getVoicePrefs();
   const ceremony = getCeremonyPrefs();
+  const effects3d = get3dPreference();
   openModal({ icon:'⚙️', title:'Ajustes', subtitle:'Personaliza la experiencia por apartados.', body:`
     <div class="settings-stack">
     <details class="settings-section" open>
@@ -2707,6 +2720,7 @@ function showSettings() {
       <div class="field"><label>Estilo PDF por defecto</label><select id="pdfStyleSelect"><option value="premium" ${getPdfStyle()==='premium'?'selected':''}>Premium místico</option><option value="light" ${getPdfStyle()==='light'?'selected':''}>Claro elegante</option><option value="summary" ${getPdfStyle()==='summary'?'selected':''}>Resumen 1 página</option></select></div>
       <div class="field"><label>Modo foco / menos animaciones</label><select id="focusModeSelect"><option value="false" ${!isFocusMode()?'selected':''}>Animaciones completas</option><option value="true" ${isFocusMode()?'selected':''}>Reducir animaciones</option></select></div>
       <div class="field"><label>Modo rendimiento real</label><select id="performanceModeSelect"><option value="false" ${!isPerformanceMode()?'selected':''}>Normal</option><option value="true" ${isPerformanceMode()?'selected':''}>Rendimiento móvil</option></select></div>
+      <div class="field om-3d-control"><label>Efectos 3D</label><select id="effects3dSelect"><option value="auto" ${effects3d==='auto'?'selected':''}>Automático</option><option value="high" ${effects3d==='high'?'selected':''}>Alto</option><option value="balanced" ${effects3d==='balanced'?'selected':''}>Equilibrado</option><option value="reduced" ${effects3d==='reduced'?'selected':''}>Reducido</option><option value="off" ${effects3d==='off'?'selected':''}>Desactivado</option></select><small>Usa fallback 2D si WebGL falla, el dispositivo lo pide o eliges desactivarlo.</small></div>
     </div></div></details>
     </div>
 
@@ -2760,6 +2774,7 @@ Consejo: une la claridad de la carta, la fuerza de la runa y el ritmo lunar para
   setLastReading({ type:'Mensaje del día', title:'Mensaje del día', text, items:[{ kind:'tarot', name:card.name, subtitle:card.key || card.el || '', image:card.img || '', symbol:'🃏', position:'Carta del día' }, { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:'Runa del día' }, { kind:'luna', name:phase.name, subtitle:phase.meaning || '', image:'', symbol:phase.sym || '🌙', position:'Luna del día' }] });
   $('#dailyText').textContent = `${card.name} · ${rune.name} · ${phase.name}`;
   openModal({ icon:'🌟', title:'Mensaje del día', subtitle:'Tarot, runa y luna en una lectura diaria.', body:`
+    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dailyRelic" aria-label="Reliquia del Oráculo"></div>
     <div class="daily-oracle-grid">
       <div class="daily-oracle-card">${cardImage(card)}<strong>🃏 ${escapeHTML(card.name)}</strong><small>${escapeHTML(card.key || card.el || '')}</small></div>
       <div class="daily-oracle-card"><div class="rune-big compact-rune">${rune.sym}</div><strong>ᚱ ${escapeHTML(rune.name)}</strong><small>${escapeHTML(clampText(rune.up, 70))}</small></div>
@@ -2822,6 +2837,7 @@ function chatRuneHTML(item, index) {
 function showChatRitual() {
   openModal({ icon:'🕯️', title:'Chat Ritual Privado', subtitle:'Habla con el Oráculo y haz tiradas sin salir del chat.', body:`
     <div class="private-chat-wrap">
+      <div class="om-3d-stage om-oracle-chat-3d" data-oraculo-3d-asset="orb" aria-label="Orbe del Oráculo"></div>
       <div class="privacy-note">🔒 Espacio privado local. Si usas Puter IA, tu pregunta se envía a Puter para generar la respuesta.</div>
       <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
       <div class="chat-quick-actions">
@@ -2991,7 +3007,7 @@ function handleAction(action) {
     'clear-profile': clearProfileData,
     'factory-reset': factoryResetData,
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast('Guía completada.'); },
-    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); closeModal(); updateHome(); toast(t('settingsSaved')); },
+    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'toggle-large-text': () => { const p=storeGet(LS.prefs,{}); p.largeText=!p.largeText; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },

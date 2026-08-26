@@ -160,6 +160,10 @@
     // Escape cierra el Perfil.
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && !$('#omProfile')?.hidden) cerrarPerfil();
+      if ((ev.key === 'Enter' || ev.key === ' ') && ev.target?.matches?.('[role="button"][data-om-nav]')) {
+        ev.preventDefault();
+        ev.target.click();
+      }
     });
 
     /* Algunas acciones del motor hacen scrollIntoView sobre paneles
