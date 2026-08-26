@@ -7,6 +7,7 @@ const HEAVY_MODEL_BYTES = 35 * 1024 * 1024;
 const moduleState = { ready: null, THREE: null, GLTFLoader: null };
 const modelCache = new Map();
 const mountedStages = new WeakMap();
+const activeStages = new Set();
 const prefetchSkips = new Map();
 
 function readPreference() {
@@ -42,12 +43,10 @@ function detectQuality() {
 
   const memory = navigator.deviceMemory || 4;
   const cores = navigator.hardwareConcurrency || 4;
-  const mobile = matchMedia('(pointer: coarse), (max-width: 760px)').matches;
   const saveData = navigator.connection?.saveData;
   const performanceMode = localStorage.getItem('oraculo.performanceMode.v1') === 'true';
   if (saveData || performanceMode || memory <= 2 || cores <= 2) return { enabled: true, level: 'low', motion: false, reason: 'device' };
-  if (mobile || memory <= 4 || cores <= 4) return { enabled: true, level: 'medium', motion: true, reason: 'device' };
-  return { enabled: true, level: 'high', motion: true, reason: 'device' };
+  return { enabled: true, level: 'low', motion: false, reason: 'auto-heavy-assets' };
 }
 
 function qualityOptions(level) {
@@ -125,7 +124,9 @@ async function loadModel(assetId, quality = detectQuality()) {
   const { GLTFLoader } = await loadThree();
   const loader = new GLTFLoader();
   const started = performance.now();
+  const entry = { promise: null, lastUsed: performance.now(), assetId, gltf: null };
   const promise = loader.loadAsync(asset.path).then(gltf => {
+    entry.gltf = gltf;
     updateReport(assetId, {
       status: 'loaded',
       path: asset.path,
@@ -140,7 +141,8 @@ async function loadModel(assetId, quality = detectQuality()) {
     updateReport(assetId, { status: 'fallback', path: asset.path, error: error?.message || 'model-load-failed' });
     throw error;
   });
-  modelCache.set(assetId, { promise, lastUsed: performance.now(), assetId });
+  entry.promise = promise;
+  modelCache.set(assetId, entry);
   return promise;
 }
 
@@ -163,7 +165,10 @@ function countTriangles(root) {
 function trimModelCache() {
   if (modelCache.size <= MAX_MODEL_CACHE) return;
   const entries = [...modelCache.values()].sort((a, b) => a.lastUsed - b.lastUsed);
-  entries.slice(0, modelCache.size - MAX_MODEL_CACHE).forEach(entry => modelCache.delete(entry.assetId));
+  entries.slice(0, modelCache.size - MAX_MODEL_CACHE).forEach(entry => {
+    if (entry.gltf?.scene && moduleState.THREE) disposeObject(moduleState.THREE, entry.gltf.scene);
+    modelCache.delete(entry.assetId);
+  });
 }
 
 function cloneScene(scene) {
@@ -208,8 +213,11 @@ class OracleScene {
     this.running = false;
     this.frame = 0;
     this.baseModelY = 0;
+    this.lastRender = 0;
+    this.targetFrameMs = quality.level === 'high' ? 16 : quality.level === 'medium' ? 33 : 80;
     this.onResize = this.resize.bind(this);
     this.onPointerMove = this.pointerMove.bind(this);
+    this.onVisibilityChange = this.visibilityChange.bind(this);
   }
 
   async mount() {
@@ -251,8 +259,10 @@ class OracleScene {
     this.resize();
     window.addEventListener('resize', this.onResize, { passive: true });
     this.stage.addEventListener('pointermove', this.onPointerMove, { passive: true });
+    document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true });
     this.running = true;
-    this.animate();
+    if (this.quality.motion) this.animate();
+    else this.renderer.render(this.scene, this.camera);
     schedulePrefetch(this.asset.prefetch || []);
   }
 
@@ -287,10 +297,20 @@ class OracleScene {
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(0, 0, 0);
     this.renderer.setSize(width, height, false);
+    if (!this.quality.motion) this.renderer.render(this.scene, this.camera);
   }
 
-  animate() {
+  visibilityChange() {
+    if (document.hidden) this.lastRender = 0;
+  }
+
+  animate(now = performance.now()) {
     if (!this.running) return;
+    if (document.hidden || now - this.lastRender < this.targetFrameMs) {
+      this.frame = requestAnimationFrame(next => this.animate(next));
+      return;
+    }
+    this.lastRender = now;
     const motion = this.quality.motion;
     if (this.model && motion) {
       const t = performance.now() * 0.00035;
@@ -308,6 +328,7 @@ class OracleScene {
     cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
     this.stage.removeEventListener('pointermove', this.onPointerMove);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     if (this.model) {
       this.scene?.remove(this.model);
       disposeObject(this.THREE, this.model);
@@ -335,9 +356,11 @@ function mountStage(stage) {
       }
       const scene = new OracleScene(stage, assetId, quality);
       mountedStages.set(stage, scene);
+      activeStages.add(stage);
       return scene.mount().then(() => scene).catch(error => {
         scene.destroy();
         mountedStages.delete(stage);
+        activeStages.delete(stage);
         makeFallback(stage, assetId, error?.message || 'mount-failed');
         return null;
       });
@@ -353,6 +376,7 @@ function unmountStage(stage) {
   if (!scene) return;
   scene.destroy();
   mountedStages.delete(stage);
+  activeStages.delete(stage);
 }
 
 function schedulePrefetch(assetIds = []) {
@@ -409,6 +433,13 @@ function init() {
     });
   });
   mo.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('pagehide', () => {
+    activeStages.forEach(stage => unmountStage(stage));
+    [...modelCache.values()].forEach(entry => {
+      if (entry.gltf?.scene && moduleState.THREE) disposeObject(moduleState.THREE, entry.gltf.scene);
+    });
+    modelCache.clear();
+  });
 }
 
 window.Oraculo3D = {
