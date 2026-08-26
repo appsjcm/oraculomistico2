@@ -1846,28 +1846,67 @@ function ceremonyVibrate(pattern = 22) {
     try { navigator.vibrate(pattern); } catch {}
   }
 }
+/* Fase 13D. El sonido ya existia pero se quedaba mudo en movil: el
+   navegador crea el contexto suspendido y nadie lo reanudaba. Ademas
+   ignoraba el silencio general de la app. Se corrigen ambas cosas y
+   se abre a la capa V2, que hasta ahora no sonaba.
+   Sigue apagado por defecto: nada suena sin activarlo en Ajustes. */
+const TONOS = {
+  shuffle: { f: 196, a: 1.35, d: .34, v: .038 },
+  reveal:  { f: 432, a: 1.45, d: .42, v: .045 },
+  rune:    { f: 174, a: 1.40, d: .40, v: .042 },
+  pick:    { f: 288, a: 1.18, d: .22, v: .030 },
+  close:   { f: 324, a: 0.75, d: .70, v: .040 }
+};
+
+function audioSilenciado() {
+  try { return localStorage.getItem('oraculo.v2.voz.silencio') === '1'; } catch { return false; }
+}
+
+function audioCtx() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = window.__oraculoAudioCtx || (window.__oraculoAudioCtx = new AC());
+  /* Sin gesto previo el contexto nace suspendido y todo suena a nada. */
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  return ctx;
+}
+
 function ceremonyTone(kind = 'reveal') {
-  const prefs = getCeremonyPrefs();
-  if (!prefs.sounds) return;
+  if (!getCeremonyPrefs().sounds) return;
+  if (audioSilenciado()) return;
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = window.__oraculoAudioCtx || (window.__oraculoAudioCtx = new AudioContext());
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const ctx = audioCtx();
+    if (!ctx) return;
+    const p = TONOS[kind] || TONOS.reveal;
     const now = ctx.currentTime;
-    const freq = kind === 'shuffle' ? 196 : kind === 'rune' ? 174 : 432;
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.45, now + .16);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.045, now + .03);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + .38);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + .42);
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(p.v, now + .03);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + p.d);
+    master.connect(ctx.destination);
+    /* Fundamental mas una quinta muy tenue: da cuerpo sin necesitar
+       ningun archivo de audio, que engordaria la app sin conexion. */
+    [[1, 1], [1.5, .28]].forEach(([mult, peso]) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      g.gain.value = peso;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(p.f * mult, now);
+      osc.frequency.exponentialRampToValueAtTime(p.f * mult * p.a, now + p.d * .42);
+      osc.connect(g).connect(master);
+      osc.start(now);
+      osc.stop(now + p.d + .04);
+    });
   } catch {}
 }
+
+/* La capa V2 es script clasico y no ve estas funciones. */
+window.OraculoSonido = {
+  tono: ceremonyTone,
+  activo: () => !!getCeremonyPrefs().sounds && !audioSilenciado(),
+  vibrar: (p) => ceremonyVibrate(p)
+};
 function openCeremonyIntro(kind = 'tarot') {
   const isTarot = kind === 'tarot';
   openModal({ icon:isTarot?'🃏':'ᚱ', title:isTarot?'Ritual de Tarot':'Ritual de Runas', subtitle:'Antes de empezar, respira y formula tu intención.', body:`
@@ -2642,8 +2681,8 @@ function showSettings() {
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label>Velocidad de revelación</label><select id="ceremonySpeed"><option value="slow" ${ceremony.speed==='slow'?'selected':''}>Lenta ceremonial</option><option value="normal" ${(ceremony.speed||'normal')==='normal'?'selected':''}>Normal</option><option value="fast" ${ceremony.speed==='fast'?'selected':''}>Rápida</option></select></div>
-      <div class="field"><label>Sonidos rituales</label><select id="ceremonySounds"><option value="false" ${!ceremony.sounds?'selected':''}>Desactivados</option><option value="true" ${ceremony.sounds?'selected':''}>Activados</option></select></div>
-      <div class="field"><label>Vibración móvil</label><select id="ceremonyVibration"><option value="false" ${!ceremony.vibration?'selected':''}>Desactivada</option><option value="true" ${ceremony.vibration?'selected':''}>Activada</option></select></div>
+      <div class="field"><label>${escapeHTML(t('sndTitle'))}</label><select id="ceremonySounds"><option value="false" ${!ceremony.sounds?'selected':''}>${escapeHTML(t('sndOff'))}</option><option value="true" ${ceremony.sounds?'selected':''}>${escapeHTML(t('sndOn'))}</option></select><small>${escapeHTML(t('sndHelp'))}</small></div>
+      <div class="field"><label>${escapeHTML(t('sndVib'))}</label><select id="ceremonyVibration"><option value="false" ${!ceremony.vibration?'selected':''}>${escapeHTML(t('sndVibOff'))}</option><option value="true" ${ceremony.vibration?'selected':''}>${escapeHTML(t('sndVibOn'))}</option></select></div>
     </div></div></details>
 
 
@@ -2962,7 +3001,7 @@ function handleAction(action) {
     'profile-favorite-spread': () => drawTarotSpread(getProfile().favoriteSpread || 'three'),
     'toggle-private': () => { setPrivateMode(!isPrivateMode()); updateHome(); showMiOraculo(); },
     'import-backup': () => { const input=document.createElement('input'); input.type='file'; input.accept='application/json,.json'; input.onchange=()=>importBackupFromFile(input.files?.[0]); input.click(); },
-    'test-ceremony': () => { setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); ceremonyTone('reveal'); ceremonyVibrate([25,40,25]); toast('Ceremonia probada.'); },
+    'test-ceremony': () => { setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); ceremonyTone('reveal'); ceremonyVibrate([25,40,25]); toast(t('sndTested')); },
     'backup-data': backupData,
     'app-health': appHealthCheck,
     'ceremony-tarot': () => openCeremonyIntro('tarot'),

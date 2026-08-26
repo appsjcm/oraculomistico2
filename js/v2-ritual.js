@@ -143,6 +143,10 @@
 
     boton.classList.add('om-carta-tomada');
     boton.disabled = true;
+    /* El ritual V2 era mudo: el sonido solo vivia en el motor viejo.
+       Usa la misma preferencia, asi que sigue apagado por defecto. */
+    window.OraculoSonido?.tono('pick');
+    window.OraculoSonido?.vibrar(12);
     boton.setAttribute('aria-label', tr('rChosen'));
     estado.elegidas.push(Number(boton.dataset.i));
 
@@ -152,6 +156,7 @@
     if (estado.elegidas.length >= objetivo) {
       const mesa = $('#omMesa');
       if (mesa) mesa.classList.add('om-mesa-completa');
+      window.OraculoSonido?.tono('close');
       setTimeout(revelar, menosMovimiento() ? 0 : 520);
     }
   }
