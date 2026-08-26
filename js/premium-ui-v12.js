@@ -1063,8 +1063,14 @@
   function pulseVeil() {
     const veil = $('#premiumTransitionVeil');
     if (!veil) return;
+    if (!veil.querySelector('[data-oraculo-3d-asset="portal"]')) {
+      veil.insertAdjacentHTML('beforeend', '<div class="om-3d-stage om-transition-3d" data-oraculo-3d-asset="portal" aria-label="Portal del Oráculo"></div>');
+    }
     veil.classList.add('active');
-    setTimeout(() => veil.classList.remove('active'), 560);
+    setTimeout(() => {
+      veil.classList.remove('active');
+      veil.querySelector('.om-transition-3d')?.remove();
+    }, 560);
   }
 
   document.addEventListener('click', (e) => {
@@ -1166,8 +1172,10 @@
 
     const pro = $('#premiumProMode');
     const cinematic = $('#premiumCinematicMode');
+    const effects3d = $('#premium3dPreference');
     if (pro) pro.checked = !!settings.proMode;
     if (cinematic) cinematic.checked = !!settings.cinematicMode;
+    if (effects3d) effects3d.value = window.Oraculo3D?.getPreference?.() || localStorage.getItem('oraculo.3d.preference.v14') || 'auto';
   }
 
   function clickReal(selector) {
@@ -1182,8 +1190,14 @@
   function pulseVeil(duration = 620) {
     const veil = $('#premiumTransitionVeil');
     if (!veil) return;
+    if (!veil.querySelector('[data-oraculo-3d-asset="portal"]')) {
+      veil.insertAdjacentHTML('beforeend', '<div class="om-3d-stage om-transition-3d" data-oraculo-3d-asset="portal" aria-label="Portal del Oráculo"></div>');
+    }
     veil.classList.add('active');
-    setTimeout(() => veil.classList.remove('active'), duration);
+    setTimeout(() => {
+      veil.classList.remove('active');
+      veil.querySelector('.om-transition-3d')?.remove();
+    }, duration);
   }
 
   document.addEventListener('click', (e) => {
@@ -1222,6 +1236,9 @@
     if (e.target?.id === 'premiumCinematicMode') {
       settings.cinematicMode = !!e.target.checked;
       touched = true;
+    }
+    if (e.target?.id === 'premium3dPreference') {
+      window.Oraculo3D?.setPreference?.(e.target.value || 'auto');
     }
 
     if (touched) {

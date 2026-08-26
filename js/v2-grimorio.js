@@ -273,6 +273,7 @@
           <h2 id="omGrimTitulo">${tr('gTitle')}</h2>
           <button class="om-sheet-close" data-grim="cerrar" type="button" aria-label="${esc(tr('close'))}">✕</button>
         </header>
+        <div class="om-3d-stage om-sheet-3d" data-oraculo-3d-asset="grimoire" aria-label="Mi Grimorio"></div>
         <div class="om-grim-tabs" role="tablist">
           <button class="om-grim-tab${pestana === 'lecturas' ? ' activo' : ''}" data-grim="pestana" data-valor="lecturas" role="tab" aria-selected="${pestana === 'lecturas'}" type="button">${tr('gTabReadings')}</button>
           <button class="om-grim-tab${pestana === 'viaje' ? ' activo' : ''}" data-grim="pestana" data-valor="viaje" role="tab" aria-selected="${pestana === 'viaje'}" type="button">${tr('gTabJourney')}</button>

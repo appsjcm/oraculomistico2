@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-catala-41';
+const CACHE_NAME = 'oraculo-v1-0-public-catala-41-fase-14';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './styles/v2.css',
   './styles/v2-ritual.css',
   './styles/v2-oraculos.css',
+  './styles/oraculo-3d.css',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
@@ -28,6 +29,11 @@ const APP_SHELL = [
   './js/tarot/zh.js',
   './js/data.js',
   './js/config.js',
+  './js/oraculo-3d.js',
+  './js/oraculo-3d-assets.js',
+  './assets/vendor/three/0.160.0/three.module.js',
+  './assets/vendor/three/0.160.0/GLTFLoader.js',
+  './assets/vendor/three/0.160.0/BufferGeometryUtils.js',
   './grabovoi_db.json',
   './manifest.json',
   './privacy.html',
