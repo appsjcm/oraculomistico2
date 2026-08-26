@@ -110,6 +110,9 @@ function escHandler(e) { if (e.key === 'Escape') closeModal(); else document.add
 function closeModal() { $('#modalRoot').className = 'modal-root'; $('#modalRoot').innerHTML = ''; }
 
 function readingActions(text, type = 'Lectura') {
+  const grabovoiPdfButton = /Numerolog[ií]a/i.test(type)
+    ? '<button class="btn compact" data-act="numerology-grabovoi-pdf" type="button">📜 PDF + Grabovoi</button>'
+    : '';
   return `
     <div class="actions mt reading-actions">
       <button class="btn compact" data-act="ai-reading" type="button">🤖 Profundizar IA</button>
@@ -119,6 +122,7 @@ function readingActions(text, type = 'Lectura') {
       <button class="btn compact" data-act="speak-reading" type="button">🔊 Escuchar</button>
       <button class="btn compact" data-act="download-reading-mp3" type="button">🎧 MP3</button>
       <button class="btn compact" data-act="pdf-options" type="button">📄 PDF profesional</button>
+      ${grabovoiPdfButton}
       <button class="btn compact" data-act="share-visual" type="button">🖼️ Tarjeta</button>
     </div>
     <div id="aiReadingPanel" class="ai-reading-panel hidden" aria-live="polite"></div>`;
@@ -174,6 +178,15 @@ function safeFileName(title = 'oraculo-mistico') {
   return String(title).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'oraculo-mistico';
 }
 function getUserName() { return (localStorage.getItem(LS.name) || '').trim(); }
+function getReadingSubjectName(reading = lastReading) {
+  const meta = reading?.meta || {};
+  if (meta.name) return String(meta.name).trim();
+  if (meta.synastry?.a?.name && meta.synastry?.b?.name) return `${meta.synastry.a.name} · ${meta.synastry.b.name}`;
+  return getUserName();
+}
+function isNumerologyReading(reading = lastReading) {
+  return /Numerolog[ií]a/i.test(reading?.type || '');
+}
 function getAIStyle() { return localStorage.getItem(LS.aiStyle) || 'mistica'; }
 function aiStyleInstruction(style = getAIStyle()) {
   const styles = {
@@ -187,6 +200,10 @@ function aiStyleInstruction(style = getAIStyle()) {
   return styles[style] || styles.mistica;
 }
 function personalPrefix() { const name = getUserName(); return `${name ? `La persona se llama ${name}. Puedes dirigirte a ella por su nombre de forma natural, cercana y sin repetirlo en cada frase. ` : ''}${aiStyleInstruction()}`; }
+function readingPersonalPrefix(reading = lastReading) {
+  const name = getReadingSubjectName(reading);
+  return `${name ? `La persona de esta lectura se llama ${name}. Usa este nombre y no el nombre guardado del perfil si son diferentes. ` : ''}${aiStyleInstruction()}`;
+}
 function resolveReadingAssets(reading = lastReading) {
   if (!reading) return [];
   const names = Array.isArray(reading.items) ? reading.items : [];
@@ -245,6 +262,14 @@ function runeSvgDataUrl(sym = 'ᚱ') {
 }
 function getPdfReadingHighlight(reading = lastReading) {
   const meta = reading?.meta || {};
+  if (Array.isArray(meta.grabovoiSelections) && meta.grabovoiSelections.length) {
+    const codes = meta.grabovoiSelections.map(item => item.codigo).filter(Boolean);
+    return {
+      label:'Numerologia + Grabovoi',
+      value:codes.slice(0, 3).join(' · ') + (codes.length > 3 ? ` +${codes.length - 3}` : ''),
+      detail:`${getReadingSubjectName(reading) || reading.title || 'Lectura'} · ${codes.length} secuencia${codes.length === 1 ? '' : 's'} seleccionada${codes.length === 1 ? '' : 's'}`
+    };
+  }
   if (reading?.type === 'Sueños' && meta.dreamElement) {
     return {
       label:'Elemento predominante',
@@ -289,7 +314,7 @@ async function exportPDF(title, text, reading = lastReading) {
     const assets = resolveReadingAssets(reading);
     let { compact, long } = splitReadingText(text);
     if (style === 'summary') { long = ''; compact = compact.slice(0, 9); }
-    const userName = localStorage.getItem(LS.name) || '';
+    const userName = getReadingSubjectName(reading);
     const date = new Date(reading?.date || Date.now()).toLocaleString('es-ES');
     const addHeader = (pageTitle = title) => {
       doc.setFillColor(...dark);
@@ -532,7 +557,7 @@ async function connectPuter() {
     return false;
   }
 }
-async function askAI(prompt) {
+async function askAI(prompt, options = {}) {
   if (localStorage.getItem(LS.puter) !== 'true') {
     toast('Conecta Puter IA para profundizar esta lectura.');
     return '';
@@ -541,7 +566,7 @@ async function askAI(prompt) {
     if (!window.puter?.ai?.chat) throw new Error('Puter AI no disponible');
     const languageNames = { es:'español', ca:'catalán', en:'inglés', fr:'francés', de:'alemán', zh:'chino simplificado' };
     const responseLanguage = languageNames[getAppLanguage()] || 'español';
-    const personalizedPrompt = `${personalPrefix()}Responde en ${responseLanguage}. No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
+    const personalizedPrompt = `${options.prefix || personalPrefix()}Responde en ${responseLanguage}. No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
     const result = await window.puter.ai.chat(personalizedPrompt);
     if (typeof result === 'string') return cleanInterpretation(result);
     return cleanInterpretation(result?.message?.content || result?.text || String(result || ''));
@@ -1668,7 +1693,10 @@ function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stri
 
 function showPdfOptions() {
   if (!lastReading) return toast('Primero crea una lectura.');
-  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Premium místico</strong></button><button class="choice" data-act="pdf-style-light"><strong>Claro elegante</strong></button><button class="choice" data-act="pdf-style-summary"><strong>Resumen</strong></button></div>` });
+  const combined = isNumerologyReading()
+    ? '<button class="choice" data-act="numerology-grabovoi-pdf"><strong>Numerología + Grabovoi</strong><small>Elegir varias secuencias y crear un PDF conjunto.</small></button>'
+    : '';
+  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Premium místico</strong></button><button class="choice" data-act="pdf-style-light"><strong>Claro elegante</strong></button><button class="choice" data-act="pdf-style-summary"><strong>Resumen</strong></button>${combined}</div>` });
 }
 function exportDiaryPDF() {
   const diary = storeGet(LS.diary, []);
@@ -2609,6 +2637,113 @@ Consejo:
 Usa la secuencia como ejercicio de atención y organización de una intención concreta. No es una predicción ni una garantía.${isHealth ? ' En temas de salud, no sustituye diagnóstico, tratamiento ni atención médica.' : ''}`;
   return { code, groups, digitAnalysis, method, steps, isHealth, text };
 }
+function isHealthGrabovoiEntry(entry = {}) {
+  return /salud|cardio|músculo|musculo|autoinmune|oncol|metab|psicol|enfermedad|físic|fisic|arter|artr|dolor|sangre|hueso/i.test(`${entry.categoria || ''} ${entry.nombre || ''} ${entry.uso || ''}`);
+}
+function grabovoiPdfCandidates(reading = lastReading, query = '') {
+  const normalized = normalizeGrabovoiSearch(query);
+  if (normalized) {
+    const terms = normalized.split(' ').filter(Boolean);
+    return grabovoiEntries.filter(entry => {
+      const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
+      return terms.every(term => haystack.includes(term));
+    }).slice(0, 80);
+  }
+  const meta = reading?.meta || {};
+  const numbers = meta.numbers || {};
+  const roots = [numbers.life, numbers.expression, numbers.soul, numbers.personality, numbers.personalYear].map(numRoot).filter(Boolean);
+  const focusByNumber = {
+    1:['iniciativa','éxito','resultados','realidad'],
+    2:['amor','armonía','relación','calma'],
+    3:['creatividad','alegría','expresión','comunicación'],
+    4:['estabilidad','trabajo','orden','protección'],
+    5:['cambio','movimiento','libertad','energía'],
+    6:['amor','familia','armonía','bienestar'],
+    7:['claridad','intuición','concentración','protección'],
+    8:['abundancia','éxito','dinero','realidad'],
+    9:['paz','perdón','armonía','protección']
+  };
+  const terms = [...new Set(roots.flatMap(root => focusByNumber[root] || []))];
+  return grabovoiEntries
+    .map(entry => {
+      const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
+      const score = terms.reduce((total, term) => total + (haystack.includes(normalizeGrabovoiSearch(term)) ? 1 : 0), 0) + (isHealthGrabovoiEntry(entry) ? -2 : 0);
+      return { entry, score };
+    })
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.entry)
+    .slice(0, 36);
+}
+function renderGrabovoiPdfList(list = []) {
+  return list.map(entry => {
+    const index = grabovoiEntries.indexOf(entry);
+    return `<label class="choice grabovoi-pdf-choice">
+      <input type="checkbox" data-grab-pdf-index="${index}">
+      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || 'Secuencia simbólica')}</small></span>
+    </label>`;
+  }).join('\n') || '<p class="subtle">No hay resultados. Prueba con amor, calma, éxito, protección, trabajo o el número exacto.</p>';
+}
+async function showNumerologyGrabovoiPdfPicker() {
+  if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');
+  await loadGrabovoi();
+  const subject = getReadingSubjectName();
+  const candidates = grabovoiPdfCandidates(lastReading);
+  openModal({ icon:'📜', title:'PDF Numerología + Grabovoi', subtitle:subject ? `Para ${subject}` : 'Elige varias secuencias', body:`
+    <p class="notice">Marca una o varias secuencias para añadirlas al mismo PDF de la lectura numerológica. Es contenido simbólico y de entretenimiento; no promete resultados ni sustituye asesoramiento profesional.</p>
+    <div class="field mt"><label>Buscar secuencia o tema</label>${inputWithMic('grabPdfSearch', 'placeholder="amor, calma, éxito, protección, 147..."')}</div>
+    <div id="grabPdfList" class="diary-list mt">${renderGrabovoiPdfList(candidates.length ? candidates : grabovoiEntries.filter(entry => !isHealthGrabovoiEntry(entry)).slice(0, 36))}</div>
+    <div class="actions mt"><button class="btn primary" data-act="export-numerology-grabovoi-pdf" type="button">Crear PDF conjunto</button><button class="btn" data-act="pdf-options" type="button">Volver</button></div>` });
+}
+function selectedGrabovoiPdfEntries() {
+  return $$('[data-grab-pdf-index]:checked')
+    .map(input => grabovoiEntries[Number(input.dataset.grabPdfIndex)])
+    .filter(Boolean)
+    .slice(0, 12);
+}
+function buildNumerologyGrabovoiText(reading = lastReading, entries = []) {
+  const subject = getReadingSubjectName(reading);
+  const blocks = entries.map((entry, index) => {
+    const guide = buildGrabovoiInterpretation(entry);
+    return `Secuencia ${index + 1}: ${entry.nombre}
+Código: ${guide.code}
+Categoría: ${entry.categoria || 'General'}
+Finalidad: ${entry.uso || 'Uso simbólico de concentración.'}
+Método sugerido: ${guide.method.name}
+${guide.method.description}
+Práctica breve:
+${guide.steps.slice(0, 5).map((step, stepIndex) => `${stepIndex + 1}. ${step}`).join('\n')}`;
+  }).join('\n\n');
+  return `${reading.text}
+
+SECUENCIAS GRABOVOI SELECCIONADAS${subject ? ` · ${subject}` : ''}
+
+${blocks}
+
+Nota de uso:
+Estas secuencias se incluyen como ejercicios simbólicos de atención, escritura y visualización. No son predicciones, garantías, diagnóstico, tratamiento ni sustituyen decisiones personales o profesionales.`;
+}
+function exportNumerologyGrabovoiPDFFromSelection() {
+  if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');
+  const entries = selectedGrabovoiPdfEntries();
+  if (!entries.length) return toast('Elige al menos una secuencia Grabovoi.');
+  const combinedReading = {
+    ...lastReading,
+    type:'Numerología · Grabovoi',
+    title:`${lastReading.title} · Grabovoi`,
+    text:buildNumerologyGrabovoiText(lastReading, entries),
+    meta:{
+      ...(lastReading.meta || {}),
+      grabovoiSelections:entries.map(entry => ({
+        nombre:entry.nombre,
+        codigo:entry.codigo,
+        categoria:entry.categoria || '',
+        uso:entry.uso || ''
+      }))
+    }
+  };
+  exportPDF(combinedReading.title, combinedReading.text, combinedReading);
+}
 function grabovoiActions() {
   return `<div class="actions mt reading-actions">
     <button class="btn compact" data-act="speak-reading" type="button">🔊 Escuchar guía</button>
@@ -3028,6 +3163,8 @@ function handleAction(action) {
     'share-reading': () => shareText(getReadingText(), lastReading?.title),
     'pdf-reading': () => exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()),
     'pdf-options': showPdfOptions,
+    'numerology-grabovoi-pdf': showNumerologyGrabovoiPdfPicker,
+    'export-numerology-grabovoi-pdf': exportNumerologyGrabovoiPDFFromSelection,
     'pdf-style-premium': () => { setPdfStyle('premium'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
     'pdf-style-light': () => { setPdfStyle('light'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
     'pdf-style-summary': () => { setPdfStyle('summary'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
@@ -3044,13 +3181,14 @@ function handleAction(action) {
         return;
       }
       const isGrabovoi = lastReading.type === 'Grabovoi';
-      setAIReadingPanel(`<div class="channeling"><span class="orb-pulse">🔮</span><div><h3>${isGrabovoi ? 'Analizando el código Grabovoi...' : `${getUserName() ? getUserName() + ', e' : 'E'}l oráculo está canalizando...`}</h3><p>${isGrabovoi ? 'La ampliación se centrará únicamente en la secuencia, su práctica y sus límites.' : 'Estoy profundizando la lectura con IA. Puedes dejar esta pantalla abierta.'}</p></div></div>`, 'loading');
+      const subjectName = getReadingSubjectName(lastReading);
+      setAIReadingPanel(`<div class="channeling"><span class="orb-pulse">🔮</span><div><h3>${isGrabovoi ? 'Analizando el código Grabovoi...' : `${subjectName ? subjectName + ', e' : 'E'}l oráculo está canalizando...`}</h3><p>${isGrabovoi ? 'La ampliación se centrará únicamente en la secuencia, su práctica y sus límites.' : 'Estoy profundizando la lectura con IA. Puedes dejar esta pantalla abierta.'}</p></div></div>`, 'loading');
       const prompt = isGrabovoi
         ? `Analiza exclusivamente esta ficha de un código Grabovoi. No hables del usuario, su personalidad, energía ni destino. Explica: finalidad declarada, estructura y bloques de la secuencia, lectura simbólica de los dígitos sin inventar propiedades, una práctica de concentración paso a paso, duración prudente, formas de escribir o visualizar el número y consejos para registrar la práctica. No prometas resultados. Si trata salud, deja claro que no diagnostica, trata ni cura y que no sustituye atención médica. Esta pantalla no es un chat: entrega una interpretación completa y cerrada, sin formular preguntas, sin pedir datos y sin invitar al usuario a responder. Responde de forma clara y organizada:\n\n${base}`
         : `Amplía esta lectura de forma simbólica, clara, positiva y segura. Esta pantalla no es un chat: entrega una interpretación completa, autónoma y cerrada. No formules ninguna pregunta al usuario, no pidas aclaraciones o datos adicionales, no ofrezcas continuar conversando y no termines con una interrogación. Interpreta únicamente la información disponible. Si es una tirada de una carta, explica el mensaje central, cómo se relaciona con la pregunta si existe, la advertencia o matiz y un paso práctico concreto. En tiradas de varias cartas, integra sus posiciones y concluye con un consejo final. No hagas promesas absolutas. No des consejos médicos, legales ni financieros. Usa un tono místico, claro y útil:
 
 ${base}`;
-      const rawAI = await askAI(prompt);
+      const rawAI = await askAI(prompt, { prefix: isGrabovoi ? aiStyleInstruction() : readingPersonalPrefix(lastReading) });
       const ai = cleanClosedReading(rawAI);
       if (ai) {
         lastReading.ai = ai;
@@ -3121,6 +3259,11 @@ function attachGlobalEvents() {
       const list = grabovoiEntries.filter(x => `${x.codigo} ${x.nombre} ${x.categoria} ${x.uso}`.toLowerCase().includes(q)).slice(0, 60);
       $('#grabList').innerHTML = renderGrabList(list);
     }
+    if (e.target.id === 'grabPdfSearch') {
+      const list = grabovoiPdfCandidates(lastReading, e.target.value || '');
+      const box = $('#grabPdfList');
+      if (box) box.innerHTML = renderGrabovoiPdfList(list);
+    }
   });
   document.addEventListener('change', e => {
     if (e.target?.id === 'voiceLanguage' || e.target?.id === 'voiceFilter') refreshDeviceVoiceSelect();
@@ -3138,7 +3281,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-catala-41-fase-14'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-catala-41-fase-14-num-grab'); } catch {}
   }
 }
 
