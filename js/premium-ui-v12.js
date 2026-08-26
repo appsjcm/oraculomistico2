@@ -696,7 +696,11 @@
   }
 
   document.addEventListener('click', (e) => {
-    const themeBtn = e.target.closest('[data-premium-theme]');
+    /* El mismo atributo hace de estado en el <body> y de selector para los
+       botones de tema, así que closest() subía hasta el body en cualquier
+       clic y anunciaba un cambio de tema que nadie había pedido. Se acota
+       a los botones. */
+    const themeBtn = e.target.closest('button[data-premium-theme]');
     if (themeBtn) {
       e.preventDefault();
       saveTheme(themeBtn.dataset.premiumTheme);
