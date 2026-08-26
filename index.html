@@ -41,14 +41,14 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-fix-tema-28">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-fix-tema-28">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-f11-29">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-f11-29">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-fix-tema-28">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-fix-tema-28">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-fix-tema-28">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-fix-tema-28">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-f11-29">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-f11-29">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-f11-29">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-f11-29">
   <script>
     /* Al cambiar de versión ya no se desregistra el service worker ni se
        vacían todas las cachés: eso dejaba la app sin modo offline en cada
@@ -56,21 +56,21 @@
        borra las cachés viejas al activarse, así que aquí basta con dejar
        constancia de la versión instalada. */
     (() => {
-      const build = '1.0-fix-tema-28';
+      const build = '1.0-f11-29';
       const key = 'oraculo.publicBuild';
       try { localStorage.setItem(key, build); } catch {}
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-shell.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-voz.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-fix-tema-28"></script>
-  <script defer src="js/v2-movil.js?v=1.0-fix-tema-28"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-f11-29"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-shell.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-voz.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-f11-29"></script>
+  <script defer src="js/v2-movil.js?v=1.0-f11-29"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -194,7 +194,7 @@
          avanzados, y cualquier acción que apunte aquí los despliega sola. -->
     <div id="omAdvanced" class="om-advanced" hidden>
 
-    <section class="premium-focus-row" aria-label="Experiencia premium">
+    <section class="premium-focus-row" aria-label="Experiencia">
       <button class="premium-feature-card" data-module="tarot" type="button">
         <span>🃏</span>
         <strong>Tarot completo</strong>
@@ -214,9 +214,9 @@
 
 
     
-    <section class="premium-dashboard card-glass" aria-label="Panel premium diario">
+    <section class="premium-dashboard card-glass" aria-label="Panel del día">
       <div class="premium-dashboard-hero">
-        <span class="premium-section-kicker">✦ Santuario Premium</span>
+        <span class="premium-section-kicker">✦ El Santuario</span>
         <h2>Tu tablero místico personal</h2>
         <p>Accede a tus rituales, revisa tu actividad y entra en una experiencia guiada más profesional.</p>
       </div>
@@ -252,10 +252,10 @@
     </section>
 
     
-    <section class="premium-tarot-studio card-glass" aria-label="Tarot Studio Premium">
+    <section class="premium-tarot-studio card-glass" aria-label="Los Arcanos">
       <div class="premium-tarot-studio-head">
-        <span class="premium-section-kicker">✦ Tarot Studio</span>
-        <h2>Una mesa premium para tus tiradas</h2>
+        <span class="premium-section-kicker">✦ Los Arcanos</span>
+        <h2>Una mesa para tus tiradas</h2>
         <p>Accesos directos, lectura visual mejorada y una experiencia de cartas más elegante.</p>
       </div>
 
@@ -284,17 +284,17 @@
     </section>
 
     
-    <section class="premium-concierge card-glass" aria-label="Concierge Premium">
+    <section class="premium-concierge card-glass" aria-label="Guardián del Santuario">
       <div class="premium-concierge-head">
-        <span class="premium-section-kicker">✦ Concierge</span>
-        <h2>Centro premium de control</h2>
+        <span class="premium-section-kicker">✦ Guardián del Santuario</span>
+        <h2>Centro de control</h2>
         <p>Personaliza el santuario, toma notas rápidas y revisa tu actividad reciente sin salir de la portada.</p>
       </div>
 
       <div class="premium-concierge-grid">
         <article class="premium-concierge-card">
           <h3>🎨 Tema visual</h3>
-          <p>Elige un estilo para que la app se sienta todavía más premium.</p>
+          <p>Elige el aire visual del Santuario.</p>
           <div class="premium-theme-row">
             <button type="button" data-premium-theme="gold">Gold</button>
             <button type="button" data-premium-theme="violet">Violet</button>
@@ -314,17 +314,17 @@
 
         <article class="premium-concierge-card">
           <h3>🕘 Actividad reciente</h3>
-          <p>Pequeño historial local de tus acciones premium.</p>
+          <p>Pequeño historial local de tus últimas acciones.</p>
           <div id="premiumActivityList" class="premium-activity-list"></div>
         </article>
       </div>
     </section>
 
     
-    <section class="premium-library-studio card-glass" aria-label="Biblioteca premium de cartas">
+    <section class="premium-library-studio card-glass" aria-label="Archivo de los Arcanos">
       <div class="premium-library-head">
         <span class="premium-section-kicker">✦ Card Library</span>
-        <h2>Biblioteca visual más premium</h2>
+        <h2>Archivo visual de los Arcanos</h2>
         <p>Un espacio más elegante para explorar cartas, favoritos e ideas de lectura como si fuera una app de pago.</p>
       </div>
 
@@ -375,9 +375,9 @@
       </div>
     </section>
 
-    <section class="premium-reading-theatre card-glass" aria-label="Reading Theatre Premium">
+    <section class="premium-reading-theatre card-glass" aria-label="Sala de lectura">
       <div class="premium-reading-head">
-        <span class="premium-section-kicker">✦ Reading Theatre</span>
+        <span class="premium-section-kicker">✦ Sala de lectura</span>
         <h2>Una lectura con más espectáculo visual</h2>
         <p>Eleva la sensación de tirada con una escena tipo altar, carta central y acciones rápidas.</p>
       </div>
@@ -404,9 +404,9 @@
 
     
 
-    <section id="premiumNativeEngine" class="premium-native-engine card-glass" aria-label="Native Tarot Engine">
+    <section id="premiumNativeEngine" class="premium-native-engine card-glass" aria-label="Archivo de los Arcanos">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Native Tarot Engine v12</span>
+        <span class="premium-section-kicker">✦ Archivo de los Arcanos</span>
         <h2>Motor de tarot local con 78 cartas reales</h2>
         <p>Busca cartas, filtra por palos, genera tiradas y guarda sesiones en el navegador como una app nativa.</p>
       </div>
@@ -429,7 +429,7 @@
       <div id="premiumRealCardGrid" class="premium-real-card-grid" aria-live="polite"></div>
     </section>
 
-    <section id="premiumNativeSpread" class="premium-native-spread card-glass" aria-label="Tirada local real">
+    <section id="premiumNativeSpread" class="premium-native-spread card-glass" aria-label="Mesa de Lectura">
       <div class="premium-suite-head">
         <span class="premium-section-kicker">✦ Tirada Express Real</span>
         <h2>Baraja local con lectura de 1, 3 o 5 cartas</h2>
@@ -444,9 +444,9 @@
       <div id="premiumSpreadResult" class="premium-spread-result"><div class="premium-empty-state"><strong>Tu mesa está preparada.</strong><span>Pulsa una tirada para revelar cartas.</span></div></div>
     </section>
 
-    <section id="premiumNativeVault" class="premium-native-vault card-glass" aria-label="Vault local real">
+    <section id="premiumNativeVault" class="premium-native-vault card-glass" aria-label="Lecturas guardadas">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Vault local</span>
+        <span class="premium-section-kicker">✦ Lecturas guardadas</span>
         <h2>Historial real de tiradas guardadas</h2>
         <p>Las tiradas se guardan en este navegador usando almacenamiento local.</p>
       </div>
@@ -457,11 +457,11 @@
       <div id="premiumVaultRealList" class="premium-vault-real-list" aria-live="polite"><div class="premium-empty-state"><strong>Aún no hay tiradas guardadas.</strong><span>Genera una lectura y pulsa “Guardar tirada”.</span></div></div>
     </section>
 
-    <section class="premium-library-suite card-glass" aria-label="Library Suite Premium">
+    <section class="premium-library-suite card-glass" aria-label="Biblioteca Arcana">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Library Suite</span>
-        <h2>Biblioteca con búsqueda y filtros premium</h2>
-        <p>Un espacio más profesional para explorar el mazo y preparar lecturas con una sensación mucho más de app premium.</p>
+        <span class="premium-section-kicker">✦ Biblioteca Arcana</span>
+        <h2>Busca y filtra en el Archivo de los Arcanos</h2>
+        <p>Un espacio amplio para recorrer el mazo y preparar tus lecturas.</p>
       </div>
 
       <div class="premium-library-suite-toolbar">
@@ -495,7 +495,7 @@
 
     <section class="premium-spread-lab card-glass" aria-label="Tarot Flow Lab">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Tarot Flow Lab</span>
+        <span class="premium-section-kicker">✦ Mesa de Lectura</span>
         <h2>Pantalla de tirada más espectacular</h2>
         <p>Presenta la lectura con más teatralidad visual: presets de tirada, reveal y una experiencia mucho más elegante.</p>
       </div>
@@ -515,15 +515,15 @@
         </div>
 
         <div class="premium-inline-actions">
-          <button type="button" data-premium-action="launch-spread-lab">Abrir tirada premium</button>
+          <button type="button" data-premium-action="launch-spread-lab">Abrir la Mesa de Lectura</button>
           <button type="button" data-premium-action="start-ceremonial-reading">Modo ceremonial</button>
         </div>
       </div>
     </section>
 
-    <section class="premium-reading-vault card-glass" aria-label="Reading Vault Premium">
+    <section class="premium-reading-vault card-glass" aria-label="Lecturas guardadas">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Reading Vault</span>
+        <span class="premium-section-kicker">✦ Lecturas guardadas</span>
         <h2>Lecturas guardadas con diseño tipo app de pago</h2>
         <p>Una previsualización elegante de sesiones, intenciones y registros guardados para que toda la experiencia se sienta más pro.</p>
       </div>
@@ -548,11 +548,11 @@
     </section>
 
     
-    <section class="premium-onboarding-hub card-glass" aria-label="Onboarding Hub Premium">
+    <section class="premium-onboarding-hub card-glass" aria-label="Primeros pasos">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Onboarding Hub</span>
+        <span class="premium-section-kicker">✦ Primeros pasos</span>
         <h2>Onboarding completo como app profesional</h2>
-        <p>Una presentación más seria y premium para guiar al usuario por la app, sus lecturas, la biblioteca y su espacio personal.</p>
+        <p>Una guía tranquila por el Santuario, tus lecturas y la Biblioteca.</p>
       </div>
 
       <div class="premium-onboarding-grid">
@@ -579,11 +579,11 @@
       </div>
     </section>
 
-    <section class="premium-pro-workspace card-glass" aria-label="Professional Workspace Premium">
+    <section class="premium-pro-workspace card-glass" aria-label="Tu espacio">
       <div class="premium-suite-head">
-        <span class="premium-section-kicker">✦ Pro Workspace</span>
+        <span class="premium-section-kicker">✦ Tu espacio</span>
         <h2>Zona profesional y mucho más funcional</h2>
-        <p>Una vista tipo dashboard premium para tener a mano búsquedas, cartas destacadas, sesiones y acciones rápidas.</p>
+        <p>Un panel para tener a mano búsquedas, cartas destacadas y acciones rápidas.</p>
       </div>
 
       <div class="premium-workspace-grid">
@@ -603,30 +603,30 @@
         </article>
         <article class="premium-workspace-card">
           <span>📁</span>
-          <strong>Vault rápido</strong>
+          <strong>Guardadas</strong>
           <small>Acceso directo a registros y sesiones destacadas.</small>
         </article>
         <article class="premium-workspace-card">
           <span>⚙️</span>
-          <strong>Ajustes premium</strong>
+          <strong>Ajustes</strong>
           <small>Visual, reveal, glass, onboarding y modo profesional.</small>
         </article>
       </div>
     </section>
 
-    <section class="premium-user-identity card-glass" aria-label="User Identity Premium">
+    <section class="premium-user-identity card-glass" aria-label="Tu perfil">
       <div class="premium-suite-head">
         <span class="premium-section-kicker">✦ User Identity</span>
         <h2>Perfil de usuario con sensación de app de pago</h2>
-        <p>Un bloque estilo cuenta premium para que la app se sienta más completa, seria y lista para crecer.</p>
+        <p>Tu espacio dentro del Santuario: quién eres y cómo lo usas.</p>
       </div>
 
       <div class="premium-identity-shell">
         <div class="premium-identity-main">
           <div class="premium-avatar-orb">A</div>
           <div>
-            <strong>Alaya / Usuario Premium</strong>
-            <small>Sesión espiritual · modo premium · experiencia personalizada</small>
+            <strong>Tu perfil</strong>
+            <small>Sesión espiritual · experiencia personalizada</small>
           </div>
         </div>
 
@@ -638,9 +638,9 @@
       </div>
     </section>
 
-    <section class="premium-ritual-panel card-glass" aria-label="Ritual rápido premium">
+    <section class="premium-ritual-panel card-glass" aria-label="Ritual rápido">
       <div class="premium-ritual-copy">
-        <span class="premium-section-kicker">✦ Ritual Premium</span>
+        <span class="premium-section-kicker">✦ Ritual</span>
         <h2>Prepara tu lectura antes de revelar el mensaje.</h2>
         <p>Escribe una intención, elige el camino y entra en modo enfoque para una experiencia más limpia y profunda.</p>
       </div>
@@ -673,7 +673,7 @@
       </div>
     </section>
 
-    <section class="premium-control-strip" aria-label="Controles premium">
+    <section class="premium-control-strip" aria-label="Controles">
       <button data-premium-action="focus-mode" type="button">🌙 Modo enfoque</button>
       <button data-premium-action="clear-intention" type="button">🧹 Limpiar intención</button>
       <button data-action="install-help" type="button">📲 Instalar app</button>
@@ -767,7 +767,7 @@
   <div id="premiumFocusVeil" class="premium-focus-veil" aria-hidden="true"></div>
 
   
-  <button id="premiumOracleFab" class="premium-oracle-fab" data-premium-action="ritual-onboarding" type="button" aria-label="Abrir ritual premium">
+  <button id="premiumOracleFab" class="premium-oracle-fab" data-premium-action="ritual-onboarding" type="button" aria-label="Abrir el ritual">
     <span>🔮</span>
   </button>
 
@@ -810,13 +810,13 @@
   <!-- Duplica el Santuario y el Perfil: se recoge con los paneles avanzados. -->
   <section class="premium-quick-actions" aria-label="Accesos rápidos" id="omQuickActions" hidden>
     <span class="premium-section-kicker">✦ Accesos rápidos</span>
-  <div class="premium-smart-dock" aria-label="Dock premium">
+  <div class="premium-smart-dock" aria-label="Accesos rápidos">
     <button type="button" data-premium-action="tarot-reading">🃏 Tarot</button>
     <button type="button" data-premium-action="daily-reading">🌟 Día</button>
     <button type="button" data-premium-action="open-library">📚 Biblioteca</button>
     <button type="button" data-premium-action="open-card-library">🗂️ Cartas</button>
-    <button type="button" data-premium-action="open-reading-vault">🗄️ Vault</button>
-    <button type="button" data-premium-action="open-native-engine">⚡ Engine</button>
+    <button type="button" data-premium-action="open-reading-vault">🗄️ Guardadas</button>
+    <button type="button" data-premium-action="open-native-engine">⚡ Arcanos</button>
     <button type="button" data-premium-action="open-onboarding-hub">🚀 Onboarding</button>
     <button type="button" data-premium-action="ritual-onboarding">✨ Ritual</button>
     <button type="button" data-premium-action="open-palette">⌘ Buscar</button>
@@ -825,16 +825,16 @@
   </section>
 
   
-  <button id="premiumSettingsFab" class="premium-settings-fab" data-premium-action="open-settings-drawer" type="button" aria-label="Abrir ajustes premium">
+  <button id="premiumSettingsFab" class="premium-settings-fab" data-premium-action="open-settings-drawer" type="button" aria-label="Abrir ajustes">
     <span>⚙️</span>
   </button>
 
   <div id="premiumNativeSplash" class="premium-native-splash" hidden>
     <div class="premium-native-splash-bg"></div>
     <div class="premium-native-splash-card">
-      <span class="premium-section-kicker">✦ Ultra Premium</span>
+      <span class="premium-section-kicker">✦ Oráculo Místico</span>
       <h2>Bienvenido al Santuario</h2>
-      <p>Una experiencia más cercana a una app nativa, con control visual, transiciones y ajustes premium.</p>
+      <p>Una experiencia cercana a una app, con control visual y transiciones cuidadas.</p>
       <div class="premium-native-splash-actions">
         <button class="btn primary" data-premium-action="dismiss-native-splash" type="button">Entrar</button>
         <button class="btn ghost" data-premium-action="dont-show-native-splash" type="button">No mostrar más</button>
@@ -844,10 +844,10 @@
 
   <div id="premiumSettingsDrawer" class="premium-settings-drawer" hidden>
     <div class="premium-settings-backdrop" data-premium-action="close-settings-drawer"></div>
-    <aside class="premium-settings-panel" aria-label="Ajustes premium">
+    <aside class="premium-settings-panel" aria-label="Ajustes">
       <div class="premium-settings-head">
         <div>
-          <span class="premium-section-kicker">✦ Ajustes Premium</span>
+          <span class="premium-section-kicker">✦ Ajustes</span>
           <h3>Personaliza la experiencia</h3>
         </div>
         <button type="button" data-premium-action="close-settings-drawer">✕</button>
@@ -873,7 +873,7 @@
         <label class="premium-setting-row">
           <div>
             <strong>Mostrar bienvenida</strong>
-            <small>Activa la pantalla de entrada premium.</small>
+            <small>Muestra la pantalla de bienvenida al entrar.</small>
           </div>
           <input id="premiumShowSplash" type="checkbox">
         </label>
@@ -889,7 +889,7 @@
         <label class="premium-setting-row">
           <div>
             <strong>Halo ambiental</strong>
-            <small>Refuerza el brillo premium del santuario.</small>
+            <small>Refuerza el brillo del Santuario.</small>
           </div>
           <input id="premiumAmbientGlow" type="checkbox">
         </label>
@@ -897,7 +897,7 @@
         <label class="premium-setting-row">
           <div>
             <strong>Glass máximo</strong>
-            <small>Refuerza el efecto cristal premium.</small>
+            <small>Refuerza el efecto cristal.</small>
           </div>
           <input id="premiumGlassMax" type="checkbox">
         </label>
@@ -950,8 +950,8 @@
           <button type="button" data-premium-action="daily-reading">🌟 Día</button>
           <button type="button" data-premium-action="open-library">📚 Biblioteca</button>
     <button type="button" data-premium-action="open-card-library">🗂️ Cartas</button>
-    <button type="button" data-premium-action="open-reading-vault">🗄️ Vault</button>
-    <button type="button" data-premium-action="open-native-engine">⚡ Engine</button>
+    <button type="button" data-premium-action="open-reading-vault">🗄️ Guardadas</button>
+    <button type="button" data-premium-action="open-native-engine">⚡ Arcanos</button>
     <button type="button" data-premium-action="open-onboarding-hub">🚀 Onboarding</button>
           <button type="button" data-premium-action="open-palette">⌘ Buscar</button>
         </div>
@@ -963,7 +963,7 @@
           <div class="premium-native-status-card">
             <span>⚡</span>
             <strong id="premiumNativeBuild">v8</strong>
-            <small>Build premium</small>
+            <small>Versión</small>
           </div>
           <div class="premium-native-status-card">
             <span>🪞</span>

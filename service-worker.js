@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-fix-tema-28';
+const CACHE_NAME = 'oraculo-v1-0-public-f11-29';
 const APP_SHELL = [
   './',
   './index.html',

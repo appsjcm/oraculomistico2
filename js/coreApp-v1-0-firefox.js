@@ -1976,6 +1976,15 @@ function drawTarotSpread(key = 'one') {
 /* Puente para la capa V2: el ritual necesita las tiradas y el mazo, y
    entregar las cartas que la persona ha elegido a la misma revelación
    de siempre. Se expone lo mínimo; la lógica sigue viviendo aquí. */
+/* El sistema de traducción, al alcance de la capa V2, que son scripts
+   clásicos y no pueden importar el módulo. No es un segundo sistema:
+   es el mismo, accesible. */
+window.OraculoI18n = {
+  t,
+  idioma: getAppLanguage,
+  locale: getAppLocale
+};
+
 /* Todo el saber que la app ya contenía, disponible para la Biblioteca.
    Estaba repartido en catálogos de cada módulo; aquí solo se expone. */
 window.OraculoSaber = {
