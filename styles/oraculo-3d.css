@@ -79,14 +79,14 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 12px;
-  margin: 18px auto 4px;
-  max-width: 760px;
+  margin: 20px auto 8px;
+  max-width: 840px;
 }
 
 .om-3d-strip .om-3d-stage {
   width: 100%;
   min-width: 0;
-  max-width: 170px;
+  max-width: 190px;
 }
 
 .om-modal-3d {

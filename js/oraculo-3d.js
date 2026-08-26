@@ -207,6 +207,7 @@ class OracleScene {
     this.pointer = { x: 0, y: 0 };
     this.running = false;
     this.frame = 0;
+    this.baseModelY = 0;
     this.onResize = this.resize.bind(this);
     this.onPointerMove = this.pointerMove.bind(this);
   }
@@ -218,6 +219,7 @@ class OracleScene {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
     this.camera.position.set(...this.asset.camera);
+    this.camera.lookAt(0, 0, 0);
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: this.options.antialias, powerPreference: this.quality.level === 'high' ? 'high-performance' : 'low-power' });
     this.renderer.setPixelRatio(this.options.dpr);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -260,10 +262,15 @@ class OracleScene {
     const center = box.getCenter(new Vector3());
     const size = box.getSize(new Vector3());
     const largest = Math.max(size.x, size.y, size.z) || 1;
-    const targetScale = this.asset.scale * (2.2 / largest);
+    const fitSize = this.asset.fitSize || 1.68;
+    const targetScale = this.asset.scale * (fitSize / largest);
     this.model.scale.setScalar(targetScale);
-    this.model.position.sub(center.multiplyScalar(targetScale));
-    this.model.position.y -= size.y * targetScale * 0.08;
+    this.model.position.set(
+      -center.x * targetScale,
+      -center.y * targetScale - size.y * targetScale * 0.02,
+      -center.z * targetScale
+    );
+    this.baseModelY = this.model.position.y;
   }
 
   pointerMove(event) {
@@ -278,6 +285,7 @@ class OracleScene {
     const height = Math.max(1, Math.round(rect.height));
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    this.camera.lookAt(0, 0, 0);
     this.renderer.setSize(width, height, false);
   }
 
@@ -289,7 +297,7 @@ class OracleScene {
       this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
       this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
       this.model.rotation.z += (this.pointer.x * -0.035 - this.model.rotation.z) * 0.04;
-      this.model.position.y = Math.sin(t * 1.2) * 0.035;
+      this.model.position.y = this.baseModelY + Math.sin(t * 1.2) * 0.026;
     }
     this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(() => this.animate());
