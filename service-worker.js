@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-f11-29';
+const CACHE_NAME = 'oraculo-v1-0-public-arcanos-31';
 const APP_SHELL = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ const APP_SHELL = [
   './js/v2-biblioteca.js',
   './js/v2-movil.js',
   './js/i18n.js',
+  './js/tarot-content.js',
   './js/data.js',
   './js/config.js',
   './grabovoi_db.json',

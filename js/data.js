@@ -1,3 +1,4 @@
+import { ARCANOS, contenidoPorIndice, ELEMENTOS, validar as validarArcanos } from "./tarot-content.js";
 // data.js - Arcanos Mayores, Menores, Runas, Fases Lunares
 import { imgObj } from './config.js';
 
@@ -158,3 +159,32 @@ export const MOON_PHASES = [
     { sym:'🌗', name:'Cuarto Menguante', meaning:'Liberación y perdón.', ritual:'Quema lo que deseas soltar.', affirmation:'Libero con amor todo lo que me pesa.' },
     { sym:'🌘', name:'Luna Menguante', meaning:'Descanso e integración.', ritual:'Baño de sal marina.', affirmation:'Descanso y me restauro.' }
 ];
+
+/* ============================================================
+   Fase 12 · Contenido de los 78 Arcanos
+   El mazo no se duplica: se enriquece. Cada carta recibe sus
+   conceptos clave, energía, consejo, luz, sombra, significados
+   y correspondencias desde tarot-content.js, que es donde vive
+   el texto. Aquí solo se acoplan.
+   ============================================================ */
+ALL_TAROT.forEach((carta, i) => {
+    const c = contenidoPorIndice(i);
+    if (!c) return;
+    carta.codigo = (i < 22 ? 'M' + String(i).padStart(2, '0') : null) || carta.codigo;
+    carta.keywords = c.keywords;
+    carta.energy = c.energy;
+    carta.advice = c.advice;
+    carta.light = c.light;
+    carta.shadow = c.shadow;
+    /* up y rv siguen existiendo para todo el código anterior; los
+       nuevos textos son más largos y estructurados. */
+    carta.uprightMeaning = c.upright;
+    carta.reversedMeaning = c.reversed;
+    carta.love = c.love;
+    carta.work = c.work;
+    carta.personalGrowth = c.growth;
+    carta.yesNo = c.yesNo;
+    carta.astrology = c.astrology;
+});
+
+export { ARCANOS, ELEMENTOS, validarArcanos };

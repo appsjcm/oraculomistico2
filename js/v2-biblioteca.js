@@ -48,13 +48,22 @@
         id: `tarot-${i}`,
         titulo: c.name,
         etiqueta: c.num ? `${tr('bMajor')} ${c.num}` : (c.key || ''),
-        subtitulo: [c.key, c.el].filter(Boolean).join(' · '),
+        subtitulo: (c.keywords || []).join(' · ') || [c.key, c.el].filter(Boolean).join(' · '),
         imagen: c.img || '',
+        /* Lo esencial arriba; el resto se despliega bajo demanda. */
+        destacado: c.energy ? [[tr('cEnergy'), c.energy], [tr('cAdvice'), c.advice]] : [],
         secciones: [
-          [tr('bUpright'), c.up],
-          [tr('bReversed'), c.rv]
+          [tr('bUpright'), c.uprightMeaning || c.up],
+          [tr('bReversed'), c.reversedMeaning || c.rv],
+          [tr('cLight'), (c.light || []).join(' · ')],
+          [tr('cShadow'), (c.shadow || []).join(' · ')],
+          [tr('cLove'), c.love],
+          [tr('cWork'), c.work],
+          [tr('cGrowth'), c.personalGrowth],
+          [tr('cTrend'), c.yesNo],
+          [tr('cCorrespond'), [c.el, c.astrology].filter(Boolean).join(' · ')]
         ].filter(x => x[1]),
-        busca: `${c.name} ${c.num || ''} ${c.key || ''} ${c.el || ''} ${c.up || ''} ${c.rv || ''}`
+        busca: `${c.name} ${c.num || ''} ${(c.keywords || []).join(' ')} ${c.el || ''} ${c.energy || ''} ${c.uprightMeaning || c.up || ''} ${c.reversedMeaning || c.rv || ''} ${c.love || ''} ${c.work || ''}`
       }));
     }
     if (cat === 'runas') {
@@ -186,7 +195,12 @@
         ${e.etiqueta && e.imagen ? `<p class="om-bib-etiqueta">${esc(e.etiqueta)}</p>` : ''}
         <h3>${esc(e.titulo)}</h3>
         ${e.subtitulo ? `<p class="om-bib-sub">${esc(e.subtitulo)}</p>` : ''}
-        ${e.secciones.map(([t, c]) => `<section class="om-bib-seccion"><h4>${esc(t)}</h4><p>${esc(c)}</p></section>`).join('')}
+        ${(e.destacado || []).map(([t, c]) => `<section class="om-bib-clave"><h4>${esc(t)}</h4><p>${esc(c)}</p></section>`).join('')}
+        ${e.secciones.map(([t, c], i) => `
+          <details class="om-bib-seccion om-bib-plegable"${i < 2 ? ' open' : ''}>
+            <summary><h4>${esc(t)}</h4><span aria-hidden="true">+</span></summary>
+            <p>${esc(c)}</p>
+          </details>`).join('')}
         <button class="om-btn ${esFav ? 'om-btn-primary' : 'om-btn-quiet'}" data-bib="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${esFav}">
           ${esFav ? '★ ' + esc(tr('bInFav')) : '☆ ' + esc(tr('bSaveFav'))}
         </button>

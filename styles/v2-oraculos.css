@@ -562,3 +562,24 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   .om-bib-rejilla { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: var(--om-s-2); }
   .om-bib-lamina { width: 72%; }
 }
+
+/* Fase 12 · Ficha de carta: lo esencial arriba, el resto plegable. */
+.om-bib-clave {
+  width: 100%; max-width: 62ch; text-align: left;
+  padding: var(--om-s-4);
+  border: 1px solid var(--om-line-gold); border-radius: var(--om-r-md);
+  background: var(--om-gold-veil);
+}
+.om-bib-clave h4 { margin: 0 0 6px; font-size: var(--om-t-xs); letter-spacing: var(--om-track-caps); text-transform: uppercase; color: var(--om-gold); }
+.om-bib-clave p { margin: 0; font-size: var(--om-t-md); line-height: var(--om-lh-body); color: var(--om-ivory); }
+.om-bib-plegable { padding: 0; overflow: hidden; }
+.om-bib-plegable summary {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--om-s-3);
+  padding: var(--om-s-3) var(--om-s-4); cursor: pointer; list-style: none; min-height: 48px;
+}
+.om-bib-plegable summary::-webkit-details-marker { display: none; }
+.om-bib-plegable summary h4 { margin: 0; }
+.om-bib-plegable summary span { color: var(--om-gold); font-size: 1.1rem; line-height: 1; transition: transform var(--om-dur-fast) var(--om-ease); }
+.om-bib-plegable[open] summary span { transform: rotate(45deg); }
+.om-bib-plegable > p { margin: 0; padding: 0 var(--om-s-4) var(--om-s-4); font-size: var(--om-t-md); line-height: var(--om-lh-body); color: var(--om-ivory-2); }
+.om-bib-plegable summary:hover { background: var(--om-surface-2); }
