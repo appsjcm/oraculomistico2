@@ -286,3 +286,9 @@
     if (abierto) { abierto = null; pintar(); } else cerrar();
   });
 })();
+
+/* La Biblioteca se repinta al cambiar de idioma, sin recargar. */
+document.addEventListener('om:idioma', () => {
+  const raiz = document.querySelector('#omBiblioteca');
+  if (raiz && !raiz.hidden) document.querySelector('[data-om-biblioteca]')?.click();
+});

@@ -1,4 +1,4 @@
-import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES, ARCANOS, ELEMENTOS, validarArcanos } from './data.js';
+import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES, ARCANOS, ELEMENTOS, validarArcanos, usarIdiomaTarot, estadoIdiomas, TENDENCIA_TRAD } from './data.js';
 import { thumbFor } from './config.js';
 import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
 
@@ -2023,7 +2023,10 @@ window.OraculoArcanos = {
   get catalogo() { return ARCANOS; },
   get mazo() { return ALL_TAROT; },
   elementos: ELEMENTOS,
-  validar: () => validarArcanos(ALL_TAROT)
+  validar: (idiomas) => validarArcanos(ALL_TAROT, idiomas || ['es','ca','en','fr','de','zh']),
+  usarIdioma: usarIdiomaTarot,
+  estadoIdiomas,
+  etiquetaTendencia: (cod, l) => (TENDENCIA_TRAD[l] || TENDENCIA_TRAD.es)[cod] || cod
 };
 
 window.OraculoSaber = {
