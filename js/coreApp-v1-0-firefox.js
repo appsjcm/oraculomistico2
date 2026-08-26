@@ -1,4 +1,4 @@
-import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES } from './data.js';
+import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES, ARCANOS, ELEMENTOS, validarArcanos } from './data.js';
 import { thumbFor } from './config.js';
 import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
 
@@ -1911,7 +1911,7 @@ function backupData() {
 
 function tarotReading(cards, title = 'Lectura de Tarot') {
   const question = $('#tarotPrompt')?.value?.trim() || '';
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? c.card.rv : c.card.up}`).join('\n\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
   const lines = question ? `Pregunta: ${question}
 
 ${linesOnly}` : linesOnly;
@@ -1925,9 +1925,34 @@ ${linesOnly}` : linesOnly;
     <div class="result-card"><h3>${escapeHTML(title)}</h3>${question ? `<p><strong>Pregunta:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Tarot')}</div>`;
   openModal({ icon:'🃏', title, subtitle:'Lectura completa.', body: content });
 }
+/* ============================================================
+   Fase 12 · Contexto por posición
+   La misma carta no dice lo mismo en «Pasado» que en «Consejo».
+   Se antepone una frase que sitúa la lectura, elegida por el
+   tipo de posición y no por su nombre exacto, para que sirva a
+   las 21 tiradas sin escribir una regla por cada una.
+   ============================================================ */
+const CONTEXTOS = [
+  [/pasado|origen|raíz|base|antes/i,            'En esta posición mira hacia atrás: qué de esto viene de antes.'],
+  [/presente|situación|actual|centro|yo\b/i,    'Aquí describe el momento tal como es ahora.'],
+  [/futuro|resultado|potencial|posible|camino/i,'Aquí apunta una tendencia, no un desenlace cerrado.'],
+  [/reto|obstáculo|bloqueo|cruce|dificultad/i,  'En esta posición señala qué se interpone o qué pide atención.'],
+  [/consejo|clave|llave|paso|recomend/i,        'Aquí conviene leerla como sugerencia práctica.'],
+  [/otra persona|vínculo|relación|pareja|los dos/i, 'Aquí habla de lo que ocurre entre ambas partes.'],
+  [/energía|apoyo|fortaleza|don|talento/i,      'En esta posición muestra un recurso disponible.'],
+  [/oculto|inconsciente|miedo|sombra|interior/i,'Aquí apunta a lo que actúa sin verse del todo.'],
+  [/entorno|influencia|casa \d|semana|mes|día/i,'Aquí describe el terreno alrededor, no a ti directamente.']
+];
+
+function contextoDePosicion(posicion = '') {
+  if (!posicion) return '';
+  const encontrado = CONTEXTOS.find(([re]) => re.test(posicion));
+  return encontrado ? encontrado[1] : '';
+}
+
 function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0.3) {
   const question = $('#tarotPrompt')?.value?.trim() || '';
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? c.card.rv : c.card.up}`).join('\\n\\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\\n\\n');
   const lines = question ? `Pregunta: ${question}\\n\\n${linesOnly}` : linesOnly;
   setLastReading({ type: 'Tarot', title, text: lines, items: cards.map(c => ({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), meta:{ reversedRate } });
   ceremonyTone('shuffle');
@@ -1946,7 +1971,11 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
       if (!slot) return;
       slot.className = 'reveal-slot tarot-slot revealed cinematic-slot';
       ceremonyTone('reveal'); ceremonyVibrate(28);
-      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(item.position || `Carta ${index + 1}`)}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}${item.card.num ? `<span class="card-roman">${escapeHTML(item.card.num)}</span>` : ''}<strong>${escapeHTML(item.card.name)}</strong>${item.card.key ? `<span class="card-keys">${escapeHTML(item.card.key)}${item.card.el ? ' · ' + escapeHTML(item.card.el) : ''}</span>` : ''}<small>${item.rev ? 'Invertida · carta girada 180°' : 'Al derecho'}</small></div>`;
+      /* La carta revelada muestra sus tres conceptos y su energía. El texto
+         base viene del catálogo local: funciona sin IA y sin conexión. */
+      const claves = Array.isArray(item.card.keywords) ? item.card.keywords.join(' · ') : (item.card.key || '');
+      const lectura = item.rev ? (item.card.reversedMeaning || item.card.rv) : (item.card.uprightMeaning || item.card.up);
+      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(item.position || `Carta ${index + 1}`)}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}${item.card.num ? `<span class="card-roman">${escapeHTML(item.card.num)}</span>` : ''}<strong>${escapeHTML(item.card.name)}</strong>${claves ? `<span class="card-keys">${escapeHTML(claves)}</span>` : ''}${item.card.energy ? `<span class="card-energy">${escapeHTML(item.card.energy)}</span>` : ''}<small>${item.rev ? 'Invertida · carta girada 180°' : 'Al derecho'}</small></div>`;
       if (index === cards.length - 1) {
         const board = $('#tarotShuffleBoard');
         if (board) board.classList.add('fade-out');
@@ -1987,6 +2016,16 @@ window.OraculoI18n = {
 
 /* Todo el saber que la app ya contenía, disponible para la Biblioteca.
    Estaba repartido en catálogos de cada módulo; aquí solo se expone. */
+/* Catalogo de los 78 Arcanos, con su validacion. La comprobacion no
+   molesta a quien usa la app: se consulta desde la consola con
+   OraculoArcanos.validar(). */
+window.OraculoArcanos = {
+  get catalogo() { return ARCANOS; },
+  get mazo() { return ALL_TAROT; },
+  elementos: ELEMENTOS,
+  validar: () => validarArcanos(ALL_TAROT)
+};
+
 window.OraculoSaber = {
   get tarot()  { return ALL_TAROT; },
   get runas()  { return RUNAS; },
@@ -2760,7 +2799,7 @@ function chatDrawTarot(spreadKey = 'one') {
   const spread = getTarotSpread(spreadKey);
   const reversedRate = chooseReversedRate();
   const cards = [...ALL_TAROT].sort(() => Math.random() - .5).slice(0, spread.count).map((card, index) => ({ card, rev: isReversed(reversedRate), position: spread.positions[index] || '' }));
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? c.card.rv : c.card.up}`).join('\n\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' invertida' : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
   setLastReading({ type:'Tarot privado', title:spread.title, text:linesOnly, items:cards.map(c=>({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), ritual:{ module:'chat', action:'tarot', spread:spreadKey }, meta:{ reversedRate } });
   ceremonyTone('shuffle'); ceremonyVibrate([14,35,14]);
   addChat('oracle', `El oráculo está mezclando las cartas para tu ${spread.title}...`);

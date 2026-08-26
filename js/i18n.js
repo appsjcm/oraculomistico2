@@ -732,3 +732,14 @@ const DYN_STRINGS = {
 Object.keys(DYN_STRINGS).forEach(idioma => {
   if (STRINGS[idioma]) Object.assign(STRINGS[idioma], DYN_STRINGS[idioma]);
 });
+
+/* Fase 12 · Campos de interpretación de los Arcanos. */
+const CARD_STRINGS = {
+  es: { cEnergy:'Energía', cAdvice:'Consejo', cLight:'Luz', cShadow:'Sombra', cLove:'Amor y relaciones', cWork:'Estudios, trabajo y proyectos', cGrowth:'Crecimiento personal', cTrend:'Tendencia simbólica', cCorrespond:'Correspondencias' },
+  ca: { cEnergy:'Energia', cAdvice:'Consell', cLight:'Llum', cShadow:'Ombra', cLove:'Amor i relacions', cWork:'Estudis, feina i projectes', cGrowth:'Creixement personal', cTrend:'Tendència simbòlica', cCorrespond:'Correspondències' },
+  en: { cEnergy:'Energy', cAdvice:'Advice', cLight:'Light', cShadow:'Shadow', cLove:'Love and relationships', cWork:'Study, work and projects', cGrowth:'Personal growth', cTrend:'Symbolic leaning', cCorrespond:'Correspondences' },
+  fr: { cEnergy:'Énergie', cAdvice:'Conseil', cLight:'Lumière', cShadow:'Ombre', cLove:'Amour et relations', cWork:'Études, travail et projets', cGrowth:'Croissance personnelle', cTrend:'Tendance symbolique', cCorrespond:'Correspondances' },
+  de: { cEnergy:'Energie', cAdvice:'Rat', cLight:'Licht', cShadow:'Schatten', cLove:'Liebe und Beziehungen', cWork:'Studium, Arbeit und Projekte', cGrowth:'Persönliches Wachstum', cTrend:'Symbolische Tendenz', cCorrespond:'Entsprechungen' },
+  zh: { cEnergy:'能量', cAdvice:'建议', cLight:'光', cShadow:'阴影', cLove:'爱与关系', cWork:'学习、工作与计划', cGrowth:'个人成长', cTrend:'象征倾向', cCorrespond:'对应关系' }
+};
+Object.keys(CARD_STRINGS).forEach(l => { if (STRINGS[l]) Object.assign(STRINGS[l], CARD_STRINGS[l]); });
