@@ -4138,9 +4138,13 @@ function attachGlobalEvents() {
 }
 
 async function registerSW() {
-  if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase20-astro-wheel'); } catch {}
-  }
+  if (!('serviceWorker' in navigator)) return;
+  /* La version iba escrita a mano aqui y se quedo en una antigua: las
+     subidas de version de index.html no llegan a esta cadena. Se toma
+     del propio <script> que carga la app, que si se versiona. */
+  let v = '';
+  try { v = new URL(document.currentScript?.src || document.querySelector('script[src*="coreApp"]')?.src || '', location.href).search; } catch {}
+  try { await navigator.serviceWorker.register('service-worker.js' + v); } catch (e) { console.warn('SW no registrado:', e); }
 }
 
 function boot() {

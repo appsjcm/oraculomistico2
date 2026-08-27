@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-grabovoi-70';
+const CACHE_NAME = 'oraculo-v1-0-public-offline-72';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,10 @@ const APP_SHELL = [
   './styles/oraculo-3d.css',
   './styles/visual-performance-polish.css',
   './styles/astro.css',
+  /* jsPDF venia de un CDN y el service worker ignora todo lo que no sea
+     del propio dominio, asi que sin conexion el PDF caia a un .txt.
+     Alojado aqui, funciona offline y no depende de terceros. */
+  './assets/vendor/jspdf/jspdf.umd.min.js',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
