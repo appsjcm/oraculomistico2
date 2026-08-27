@@ -122,6 +122,20 @@ function pdfAscii(txt = '') {
   return limpio.replace(/[^\u0020-\u024f\n]/g, '').trim();
 }
 
+/* Vista traducida de una fase lunar. El indice es la clave y no cambia,
+   asi que las lecturas ya guardadas siguen siendo validas. */
+function faseTraducida(phase) {
+  const i = MOON_PHASES.indexOf(phase);
+  if (i < 0) return phase;
+  return {
+    ...phase,
+    name: t('mp' + i + 'N'),
+    meaning: t('mp' + i + 'M'),
+    ritual: t('mp' + i + 'R'),
+    affirmation: t('mp' + i + 'A')
+  };
+}
+
 function readingActions(text, type = 'Lectura') {
   const grabovoiPdfButton = /Numerolog[ií]a/i.test(type)
     ? `<button class="btn compact" data-act="numerology-grabovoi-pdf" type="button">📜 ${escapeHTML(t('raGrabovoi'))}</button>`
@@ -1621,7 +1635,7 @@ const TAROT_SPREADS = {
   celtic: { count: 10, icon:'✝️', i18n:'spCeltic', title: 'Cruz Celta', positions: ['Situación actual', 'Cruce o reto', 'Base', 'Pasado reciente', 'Posible futuro', 'Próximo paso', 'Tu actitud', 'Entorno', 'Esperanzas o miedos', 'Resultado probable'] },
   astrologic: { count: 12, icon:'🌟', i18n:'spAstrologic', premium:true, title: 'Astrológica', positions: ['Casa 1 · Yo', 'Casa 2 · Recursos', 'Casa 3 · Comunicación', 'Casa 4 · Hogar', 'Casa 5 · Creatividad', 'Casa 6 · Rutina', 'Casa 7 · Vínculos', 'Casa 8 · Transformación', 'Casa 9 · Visión', 'Casa 10 · Propósito', 'Casa 11 · Comunidad', 'Casa 12 · Alma'] },
   karmicRelations: { count: 9, icon:'🌀', i18n:'spKarmic', premium:true, title: 'Relaciones kármicas', positions: ['Origen', 'Vínculo', 'Lección', 'Herida', 'Don', 'Bloqueo', 'Liberación', 'Potencial', 'Consejo'] },
-  treeLife: { count: 10, icon:'🌳', premium:true, title: 'Árbol de la Vida', positions: ['Kéter', 'Jokmá', 'Biná', 'Jésed', 'Guevurá', 'Tiféret', 'Nétsaj', 'Hod', 'Yesod', 'Maljut'] }
+  treeLife: { count: 10, icon:'🌳', premium:true, i18n:'spTree', title: 'Árbol de la Vida', positions: ['Kéter', 'Jokmá', 'Biná', 'Jésed', 'Guevurá', 'Tiféret', 'Nétsaj', 'Hod', 'Yesod', 'Maljut'] }
 };
 function getTarotSpread(key = 'one') { return TAROT_SPREADS[key] || TAROT_SPREADS.one; }
 
@@ -2209,14 +2223,14 @@ function renderSpreadButton(key, spread) {
 function showTarot() {
   const normalKeys = Object.keys(TAROT_SPREADS).filter(k => !TAROT_SPREADS[k].premium);
   const premiumKeys = Object.keys(TAROT_SPREADS).filter(k => TAROT_SPREADS[k].premium);
-  openModal({ icon:'🃏', title:'Tarot', subtitle:'Elige la tirada y deja que las cartas se mezclen y se revelen una a una.', body:`
+  openModal({ icon:'🃏', title:t('tarot'), subtitle:t('tarotSub'), body:`
     <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotTable" aria-label="Mesa de Lectura"></div>
     <div class="form-grid">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('tarotQ'))}</label>${inputWithMic('tarotPrompt', `placeholder="${escapeHTML(t('tarotQPh'))}"`)}</div></div>
     <div class="actions mt"><button class="btn primary" data-act="ceremony-tarot" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button><button class="btn" data-module="runas" type="button">ᚱ ${escapeHTML(t('runeSpreads'))}</button><button class="btn" data-act="tarot-library" type="button">📚 ${escapeHTML(t('deckLibrary'))}</button></div>
     <div class="spread-grid mt">${normalKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
     <hr class="soft-line"><h3 class="section-title">✨ Tiradas Premium ✨</h3>
     <div class="spread-grid premium-spreads">${premiumKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
-    <p class="notice mt">Todas las tiradas incluyen interpretación, voz, guardado, opciones para compartir y exportación en PDF.</p>` });
+    <p class="notice mt">${escapeHTML(t('tarotNote'))}</p>` });
 }
 function showTarotLibrary(filter = 'all') {
   const tabs = `<div class="tabs"><button class="tab ${filter==='all'?'active':''}" data-act="tarot-lib-all">Todas</button><button class="tab ${filter==='major'?'active':''}" data-act="tarot-lib-major">Mayores</button><button class="tab ${filter==='minor'?'active':''}" data-act="tarot-lib-minor">Menores</button></div>`;
@@ -2270,7 +2284,7 @@ function drawRunes(count = 1, title = 'Runa rápida') {
   animateRuneReading(runes, title, reversedRate);
 }
 function showRunas() {
-  openModal({ icon:'ᚱ', title:'Runas', subtitle:'Runa rápida, tiradas y saquito místico con revelación progresiva.', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="runes" aria-label="Runas de Obsidiana"></div><div class="form-grid">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('runeIntent'))}</label><input id="runeIntention" class="input" placeholder="${escapeHTML(t('runeIntentPh'))}"></div></div><div class="actions mb mt"><button class="btn primary" data-act="ceremony-runes" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un mensaje simbólico breve.</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ Tres runas</strong><small>Pasado, presente y consejo.</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ Cinco runas</strong><small>Lectura más completa.</small></button><button class="choice" data-act="runes-library"><strong>📚 Biblioteca</strong><small>24 runas en 5 columnas.</small></button></div>` });
+  openModal({ icon:'ᚱ', title:t('runes'), subtitle:t('runesSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="runes" aria-label="${escapeHTML(t('a3dRunes'))}"></div><div class="form-grid">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('runeIntent'))}</label><input id="runeIntention" class="input" placeholder="${escapeHTML(t('runeIntentPh'))}"></div></div><div class="actions mb mt"><button class="btn primary" data-act="ceremony-runes" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ ${escapeHTML(t('runeOne'))}</strong><small>${escapeHTML(t('runeOneSub'))}</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ ${escapeHTML(t('runeThree'))}</strong><small>${escapeHTML(t('runeThreeSub'))}</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ ${escapeHTML(t('runeFive'))}</strong><small>${escapeHTML(t('runeFiveSub'))}</small></button><button class="choice" data-act="runes-library"><strong>📚 ${escapeHTML(t('runeLib'))}</strong><small>${escapeHTML(t('runeLibSub'))}</small></button></div>` });
 }
 function showRunesLibrary() {
   openModal({ icon:'ᚱ', title:'Biblioteca de Runas', subtitle:'24 runas del Futhark Antiguo.', body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
@@ -2321,34 +2335,38 @@ function semanaLunar(fecha = new Date()) {
 }
 
 function showLuna() {
-  const { fase: phase, iluminacion, edad, creciente } = faseLunar();
+  const { fase: cruda, iluminacion, edad, creciente } = faseLunar();
+  /* Solo para pintar: el objeto original sigue intacto porque su
+     nombre viaja dentro de las lecturas ya guardadas. */
+  const phase = faseTraducida(cruda);
   const proxima = proximaFasePrincipal();
   const dias = semanaLunar();
   const body = `<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="moon" aria-label="Luna Celestial"></div><div class="om-luna">
-      <div class="om-luna-astro" role="img" aria-label="${escapeHTML(phase.name)}, ${iluminacion}% iluminada">
+      <div class="om-luna-astro" role="img" aria-label="${escapeHTML(phase.name)}, ${iluminacion}% ${escapeHTML(t('lunLit'))}">
         <div class="om-luna-disco" style="--ilum:${iluminacion}%; --lado:${creciente ? 'right' : 'left'}"></div>
       </div>
       <p class="om-luna-fase">${phase.sym} ${escapeHTML(phase.name)}</p>
       <div class="om-luna-datos">
-        <span><b>${iluminacion}%</b> iluminada</span>
-        <span><b>Día ${Math.floor(edad) + 1}</b> del ciclo</span>
+        <span><b>${iluminacion}%</b> ${escapeHTML(t('lunLit'))}</span>
+        <span><b>${escapeHTML(t('lunDay'))} ${Math.floor(edad) + 1}</b> ${escapeHTML(t('lunOfCycle'))}</span>
         <span><b>${escapeHTML(proxima.nombre)}</b> en ${proxima.dias} día${proxima.dias > 1 ? 's' : ''}</span>
       </div>
       <div class="om-luna-semana" aria-label="Próximos siete días">
         ${dias.map(d => `<div class="om-luna-dia${d.hoy ? ' hoy' : ''}"><small>${d.inicial}</small><span>${d.sym}</span><b>${d.dia}</b><i>${d.iluminacion}%</i></div>`).join('')}
       </div>
     </div>
-    <div class="result-card"><p>${escapeHTML(phase.meaning)}</p><p><strong>Ritual simbólico:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>Afirmación:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('moonFocus'))}</label><select id="moonFocus">${[['focusClarity','Claridad'],['focusLove','Amor'],['focusWork','Trabajo / estudios'],['focusRest','Descanso'],['focusRelease','Soltar']].map(([k,v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select></div><div class="field"><label>${escapeHTML(t('moonQ'))}</label>${inputWithMic('moonQuestion', `placeholder="${escapeHTML(t('moonQPh'))}"`)}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">Crear lectura lunar</button></div>`;
+    <div class="result-card"><p>${escapeHTML(phase.meaning)}</p><p><strong>${escapeHTML(t('moonRitual'))}:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>${escapeHTML(t('moonAffirm'))}:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('moonFocus'))}</label><select id="moonFocus">${[['focusClarity','Claridad'],['focusLove','Amor'],['focusWork','Trabajo / estudios'],['focusRest','Descanso'],['focusRelease','Soltar']].map(([k,v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select></div><div class="field"><label>${escapeHTML(t('moonQ'))}</label>${inputWithMic('moonQuestion', `placeholder="${escapeHTML(t('moonQPh'))}"`)}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">${escapeHTML(t('moonGo'))}</button></div>`;
   openModal({ icon:'🌙', title:'Luna', subtitle:'Lectura lunar guiada.', body });
 }
 function moonReading() {
-  const phase = faseLunar().fase;
+  const cruda = faseLunar().fase;
+  const phase = faseTraducida(cruda);
   const subject = getReadingSubject();
   const focus = $('#moonFocus')?.value || 'Claridad';
   const q = $('#moonQuestion')?.value || 'Sin pregunta';
-  const text = `${subjectPrefix(subject)}${phase.name}\nEnfoque: ${focus}\nPregunta: ${q}\n${phase.meaning}\nRitual simbólico: ${phase.ritual}\nAfirmación: ${phase.affirmation}`;
-  setLastReading({ type:'Luna', title:`Lectura lunar: ${phase.name}`, text, items:[phase.name], meta:subjectMeta(subject, { focus, question:q }) });
-  openModal({ icon:'🌙', title:`Lectura lunar: ${phase.name}`, subtitle:subjectSubtitle(focus, subject), body:`<div class="result-card"><h3>${phase.sym} ${escapeHTML(phase.name)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}<p>${escapeHTML(phase.meaning)}</p><p><strong>Consejo:</strong> escucha la energía antes de actuar. No fuerces respuestas; ordena la intención.</p><p><strong>Ritual simbólico:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>Afirmación:</strong> ${escapeHTML(phase.affirmation)}</p>${readingActions(text,'Luna')}</div>` });
+  const text = `${subjectPrefix(subject)}${phase.name}\n${t('moonFocus')}: ${focus}\n${t('lblQuestion')}: ${q}\n${phase.meaning}\n${t('moonRitual')}: ${phase.ritual}\n${t('moonAffirm')}: ${phase.affirmation}`;
+  setLastReading({ type:'Luna', title:`${t('moonReading')}: ${phase.name}`, text, items:[phase.name], meta:subjectMeta(subject, { focus, question:q, phaseIndex:MOON_PHASES.indexOf(cruda) }) });
+  openModal({ icon:'🌙', title:`${t('moonReading')}: ${phase.name}`, subtitle:subjectSubtitle(focus, subject), body:`<div class="result-card"><h3>${phase.sym} ${escapeHTML(phase.name)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}<p>${escapeHTML(phase.meaning)}</p><p><strong>${escapeHTML(t('moonAdvice'))}:</strong> ${escapeHTML(t('moonAdviceText'))}</p><p><strong>${escapeHTML(t('moonRitual'))}:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>${escapeHTML(t('moonAffirm'))}:</strong> ${escapeHTML(phase.affirmation)}</p>${readingActions(text,'Luna')}</div>` });
 }
 
 const dreamSymbols = {
@@ -2386,7 +2404,11 @@ function analyzeDreamElement(dream = '', foundSymbols = []) {
   return scores[0];
 }
 function showSuenos() {
-  openModal({ icon:'💭', title:'Sueños', subtitle:'Interpretación simbólica y suave.', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="Espejo de los Sueños"></div><div class="form-grid"><div class="field"><label>Describe el sueño</label>${textareaWithMic('dreamText', 'placeholder="Escribe o dicta lo que recuerda..."')}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label>Emoción principal</label><select id="dreamMood"><option>Curiosidad</option><option>Tranquilidad</option><option>Miedo</option><option>Alegría</option><option>Confusión</option></select></div><div class="field"><label>Tipo de lectura</label><select id="dreamType"><option>Simbólica</option><option>Emocional</option><option>Práctica</option><option>Espiritual suave</option></select></div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(s=>`<button class="tab" data-add-symbol="${s}">${s}</button>`).join('\n\n')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">Interpretar sueño</button></div>` });
+  /* El value de cada opcion se queda en castellano: viaja dentro de las
+     lecturas ya guardadas y hay codigo que lo compara. Solo cambia la
+     etiqueta que se ve. */
+  const opc = (id, pares) => `<select id="${id}">${pares.map(([k, v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select>`;
+  openModal({ icon:'💭', title:t('drTitle'), subtitle:t('drSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="${escapeHTML(t('a3dMirror'))}"></div><div class="form-grid"><div class="field"><label>${escapeHTML(t('drDescribe'))}</label>${textareaWithMic('dreamText', `placeholder="${escapeHTML(t('drDescribePh'))}"`)}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label>${escapeHTML(t('drMood'))}</label>${opc('dreamMood', [['drCuriosity','Curiosidad'],['drCalm','Tranquilidad'],['drFear','Miedo'],['drJoy','Alegría'],['drConfusion','Confusión']])}</div><div class="field"><label>${escapeHTML(t('drType'))}</label>${opc('dreamType', [['drSymbolic','Simbólica'],['drEmotional','Emocional'],['drPractical','Práctica'],['drSpiritual','Espiritual suave']])}</div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(s=>`<button class="tab" data-add-symbol="${s}">${s}</button>`).join('\n\n')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">${escapeHTML(t('drGo'))}</button></div>` });
 }
 function dreamReading() {
   const dream = $('#dreamText')?.value || '';
@@ -2395,10 +2417,10 @@ function dreamReading() {
   const type = $('#dreamType')?.value || 'Simbólica';
   const found = Object.keys(dreamSymbols).filter(k => dream.toLowerCase().includes(k));
   const element = analyzeDreamElement(dream, found);
-  const symbols = found.length ? found.map(k => `${k}: ${dreamSymbols[k]}`).join('\n') : 'No detecté símbolos rápidos; puedes añadir más detalles o guardarlo como reflexión.';
+  const symbols = found.length ? found.map(k => `${k}: ${dreamSymbols[k]}`).join('\n') : t('drNoSymbols');
   const text = `${subjectPrefix(subject)}Sueño: ${dream || 'Sin descripción'}\nEmoción: ${mood}\nLectura: ${type}\nElemento predominante: ${element.name}\n${element.explanation}\n\nSímbolos:\n${symbols}\n\nConsejo: observa qué emoción se repite y qué parte del sueño pide orden, descanso o claridad.`;
   setLastReading({ type:'Sueños', title:subject ? `Interpretación de sueño · ${subject}` : 'Interpretación de sueño', text, items:[], meta:subjectMeta(subject, { dreamElement:element, dreamSymbols:found, mood, readingType:type }) });
-  openModal({ icon:'💭', title:'Interpretación de sueño', subtitle:subjectSubtitle(`${mood} · ${type}`, subject), body:`<div class="result-card"><h3>Elemento predominante: ${escapeHTML(element.name)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}<p>${escapeHTML(element.explanation)}</p></div><div class="result-card mt"><h3>Lectura simbólica</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Sueños')}</div>` });
+  openModal({ icon:'💭', title:t('drResult'), subtitle:subjectSubtitle(`${mood} · ${type}`, subject), body:`<div class="result-card"><h3>${escapeHTML(t('drElement'))}: ${escapeHTML(element.name)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}<p>${escapeHTML(element.explanation)}</p></div><div class="result-card mt"><h3>${escapeHTML(t('drReadingSym'))}</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Sueños')}</div>` });
 }
 
 function letterValue(ch) {
@@ -3473,38 +3495,55 @@ function daily() {
   const key = 'oraculo.daily.' + todayKey();
   let saved = storeGet(key);
   if (!saved) {
-    const card = sample(ALL_TAROT), rune = sample(RUNAS), phase = faseLunar().fase;
-    saved = { card: card.name, rune: rune.name, phase: phase.name };
+    const c = sample(ALL_TAROT), r = sample(RUNAS), f = faseLunar().fase;
+    /* Se guarda tambien el codigo de carta y el indice de fase. El
+       nombre cambia con el idioma desde que el mazo es multiidioma, y
+       buscar por nombre devolvia OTRA carta el mismo dia al cambiar de
+       lengua. Se conservan los nombres para las entradas antiguas. */
+    saved = { card: c.name, cardCode: c.codigo || '', rune: r.name, runeIndex: RUNAS.indexOf(r), phase: f.name, phaseIndex: MOON_PHASES.indexOf(f) };
     storeSet(key, saved);
   }
-  const card = ALL_TAROT.find(c => c.name === saved.card) || sample(ALL_TAROT);
-  const rune = RUNAS.find(r => r.name === saved.rune) || sample(RUNAS);
-  const phase = MOON_PHASES.find(m => m.name === saved.phase) || faseLunar().fase;
-  const text = `Fecha: ${new Date().toLocaleDateString()}
+  const card = (saved.cardCode && ALL_TAROT.find(c => c.codigo === saved.cardCode))
+    || ALL_TAROT.find(c => c.name === saved.card) || sample(ALL_TAROT);
+  const rune = (Number.isInteger(saved.runeIndex) && RUNAS[saved.runeIndex])
+    || RUNAS.find(r => r.name === saved.rune) || sample(RUNAS);
+  const cruda = (Number.isInteger(saved.phaseIndex) && MOON_PHASES[saved.phaseIndex])
+    || MOON_PHASES.find(m => m.name === saved.phase) || faseLunar().fase;
+  const phase = faseTraducida(cruda);
 
-Carta del día: ${card.name}
+  const text = `${t('dlDate')}: ${new Date().toLocaleDateString(window.OraculoI18n?.locale?.() || 'es-ES')}
+
+${t('dlCard')}: ${card.name}
 ${card.up}
 
-Runa del día: ${rune.name}
+${t('dlRune')}: ${rune.name}
 ${rune.up}
 
-Luna del día: ${phase.name}
+${t('dlMoon')}: ${phase.name}
 ${phase.meaning}
 
-Consejo: une la claridad de la carta, la fuerza de la runa y el ritmo lunar para elegir tu siguiente paso con calma.`;
-  setLastReading({ type:'Mensaje del día', title:'Mensaje del día', text, items:[{ kind:'tarot', name:card.name, subtitle:card.key || card.el || '', image:card.img || '', symbol:'🃏', position:'Carta del día' }, { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:'Runa del día' }, { kind:'luna', name:phase.name, subtitle:phase.meaning || '', image:'', symbol:phase.sym || '🌙', position:'Luna del día' }] });
-  $('#dailyText').textContent = `${card.name} · ${rune.name} · ${phase.name}`;
-  openModal({ icon:'🌟', title:'Mensaje del día', subtitle:'Tarot, runa y luna en una lectura diaria.', body:`
-    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dailyRelic" aria-label="Reliquia del Oráculo"></div>
+${t('dlAdvice')}: ${t('dlAdviceText')}`;
+
+  setLastReading({ type:'Mensaje del día', title:t('dailyMessage'), text, items:[
+    { kind:'tarot', name:card.name, subtitle:card.key || card.el || '', image:card.img || '', symbol:'🃏', position:t('dlCard') },
+    { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:t('dlRune') },
+    { kind:'luna', name:phase.name, subtitle:phase.meaning || '', image:'', symbol:phase.sym || '🌙', position:t('dlMoon') }
+  ] });
+  const chip = $('#dailyText');
+  if (chip) chip.textContent = `${card.name} · ${rune.name} · ${phase.name}`;
+
+  /* El value de cada animo se queda en castellano: viaja en el diario. */
+  const animos = [['dlCalm','Calma'],['dlHope','Ilusión'],['dlDoubt','Duda'],['dlStrength','Fuerza'],['dlTired','Cansancio'],['dlThanks','Gratitud']];
+  openModal({ icon:'🌟', title:t('dailyMessage'), subtitle:t('dlSub'), body:`
+    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dailyRelic" aria-label="${escapeHTML(t('a3dRelic'))}"></div>
     <div class="daily-oracle-grid">
       <div class="daily-oracle-card">${cardImage(card)}<strong>🃏 ${escapeHTML(card.name)}</strong><small>${escapeHTML(card.key || card.el || '')}</small></div>
       <div class="daily-oracle-card"><div class="rune-big compact-rune">${rune.sym}</div><strong>ᚱ ${escapeHTML(rune.name)}</strong><small>${escapeHTML(clampText(rune.up, 70))}</small></div>
       <div class="daily-oracle-card"><div class="moon-big">${phase.sym}</div><strong>🌙 ${escapeHTML(phase.name)}</strong><small>${escapeHTML(clampText(phase.meaning, 70))}</small></div>
     </div>
-    <div class="result-card"><h3>Interpretación simbólica</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Mensaje del día')}</div>
-    <div class="result-card mt daily-journal-card"><h3>Diario del día</h3><div class="form-grid"><div class="field"><label>Estado de ánimo</label><select id="dailyMood"><option>Calma</option><option>Ilusión</option><option>Duda</option><option>Fuerza</option><option>Cansancio</option><option>Gratitud</option></select></div><div class="field"><label>Intención de hoy</label><input class="input" id="dailyIntention" placeholder="¿Qué quieres cuidar hoy?"></div></div><div class="field mt"><label>Reflexión personal</label><textarea id="dailyReflection" placeholder="Escribe una nota breve sobre lo que te llevas de esta lectura..."></textarea></div><div class="actions mt"><button class="btn primary" data-act="save-daily-reflection">Guardar ritual diario</button><button class="btn" data-act="daily-history">Ver historial diario</button></div></div>` });
+    <div class="result-card"><h3>${escapeHTML(t('dlSymbolic'))}</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Mensaje del día')}</div>
+    <div class="result-card mt daily-journal-card"><h3>${escapeHTML(t('dlJournal'))}</h3><div class="form-grid"><div class="field"><label>${escapeHTML(t('dlMood'))}</label><select id="dailyMood">${animos.map(([k,v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select></div><div class="field"><label>${escapeHTML(t('dlIntent'))}</label><input class="input" id="dailyIntention" placeholder="${escapeHTML(t('dlIntentPh'))}"></div></div><div class="field mt"><label>${escapeHTML(t('dlReflection'))}</label><textarea id="dailyReflection" placeholder="${escapeHTML(t('dlReflectionPh'))}"></textarea></div><div class="actions mt"><button class="btn primary" data-act="save-daily-reflection">${escapeHTML(t('dlSave'))}</button><button class="btn" data-act="daily-history">${escapeHTML(t('dlHistory'))}</button></div></div>` });
 }
-
 
 function getChatLog() { return storeGet(LS.chat, []); }
 function setChatLog(log) { storeSet(LS.chat, log.slice(-80)); }
@@ -3513,7 +3552,7 @@ function getChatMemoryContext(limit = 12) {
   return log.map(m => `${m.role === 'user' ? 'Usuario' : 'Oráculo'}: ${cleanInterpretation(m.text).slice(0, 700)}`).join('\n');
 }
 function chatBubbleHTML(msg) {
-  const who = msg.role === 'user' ? 'Tú' : 'Oráculo';
+  const who = msg.role === 'user' ? t('chatYou') : t('chatOracle');
   return `<article class="chat-bubble ${msg.role}"><strong>${who}</strong><p>${escapeHTML(cleanInterpretation(msg.text)).replace(/\n/g,'<br>')}</p>${msg.actions || ''}</article>`;
 }
 /* El aviso de "canalizando" se guardaba como un mensaje más y quedaba
@@ -3556,23 +3595,23 @@ function chatRuneHTML(item, index) {
   return `<div class="chat-rune-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-big">${item.rune.sym}</div><strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
 }
 function showChatRitual() {
-  openModal({ icon:'🕯️', title:'Chat Ritual Privado', subtitle:'Habla con el Oráculo y haz tiradas sin salir del chat.', body:`
+  openModal({ icon:'🕯️', title:t('chatTitle'), subtitle:t('chatSub'), body:`
     <div class="private-chat-wrap">
       <div class="om-3d-stage om-oracle-chat-3d" data-oraculo-3d-asset="orb" aria-label="Orbe del Oráculo"></div>
-      <div class="privacy-note">🔒 Espacio privado local. Si usas Puter IA, tu pregunta se envía a Puter para generar la respuesta.</div>
+      <div class="privacy-note">🔒 ${escapeHTML(t('chatPrivacy'))}</div>
       <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
       <div class="chat-quick-actions">
-        <button class="btn compact" data-chat-quick="tirada de tarot de 3 cartas">🃏 3 cartas</button>
-        <button class="btn compact" data-chat-quick="tirada del amor">❤️ Amor</button>
-        <button class="btn compact" data-chat-quick="sácame una runa">ᚱ Runa</button>
-        <button class="btn compact" data-chat-quick="mensaje del día">🌟 Día</button>
-        <button class="btn compact" data-chat-quick="tirada astral del día">☉ Astros</button>
+        <button class="btn compact" data-chat-quick="tirada de tarot de 3 cartas">🃏 ${escapeHTML(t('qk3'))}</button>
+        <button class="btn compact" data-chat-quick="tirada del amor">❤️ ${escapeHTML(t('qkLove'))}</button>
+        <button class="btn compact" data-chat-quick="sácame una runa">ᚱ ${escapeHTML(t('qkRune'))}</button>
+        <button class="btn compact" data-chat-quick="mensaje del día">🌟 ${escapeHTML(t('chatQuickDay'))}</button>
+        <button class="btn compact" data-chat-quick="tirada astral del día">☉ ${escapeHTML(t('qkAstro'))}</button>
       </div>
       <div class="chat-input-row">
         ${textareaWithMic('chatInput', 'rows="3" placeholder="Escribe: hazme una tirada de amor, sácame una runa, interpreta mi sueño..."')}
         <button class="btn primary" data-chat-send type="button">Enviar</button>
       </div>
-      <div class="actions mt"><button class="btn compact" data-chat-clear type="button">Borrar chat</button><button class="btn compact" data-act="save-reading" type="button">⭐ Guardar última lectura</button><button class="btn compact" data-act="pdf-reading" type="button">📄 PDF última lectura</button></div>
+      <div class="actions mt"><button class="btn compact" data-chat-clear type="button">${escapeHTML(t('chatClear'))}</button><button class="btn compact" data-act="save-reading" type="button">⭐ ${escapeHTML(t('chatSaveLast'))}</button><button class="btn compact" data-act="pdf-reading" type="button">📄 ${escapeHTML(t('chatPdfLast'))}</button></div>
     </div>` });
   renderChatMessages();
 }
@@ -3611,7 +3650,7 @@ function chatDrawTarot(spreadKey = 'one', subject = '') {
   addChat('oracle', `El oráculo está mezclando las cartas${subject ? ` para ${subject}` : ` para tu ${spreadTitle(spread)}`}...`);
   cards.forEach((c, i) => setTimeout(() => { ceremonyTone('reveal'); ceremonyVibrate(22); addChat('oracle', `${c.position || `Carta ${i+1}`}: ${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}
 ${c.rev ? c.card.rv : c.card.up}`, `<div class="chat-ritual-grid single">${chatTarotCardHTML(c)}</div>`); }, ceremonyDelay(650 + i * 950)));
-  setTimeout(() => addChat('oracle', `Lectura completada. Puedes guardarla, crear PDF, escuchar la voz o pedirme que profundice con IA.`, `<div class="chat-ritual-grid summary tarot-count-${cards.length}">${cards.map(chatTarotCardHTML).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="speak-ai">🔊 Leer IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra ${spreadTitle(spread)}">🔄 Otra similar</button></div>`), ceremonyDelay(900 + cards.length * 950));
+  setTimeout(() => addChat('oracle', t('chatDone'), `<div class="chat-ritual-grid summary tarot-count-${cards.length}">${cards.map(chatTarotCardHTML).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="speak-ai">🔊 Leer IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra ${spreadTitle(spread)}">🔄 ${escapeHTML(t('qkAgain'))}</button></div>`), ceremonyDelay(900 + cards.length * 950));
 }
 function chatDrawRunes(count = 1, subject = '') {
   const reversedRate = chooseReversedRate();
@@ -3624,7 +3663,7 @@ function chatDrawRunes(count = 1, subject = '') {
   addChat('oracle', subject ? `El oráculo agita el saquito de runas para ${subject}...` : 'El oráculo agita el saquito de runas...');
   runes.forEach((r, i) => setTimeout(() => { ceremonyTone('rune'); ceremonyVibrate(22); addChat('oracle', `Runa ${i+1}: ${r.rune.sym} ${r.rune.name}${r.rev ? ' ' + t('lblReversed') : ''}
 ${r.rev ? (r.rune.rv || r.rune.up) : r.rune.up}`, `<div class="chat-ritual-grid runes single">${chatRuneHTML(r, i)}</div>`); }, ceremonyDelay(650 + i * 900)));
-  setTimeout(() => addChat('oracle', 'Tirada de runas completada. Puedes guardarla o crear su PDF.', `<div class="chat-ritual-grid runes summary rune-count-${runes.length}">${runes.map((r,i)=>chatRuneHTML(r,i)).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra runa">🔄 Otra similar</button></div>`), ceremonyDelay(900 + runes.length * 900));
+  setTimeout(() => addChat('oracle', t('chatRunesDone'), `<div class="chat-ritual-grid runes summary rune-count-${runes.length}">${runes.map((r,i)=>chatRuneHTML(r,i)).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra runa">🔄 ${escapeHTML(t('qkAgain'))}</button></div>`), ceremonyDelay(900 + runes.length * 900));
 }
 async function processChatMessage(text) {
   const clean = cleanInterpretation(text);
@@ -3668,7 +3707,7 @@ ${lastReading ? `${lastReading.title}\n${lastReading.text}${lastReading.ai ? '\n
 ${clean}`, { prefix:followsLastReading ? readingPersonalPrefix(lastReading) : personalPrefix() });
     ocultarPensando();
     const finalAnswer = answer || 'No he podido conectar con el Oráculo en este momento. Puedes pedirme una tirada directa: “hazme una tirada de tarot”.';
-    addChat('oracle', finalAnswer, `<div class="actions mt"><button class="btn compact" data-act="speak-ai">🔊 Voz</button><button class="btn compact" data-chat-quick="hazme una tirada de tarot">🃏 Tarot</button><button class="btn compact" data-chat-quick="sácame una runa">ᚱ Runa</button></div>`);
+    addChat('oracle', finalAnswer, `<div class="actions mt"><button class="btn compact" data-act="speak-ai">🔊 ${escapeHTML(t('qkVoice'))}</button><button class="btn compact" data-chat-quick="hazme una tirada de tarot">🃏 ${escapeHTML(t('qkTarot'))}</button><button class="btn compact" data-chat-quick="sácame una runa">ᚱ ${escapeHTML(t('qkRune'))}</button></div>`);
     if (answer) {
       if (lastReading) lastReading.ai = finalAnswer;
       setTimeout(() => speakText(finalAnswer), 250);

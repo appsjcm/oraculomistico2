@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-fase20-astro-wheel';
+const CACHE_NAME = 'oraculo-v1-0-public-idiomas-62';
 const APP_SHELL = [
   './',
   './index.html',
