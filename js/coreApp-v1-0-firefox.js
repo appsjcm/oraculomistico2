@@ -356,6 +356,8 @@ async function exportPDF(title, text, reading = lastReading) {
     const H = doc.internal.pageSize.getHeight();
     const margin = 18;
     const gold = [218, 184, 72];
+    /* Version del dorado con contraste suficiente sobre fondo claro. */
+    const goldInk = [146, 104, 37];
     const dark = style === 'light' || style === 'summary' ? [252, 248, 239] : [14, 13, 28];
     const violet = [38, 28, 72];
     const soft = style === 'light' || style === 'summary' ? [255, 255, 255] : [239, 234, 255];
@@ -410,9 +412,15 @@ async function exportPDF(title, text, reading = lastReading) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.text(cleanPdfText(highlight.label).toUpperCase(), margin + 7, y + 7);
-      doc.setTextColor(...gold);
+      /* El valor destacado (el codigo Grabovoi, los numeros) se imprimia
+         en dorado claro sobre el recuadro crema: 1.67:1, ilegible en
+         papel. Se oscurece conservando el tono; queda en 4.3:1. */
+      doc.setTextColor(...goldInk);
       doc.setFontSize(reading?.type === 'Grabovoi' ? 20 : 16);
-      doc.text(cleanPdfText(highlight.value), margin + 7, y + 15);
+      /* Un codigo largo se salia de la caja: ahora se parte. */
+      const anchoValor = W - margin * 2 - 14;
+      const lineasValor = doc.splitTextToSize(cleanPdfText(highlight.value), anchoValor);
+      doc.text(lineasValor.slice(0, 2), margin + 7, y + 15);
       doc.setTextColor(...ink);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
@@ -3026,7 +3034,11 @@ async function loadGrabovoi() {
     const entries = [];
     for (const key of ['enfermedades','situaciones_personales','codigos_adicionales']) {
       (data[key] || []).forEach(item => entries.push({
-        nombre: item.nombre || item.name || 'Código', codigo: item.codigo || item.code || '', categoria: item.categoria || item.sistema || key, uso: item.uso || item.descripcion || item.subcategoria || 'Uso simbólico de concentración.'
+        nombre: item.nombre || item.name || 'Código', codigo: item.codigo || item.code || '', categoria: item.categoria || item.sistema || key, uso: item.uso || item.descripcion || item.subcategoria || 'Uso simbólico de concentración.',
+        /* De que lista viene. El filtro sanitario miraba solo palabras
+           clave en el texto y se le colaban entradas como VIH o ebola,
+           que traen su propio nombre clinico sin ninguna de esas voces. */
+        origen: key
       }));
     }
     grabovoiEntries = entries.filter(e => e.codigo).slice(0, 1200);
@@ -3177,14 +3189,22 @@ Consejo:
 Usa la secuencia como ejercicio de atención y organización de una intención concreta. No es una predicción ni una garantía.${isHealth ? ' En temas de salud, no sustituye diagnóstico, tratamiento ni atención médica.' : ''}`;
   return { code, groups, digitAnalysis, method, steps, isHealth, text };
 }
+/* Toda la lista 'enfermedades' es sanitaria por definicion: se descarta
+   por procedencia y no por como este redactado el nombre. La regex se
+   mantiene para lo que aparezca en las otras listas. */
 function isHealthGrabovoiEntry(entry = {}) {
-  return /salud|cardio|músculo|musculo|autoinmune|oncol|metab|psicol|enfermedad|físic|fisic|arter|artr|dolor|sangre|hueso/i.test(`${entry.categoria || ''} ${entry.nombre || ''} ${entry.uso || ''}`);
+  if (entry.origen === 'enfermedades') return true;
+  return /salud|cardio|músculo|musculo|autoinmune|oncol|metab|psicol|enfermedad|físic|fisic|arter|artr|dolor|sangre|hueso|infecc|virus|bacteri|tumor|cancer|cáncer|diabet|hepat|renal|pulmon|neumon|herpes|vih|sida|anemia|leucem|tiroid|gastr|derma|curar|curaci|sanaci|regenera/i
+    .test(`${entry.categoria || ''} ${entry.nombre || ''} ${entry.uso || ''}`);
 }
 function grabovoiPdfCandidates(reading = lastReading, query = '') {
   const normalized = normalizeGrabovoiSearch(query);
   if (normalized) {
     const terms = normalized.split(' ').filter(Boolean);
+    /* El buscador no aplicaba ningun filtro: escribir 'infeccion'
+       devolvia la lista clinica entera como sugerencia para el PDF. */
     return grabovoiEntries.filter(entry => {
+      if (isHealthGrabovoiEntry(entry)) return false;
       const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
       return terms.every(term => haystack.includes(term));
     }).slice(0, 80);
