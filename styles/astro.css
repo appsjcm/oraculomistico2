@@ -117,6 +117,35 @@
   box-shadow: inset 0 0 32px rgba(244, 207, 117, .10), 0 22px 42px rgba(0, 0, 0, .30);
 }
 
+.astro-aspect-web {
+  position: absolute;
+  inset: 23%;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.astro-aspect-line {
+  stroke-width: .6;
+  vector-effect: non-scaling-stroke;
+  opacity: .78;
+}
+
+.astro-aspect-conjunction,
+.astro-aspect-trine {
+  stroke: rgba(93, 150, 230, .9);
+}
+
+.astro-aspect-sextile {
+  stroke: rgba(74, 201, 171, .82);
+}
+
+.astro-aspect-square,
+.astro-aspect-opposition {
+  stroke: rgba(198, 54, 110, .9);
+  stroke-width: .8;
+}
+
 .astro-wheel::before,
 .astro-wheel::after {
   content: "";
@@ -152,6 +181,33 @@
   font-size: 1rem;
 }
 
+.astro-house-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 47%;
+  transform-origin: 50% 0;
+  transform: rotate(var(--angle));
+  background: linear-gradient(rgba(255,255,255,.30), transparent);
+  opacity: .7;
+}
+
+.astro-house-number {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.49)) rotate(calc(var(--angle) * -1));
+  width: 20px;
+  height: 20px;
+  margin: -10px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 250, 239, .76);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
 .astro-planet-dot {
   position: absolute;
   left: 50%;
@@ -168,9 +224,24 @@
   color: rgb(246, 222, 154);
   font-size: .95rem;
   box-shadow: 0 8px 20px rgba(0,0,0,.24);
+  z-index: 3;
 }
 
-.astro-asc-line,
+.astro-asc-line {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  top: 50%;
+  z-index: 2;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(198, 54, 110, .95), rgba(198, 54, 110, .18), rgba(198, 54, 110, .95));
+}
+
+.astro-dc-line {
+  display: none;
+}
+
 .astro-mc-line {
   position: absolute;
   left: 50%;
@@ -179,12 +250,43 @@
   height: 46%;
   transform-origin: 50% 0;
   transform: rotate(var(--angle));
-  background: linear-gradient(rgba(99, 211, 255, .95), transparent);
-}
-
-.astro-mc-line {
+  z-index: 2;
   height: 40%;
   background: linear-gradient(rgba(246, 222, 154, .9), transparent);
+}
+
+.astro-axis-label {
+  position: absolute;
+  z-index: 4;
+  min-width: 30px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: rgb(198, 54, 110);
+  font-size: .86rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-shadow: 0 1px 8px rgba(0,0,0,.35);
+}
+
+.astro-axis-ac {
+  left: -13px;
+  top: 50%;
+  transform: translate(-100%, -50%);
+}
+
+.astro-axis-dc {
+  right: -13px;
+  top: 50%;
+  transform: translate(100%, -50%);
+}
+
+.astro-axis-mc,
+.astro-axis-ic {
+  left: 50%;
+  top: 50%;
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.56)) rotate(calc(var(--angle) * -1));
+  margin: -12px -15px;
 }
 
 .astro-panel-list {

@@ -2458,8 +2458,8 @@ function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || '';
 function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
 function getBirthTime() { try { return localStorage.getItem(LS.birthTime) || ''; } catch { return ''; } }
 function setBirthTime(v) { try { if (/^\d{2}:\d{2}$/.test(v)) localStorage.setItem(LS.birthTime, v); } catch {} }
-function getAstroHouseSystem() { try { return localStorage.getItem(LS.astroHouseSystem) || 'whole'; } catch { return 'whole'; } }
-function setAstroHouseSystem(v) { try { localStorage.setItem(LS.astroHouseSystem, ['whole','equal'].includes(v) ? v : 'whole'); } catch {} }
+function getAstroHouseSystem() { try { return localStorage.getItem(LS.astroHouseSystem) || 'equal'; } catch { return 'equal'; } }
+function setAstroHouseSystem(v) { try { localStorage.setItem(LS.astroHouseSystem, ['whole','equal'].includes(v) ? v : 'equal'); } catch {} }
 function getBirthPlace() {
   try {
     const raw = localStorage.getItem(LS.birthPlace);
@@ -2793,7 +2793,7 @@ function symbolicAscendant(date = '', time = '12:00', name = '', place = null) {
 function symbolicMc(date = '', time = '12:00', place = null) {
   const lst = localSiderealDegree(date, time, place);
   const eps = 23.439291;
-  return zodiacFromDegree(normalizeDegree(radToDeg(Math.atan2(sinDeg(lst), cosDeg(lst) * cosDeg(eps)))));
+  return zodiacFromDegree(normalizeDegree(radToDeg(Math.atan2(sinDeg(lst) * cosDeg(eps), cosDeg(lst)))));
 }
 function calculateAstroProfile(name = '', date = '', time = '', place = null, options = {}) {
   if (!name || !date || !time) return null;
@@ -2834,13 +2834,39 @@ function astroEngineNoticeHTML(chart = null) {
   const quality = chart?.quality || 'Usa fecha, hora, lugar, coordenadas y zona horaria cuando hay ciudad seleccionada.';
   return `<div class="astro-engine-note" role="note"><strong>${escapeHTML(astroEngineLabel())}</strong><span>${escapeHTML(quality)} · Sin Swiss Ephemeris ni marcas externas.</span></div>`;
 }
+function astroWheelAngle(chart, degree) {
+  return normalizeDegree(Number(degree || 0) - Number(chart?.asc?.absolute || 0) + 270);
+}
+function astroAspectClass(name = '') {
+  const map = { Conjunción:'conjunction', Sextil:'sextile', Cuadratura:'square', Trígono:'trine', Oposición:'opposition' };
+  return map[name] || 'minor';
+}
+function astroAspectWebHTML(chart) {
+  if (!chart?.aspects?.length) return '';
+  const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
+  const point = planet => {
+    const angle = degToRad(astroWheelAngle(chart, planet.degree) - 90);
+    const radius = 34;
+    return { x:50 + Math.cos(angle) * radius, y:50 + Math.sin(angle) * radius };
+  };
+  const lines = chart.aspects.map(aspect => {
+    const a = byName[aspect.a];
+    const b = byName[aspect.b];
+    if (!a || !b) return '';
+    const p1 = point(a);
+    const p2 = point(b);
+    return `<line class="astro-aspect-line astro-aspect-${astroAspectClass(aspect.name)}" x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}"></line>`;
+  }).join('');
+  return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true">${lines}</svg>`;
+}
 function astroWheelHTML(chart) {
-  const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${index * 30}deg" aria-hidden="true">${sign.symbol}</span>`).join('');
+  const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${astroWheelAngle(chart, index * 30 + 15)}deg" aria-hidden="true">${sign.symbol}</span>`).join('');
+  const houses = chart.houses.map(house => `<span class="astro-house-line" style="--angle:${astroWheelAngle(chart, house.cusp)}deg" aria-hidden="true"></span><span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
   const planets = chart.planets.map((planet, index) => {
     const radius = [-.27, -.325, -.38][index % 3];
-    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${planet.degree}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}</span>`;
+    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}</span>`;
   }).join('');
-  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div><span class="astro-asc-line" style="--angle:${chart.asc.absolute}deg" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${chart.mc.absolute}deg" aria-hidden="true"></span>${planets}</div>`;
+  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
@@ -2907,7 +2933,7 @@ function showAstros() {
       <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
       <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
       <div class="field astro-place-field"><label>Lugar de nacimiento</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="Barcelona, España" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">Busca y elige una ciudad para usar coordenadas y zona horaria.</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
-      <div class="field"><label>Sistema de casas</label><select id="astroHouseSystem" class="input"><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>Casa entera simbólica</option><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>Casas iguales simbólicas</option></select></div>
+      <div class="field"><label>Sistema de casas</label><select id="astroHouseSystem" class="input"><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>Casas iguales simbólicas</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>Casa entera simbólica</option></select></div>
       <div class="field"><label>Pregunta o intención</label>${inputWithMic('astroIntention', 'placeholder="Claridad para hoy, amor, trabajo..."')}</div>
     </div>
     <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">Crear carta astral</button><button class="btn" data-act="astro-daily" type="button">Tirada astral del día</button></div>
@@ -3858,7 +3884,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-18-ascendant-fix'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase20-astro-wheel'); } catch {}
   }
 }
 
