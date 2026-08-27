@@ -3233,8 +3233,11 @@ const grabSeleccion = new Set();
 let grabCategoria = '';
 let grabConsulta = '';
 
+/* El catalogo completo, 1.200 entradas. Las sanitarias se muestran
+   marcadas y con aviso reforzado, pero no se ocultan: ya eran
+   visibles en el navegador general del modulo. */
 function grabDisponibles() {
-  return grabovoiEntries.filter(e => !isHealthGrabovoiEntry(e));
+  return grabovoiEntries;
 }
 
 function grabCategorias() {
@@ -3250,6 +3253,11 @@ function grabFiltradas() {
     const heno = normalizeGrabovoiSearch(`${e.codigo} ${e.nombre} ${e.categoria} ${e.uso}`);
     return terminos.every(t => heno.includes(t));
   }).slice(0, 80);
+}
+
+/* ¿Hay alguna secuencia sanitaria entre las marcadas? */
+function grabHaySalud() {
+  return grabSeleccionadas().some(isHealthGrabovoiEntry);
 }
 
 function grabTextoContador() {
@@ -3270,14 +3278,15 @@ function renderGrabList(list) {
   return list.map(e => {
     const idx = grabovoiEntries.indexOf(e);
     const marcada = grabSeleccion.has(idx);
+    const salud = isHealthGrabovoiEntry(e);
     return `<div class="grabovoi-fila${marcada ? ' marcada' : ''}">
       <label class="grabovoi-marca">
         <input type="checkbox" data-grab-pick="${idx}" ${marcada ? 'checked' : ''}>
         <span class="sr-only">${escapeHTML(t('gbPick'))}</span>
       </label>
-      <button class="choice grabovoi-ficha" data-grab-index="${idx}" type="button">
+      <button class="choice grabovoi-ficha${salud ? ' es-salud' : ''}" data-grab-index="${idx}" type="button">
         <strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong>
-        <small>${escapeHTML(e.categoria || t('gbSeq'))}</small>
+        <small>${escapeHTML(e.categoria || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small>
       </button>
     </div>`;
   }).join('');
@@ -3290,6 +3299,8 @@ function refrescarGrabList() {
   if (cont) cont.textContent = grabTextoContador();
   const boton = $('#grabPdfBtn');
   if (boton) boton.disabled = grabSeleccion.size === 0;
+  const avisoSalud = $('#grabHealthChip');
+  if (avisoSalud) avisoSalud.hidden = !grabHaySalud();
   const chips = $('.grabovoi-cats');
   if (chips) chips.outerHTML = renderGrabChips();
 }
@@ -3304,6 +3315,7 @@ async function showGrabovoi() {
     ${renderGrabChips()}
     <div class="grabovoi-barra mt">
       <span id="grabCount" class="chip" aria-live="polite">${escapeHTML(grabTextoContador())}</span>
+      <span id="grabHealthChip" class="chip grabovoi-chip-salud"${grabHaySalud() ? '' : ' hidden'}>⚕ ${escapeHTML(t('gbHealthShort'))}</span>
       <button class="btn compact" data-act="grab-clear" type="button">${escapeHTML(t('gbClear'))}</button>
       <button class="btn primary compact" id="grabPdfBtn" data-act="grab-pdf" type="button" ${grabSeleccion.size ? '' : 'disabled'}>📄 ${escapeHTML(t('gbMakePdf'))}</button>
     </div>
@@ -3337,7 +3349,9 @@ ${t('gbSheetSub', { n: entries.length })}
 
 ${bloques}
 
-${t('gbSheetNote')}`;
+${t('gbSheetNote')}${entries.some(isHealthGrabovoiEntry) ? `
+
+${t('gbHealthWarn')}` : ''}`;
 }
 
 function exportGrabovoiSheetPDF() {
@@ -3418,10 +3432,7 @@ function grabovoiPdfCandidates(reading = lastReading, query = '') {
   const normalized = normalizeGrabovoiSearch(query);
   if (normalized) {
     const terms = normalized.split(' ').filter(Boolean);
-    /* El buscador no aplicaba ningun filtro: escribir 'infeccion'
-       devolvia la lista clinica entera como sugerencia para el PDF. */
     return grabovoiEntries.filter(entry => {
-      if (isHealthGrabovoiEntry(entry)) return false;
       const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
       return terms.every(term => haystack.includes(term));
     }).slice(0, 80);
@@ -3444,7 +3455,7 @@ function grabovoiPdfCandidates(reading = lastReading, query = '') {
   return grabovoiEntries
     .map(entry => {
       const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
-      const score = terms.reduce((total, term) => total + (haystack.includes(normalizeGrabovoiSearch(term)) ? 1 : 0), 0) + (isHealthGrabovoiEntry(entry) ? -2 : 0);
+      const score = terms.reduce((total, term) => total + (haystack.includes(normalizeGrabovoiSearch(term)) ? 1 : 0), 0);
       return { entry, score };
     })
     .filter(item => item.score > 0)
@@ -3455,9 +3466,10 @@ function grabovoiPdfCandidates(reading = lastReading, query = '') {
 function renderGrabovoiPdfList(list = []) {
   return list.map(entry => {
     const index = grabovoiEntries.indexOf(entry);
-    return `<label class="choice grabovoi-pdf-choice">
+    const salud = isHealthGrabovoiEntry(entry);
+    return `<label class="choice grabovoi-pdf-choice${salud ? ' es-salud' : ''}">
       <input type="checkbox" data-grab-pdf-index="${index}">
-      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || t('gbSeq'))}</small></span>
+      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small></span>
     </label>`;
   }).join('\n') || `<p class="subtle">${escapeHTML(t('gbPdfNone'))}</p>`;
 }
@@ -3469,7 +3481,7 @@ async function showNumerologyGrabovoiPdfPicker() {
   openModal({ icon:'📜', title:t('gbPdfTitle'), subtitle:subject ? `${t('lblFor')} ${subject}` : t('gbPdfPick'), body:`
     <p class="notice">${escapeHTML(t('gbPdfNotice'))}</p>
     <div class="field mt"><label>${escapeHTML(t('gbPdfSearch'))}</label>${inputWithMic('grabPdfSearch', `placeholder="${escapeHTML(t('gbPdfSearchPh'))}"`)}</div>
-    <div id="grabPdfList" class="diary-list mt">${renderGrabovoiPdfList(candidates.length ? candidates : grabovoiEntries.filter(entry => !isHealthGrabovoiEntry(entry)).slice(0, 36))}</div>
+    <div id="grabPdfList" class="diary-list mt">${renderGrabovoiPdfList(candidates.length ? candidates : grabovoiEntries.slice(0, 36))}</div>
     <div class="actions mt"><button class="btn primary" data-act="export-numerology-grabovoi-pdf" type="button">${escapeHTML(t('gbPdfGo'))}</button><button class="btn" data-act="pdf-options" type="button">${escapeHTML(t('gbBack'))}</button></div>` });
 }
 function selectedGrabovoiPdfEntries() {
@@ -3497,8 +3509,9 @@ SECUENCIAS GRABOVOI SELECCIONADAS${subject ? ` · ${subject}` : ''}
 
 ${blocks}
 
-Nota de uso:
-Estas secuencias se incluyen como ejercicios simbólicos de atención, escritura y visualización. No son predicciones, garantías, diagnóstico, tratamiento ni sustituyen decisiones personales o profesionales.`;
+${t('gbSheetNote')}${entries.some(isHealthGrabovoiEntry) ? `
+
+${t('gbHealthWarn')}` : ''}`;
 }
 function exportNumerologyGrabovoiPDFFromSelection() {
   if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');

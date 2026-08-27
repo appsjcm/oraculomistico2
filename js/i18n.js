@@ -245,6 +245,9 @@ export function applyAppTranslations(root = document) {
    ============================================================ */
 const V2_STRINGS = {
   es: {
+    gbHealth:'Salud', gbHealthTag:'Entrada de salud',
+    gbHealthWarn:'Has incluido secuencias relacionadas con la salud. Son ejercicios simbólicos de atención y visualización: no diagnostican, no tratan y no curan nada, y no sustituyen la atención médica. Si tienes un problema de salud, consulta con un profesional sanitario.',
+    gbHealthShort:'Incluye entradas de salud: contenido simbólico, sin valor médico.',
     gbSel:'{n} secuencias seleccionadas', gbSelOne:'1 secuencia seleccionada', gbNumGrab:'Numerología + Grabovoi',
     gbPick:'Marcar', gbPicked:'Marcadas', gbClear:'Quitar todas',
     gbMakePdf:'Crear PDF conjunto', gbOpen:'Ver ficha',
@@ -417,6 +420,9 @@ const V2_STRINGS = {
     omPanels: 'Paneles avanzados', omPanelsSub: 'Las herramientas de las versiones anteriores'
   },
   ca: {
+    gbHealth:'Salut', gbHealthTag:'Entrada de salut',
+    gbHealthWarn:'Hi has inclòs seqüències relacionades amb la salut. Són exercicis simbòlics d’atenció i visualització: no diagnostiquen, no tracten i no curen res, i no substitueixen l’atenció mèdica. Si tens un problema de salut, consulta amb un professional sanitari.',
+    gbHealthShort:'Inclou entrades de salut: contingut simbòlic, sense valor mèdic.',
     gbSel:'{n} seqüències seleccionades', gbSelOne:'1 seqüència seleccionada', gbNumGrab:'Numerologia + Grabovoi',
     gbPick:'Marca', gbPicked:'Marcades', gbClear:'Treu-les totes',
     gbMakePdf:'Crea el PDF conjunt', gbOpen:'Obre la fitxa',
@@ -535,6 +541,9 @@ const V2_STRINGS = {
     omPanels: 'Plafons avançats', omPanelsSub: 'Les eines de les versions anteriors'
   },
   en: {
+    gbHealth:'Health', gbHealthTag:'Health entry',
+    gbHealthWarn:'You have included health-related sequences. They are symbolic exercises in attention and visualisation: they do not diagnose, treat or cure anything, and they do not replace medical care. If you have a health problem, speak to a healthcare professional.',
+    gbHealthShort:'Includes health entries: symbolic content, of no medical value.',
     gbSel:'{n} sequences selected', gbSelOne:'1 sequence selected', gbNumGrab:'Numerology + Grabovoi',
     gbPick:'Select', gbPicked:'Selected', gbClear:'Clear all',
     gbMakePdf:'Create the combined PDF', gbOpen:'Open the entry',
@@ -708,6 +717,9 @@ const V2_STRINGS = {
     omPanels: 'Advanced panels', omPanelsSub: 'Tools from earlier versions'
   },
   fr: {
+    gbHealth:'Santé', gbHealthTag:'Entrée de santé',
+    gbHealthWarn:'Tu as inclus des séquences liées à la santé. Ce sont des exercices symboliques d’attention et de visualisation : elles ne diagnostiquent, ne traitent et ne guérissent rien, et ne remplacent pas les soins médicaux. En cas de problème de santé, consulte un professionnel de santé.',
+    gbHealthShort:'Contient des entrées de santé : contenu symbolique, sans valeur médicale.',
     gbSel:'{n} séquences sélectionnées', gbSelOne:'1 séquence sélectionnée', gbNumGrab:'Numérologie + Grabovoi',
     gbPick:'Sélectionner', gbPicked:'Sélectionnées', gbClear:'Tout enlever',
     gbMakePdf:'Créer le PDF combiné', gbOpen:'Ouvrir la fiche',
@@ -826,6 +838,9 @@ const V2_STRINGS = {
     omPanels: 'Panneaux avancés', omPanelsSub: 'Les outils des versions précédentes'
   },
   de: {
+    gbHealth:'Gesundheit', gbHealthTag:'Gesundheitseintrag',
+    gbHealthWarn:'Du hast Sequenzen zum Thema Gesundheit aufgenommen. Es sind symbolische Übungen für Aufmerksamkeit und Vorstellung: Sie diagnostizieren, behandeln und heilen nichts und ersetzen keine medizinische Versorgung. Bei gesundheitlichen Beschwerden wende dich an eine Fachperson.',
+    gbHealthShort:'Enthält Gesundheitseinträge: symbolischer Inhalt ohne medizinischen Wert.',
     gbSel:'{n} Sequenzen ausgewählt', gbSelOne:'1 Sequenz ausgewählt', gbNumGrab:'Numerologie + Grabovoi',
     gbPick:'Auswählen', gbPicked:'Ausgewählt', gbClear:'Alle entfernen',
     gbMakePdf:'Gemeinsames PDF erstellen', gbOpen:'Eintrag öffnen',
@@ -944,6 +959,9 @@ const V2_STRINGS = {
     omPanels: 'Erweiterte Bereiche', omPanelsSub: 'Werkzeuge früherer Versionen'
   },
   zh: {
+    gbHealth:'健康', gbHealthTag:'健康类条目',
+    gbHealthWarn:'你选入了与健康有关的数列。它们只是专注与观想的象征性练习：不诊断、不治疗、也不能治愈任何疾病，更不能替代医疗照护。如有健康问题，请咨询专业医疗人员。',
+    gbHealthShort:'包含健康类条目：象征性内容，不具医疗价值。',
     gbSel:'已选 {n} 组数列', gbSelOne:'已选 1 组数列', gbNumGrab:'数字学 + 格拉博沃伊',
     gbPick:'选择', gbPicked:'已选', gbClear:'全部取消',
     gbMakePdf:'生成合并 PDF', gbOpen:'查看条目',
