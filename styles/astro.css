@@ -28,6 +28,27 @@
   z-index: 1;
 }
 
+.astro-engine-note {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(145, 194, 255, .22);
+  border-radius: 8px;
+  background: rgba(7, 10, 24, .46);
+}
+
+.astro-engine-note strong {
+  color: rgb(246, 222, 154);
+  font-size: .9rem;
+}
+
+.astro-engine-note span {
+  color: rgba(255, 250, 239, .66);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
 .astro-form .field label {
   color: rgba(255, 250, 239, .82);
 }
@@ -135,20 +156,22 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.32)) rotate(calc(var(--angle) * -1));
-  width: 36px;
-  height: 36px;
-  margin: -18px;
+  transform: rotate(var(--angle)) translateY(var(--radius)) rotate(calc(var(--angle) * -1));
+  width: 30px;
+  height: 30px;
+  margin: -15px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   border: 1px solid rgba(145, 194, 255, .38);
   background: rgba(8, 10, 22, .78);
   color: rgb(246, 222, 154);
+  font-size: .95rem;
   box-shadow: 0 8px 20px rgba(0,0,0,.24);
 }
 
-.astro-asc-line {
+.astro-asc-line,
+.astro-mc-line {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -159,9 +182,18 @@
   background: linear-gradient(rgba(99, 211, 255, .95), transparent);
 }
 
+.astro-mc-line {
+  height: 40%;
+  background: linear-gradient(rgba(246, 222, 154, .9), transparent);
+}
+
 .astro-panel-list {
   display: grid;
   gap: 10px;
+}
+
+.astro-positions-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .astro-chip {
@@ -173,6 +205,10 @@
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.06);
+}
+
+.astro-summary-card {
+  align-self: stretch;
 }
 
 .astro-chip strong,
@@ -239,6 +275,17 @@
 
   .astro-wheel {
     --wheel-size: min(86vw, 310px);
+  }
+
+  .astro-positions-list {
+    grid-template-columns: 1fr;
+  }
+
+  .astro-planet-dot {
+    width: 28px;
+    height: 28px;
+    margin: -14px;
+    font-size: .86rem;
   }
 }
 

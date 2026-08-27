@@ -30,6 +30,7 @@ const LS = {
   birthDate: 'oraculo.birthDate.v1',
   birthTime: 'oraculo.birthTime.v1',
   birthPlace: 'oraculo.birthPlace.v1',
+  astroHouseSystem: 'oraculo.astroHouseSystem.v1',
   effects3d: 'oraculo.3d.preference.v14'
 };
 
@@ -1636,7 +1637,7 @@ document.addEventListener('error', (event) => {
 
 
 function getProfile() {
-  return { birth:'', birthTime:'', birthPlace:null, sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
+  return { birth:'', birthTime:'', birthPlace:null, astroHouseSystem:getAstroHouseSystem(), sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
 }
 function setProfile(profile) { storeSet(LS.profile, { ...getProfile(), ...profile }); }
 function isPrivateMode() { return localStorage.getItem(LS.privateMode) === 'true'; }
@@ -1805,7 +1806,7 @@ function showPrivacyCenter() {
   openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>Las lecturas, el perfil y el chat permanecen en este navegador. Al usar Puter IA, el texto enviado se procesa mediante ese servicio.</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
 function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast('Chat borrado.'); } }
-function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); updateHome(); toast('Perfil borrado.'); } }
+function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast('Perfil borrado.'); } }
 function factoryResetData() {
   if (!confirm('¿Restablecer todos los datos de Oráculo Místico en este navegador?')) return;
   Object.values(LS).forEach(key => localStorage.removeItem(key));
@@ -1897,6 +1898,7 @@ function importBackupFromFile(file) {
       if (data.birthDate) localStorage.setItem(LS.birthDate, data.birthDate);
       if (data.birthTime) localStorage.setItem(LS.birthTime, data.birthTime);
       if (data.birthPlace) localStorage.setItem(LS.birthPlace, typeof data.birthPlace === 'string' ? data.birthPlace : JSON.stringify(data.birthPlace));
+      if (data.astroHouseSystem) setAstroHouseSystem(data.astroHouseSystem);
       if (data.theme) localStorage.setItem(LS.theme, data.theme);
       if (data.pdfStyle) localStorage.setItem(LS.pdfStyle, data.pdfStyle);
       if (Array.isArray(data.diary)) storeSet(LS.diary, data.diary);
@@ -2032,6 +2034,7 @@ function backupData() {
     birthDate:getBirthDate(),
     birthTime:getBirthTime(),
     birthPlace:getBirthPlace(),
+    astroHouseSystem:getAstroHouseSystem(),
     theme:getTheme(),
     privateMode:isPrivateMode(),
     pdfStyle:getPdfStyle(),
@@ -2447,6 +2450,8 @@ function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || '';
 function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
 function getBirthTime() { try { return localStorage.getItem(LS.birthTime) || ''; } catch { return ''; } }
 function setBirthTime(v) { try { if (/^\d{2}:\d{2}$/.test(v)) localStorage.setItem(LS.birthTime, v); } catch {} }
+function getAstroHouseSystem() { try { return localStorage.getItem(LS.astroHouseSystem) || 'whole'; } catch { return 'whole'; } }
+function setAstroHouseSystem(v) { try { localStorage.setItem(LS.astroHouseSystem, ['whole','equal'].includes(v) ? v : 'whole'); } catch {} }
 function getBirthPlace() {
   try {
     const raw = localStorage.getItem(LS.birthPlace);
@@ -2646,13 +2651,19 @@ const ASTRO_SIGNS = [
   { name:'Piscis', symbol:'♓', element:'Agua', mode:'Mutable', keywords:['intuición','entrega','sueño'] }
 ];
 const ASTRO_PLANETS = [
-  { id:'sun', name:'Sol', symbol:'☉', role:'identidad y dirección', cycle:365.2422, offset:280 },
-  { id:'moon', name:'Luna', symbol:'☽', role:'emoción y necesidad íntima', cycle:27.3217, offset:218 },
-  { id:'mercury', name:'Mercurio', symbol:'☿', role:'mente y palabra', cycle:87.969, offset:249 },
-  { id:'venus', name:'Venus', symbol:'♀', role:'vínculos y deseo', cycle:224.701, offset:182 },
-  { id:'mars', name:'Marte', symbol:'♂', role:'acción y coraje', cycle:686.98, offset:327 },
-  { id:'jupiter', name:'Júpiter', symbol:'♃', role:'expansión y confianza', cycle:4332.59, offset:25 },
-  { id:'saturn', name:'Saturno', symbol:'♄', role:'límite y madurez', cycle:10759.22, offset:40 }
+  { id:'sun', name:'Sol', symbol:'☉', role:'identidad y dirección', cycle:365.2422, offset:280.466, type:'luminary' },
+  { id:'moon', name:'Luna', symbol:'☽', role:'emoción y necesidad íntima', cycle:27.3217, offset:218.316, type:'luminary' },
+  { id:'mercury', name:'Mercurio', symbol:'☿', role:'mente y palabra', cycle:87.969, offset:252.251, retroCycle:115.88 },
+  { id:'venus', name:'Venus', symbol:'♀', role:'vínculos y deseo', cycle:224.701, offset:181.98, retroCycle:583.92 },
+  { id:'mars', name:'Marte', symbol:'♂', role:'acción y coraje', cycle:686.98, offset:355.433, retroCycle:779.94 },
+  { id:'jupiter', name:'Júpiter', symbol:'♃', role:'expansión y confianza', cycle:4332.59, offset:34.351, retroCycle:398.88 },
+  { id:'saturn', name:'Saturno', symbol:'♄', role:'límite y madurez', cycle:10759.22, offset:50.077, retroCycle:378.09 },
+  { id:'uranus', name:'Urano', symbol:'♅', role:'despertar y cambio', cycle:30685.4, offset:314.055, retroCycle:369.66 },
+  { id:'neptune', name:'Neptuno', symbol:'♆', role:'visión, niebla e intuición', cycle:60189, offset:304.348, retroCycle:367.49 },
+  { id:'pluto', name:'Plutón', symbol:'♇', role:'sombra y transformación profunda', cycle:90560, offset:238.929, retroCycle:366.73 },
+  { id:'node', name:'Nodo Norte', symbol:'☊', role:'dirección evolutiva simbólica', cycle:-6798.38, offset:125.044, type:'point' },
+  { id:'chiron', name:'Quirón', symbol:'⚷', role:'herida sabia e integración', cycle:18453.3, offset:243.56, retroCycle:346 },
+  { id:'lilith', name:'Lilith', symbol:'⚸', role:'instinto, límite y voz propia', cycle:3232.61, offset:83.353, type:'point' }
 ];
 const ASTRO_ASPECTS = [
   { name:'Conjunción', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
@@ -2665,6 +2676,15 @@ const ASTRO_HOUSES = ['Yo','Recursos','Palabra','Hogar','Creatividad','Rutina','
 
 function normalizeDegree(value) {
   return ((Number(value) % 360) + 360) % 360;
+}
+function degToRad(value) { return Number(value) * Math.PI / 180; }
+function radToDeg(value) { return Number(value) * 180 / Math.PI; }
+function sinDeg(value) { return Math.sin(degToRad(value)); }
+function cosDeg(value) { return Math.cos(degToRad(value)); }
+function tanDeg(value) { return Math.tan(degToRad(value)); }
+function astroEngineLabel() { return 'Motor astral abierto · aproximación simbólica'; }
+function astroHouseSystemLabel(system = 'whole') {
+  return system === 'equal' ? 'Casas iguales simbólicas' : 'Casa entera simbólica';
 }
 function timeZoneOffsetMinutes(timeZone = '', utcDate = new Date()) {
   if (!timeZone || !Intl?.DateTimeFormat) return 0;
@@ -2685,6 +2705,11 @@ function astroDateUTC(date = '', time = '12:00', timeZone = '') {
   const offset = timeZoneOffsetMinutes(timeZone, new Date(localAsUTC));
   return localAsUTC - offset * 60000;
 }
+function astroDayCount(date = '', time = '12:00', place = null) {
+  const ms = astroDateUTC(date, time, place?.timezone || '');
+  if (ms === null) return null;
+  return { ms, days:(ms - Date.UTC(2000, 0, 1, 12, 0)) / 86400000, jd:ms / 86400000 + 2440587.5 };
+}
 function zodiacFromDegree(degree) {
   const normalized = normalizeDegree(degree);
   const index = Math.floor(normalized / 30) % 12;
@@ -2704,14 +2729,33 @@ function sunSignFromDate(date = '') {
   return { ...ASTRO_SIGNS[index], index };
 }
 function planetPositions(date = '', time = '12:00', place = null) {
-  const ms = astroDateUTC(date, time, place?.timezone || '');
-  if (ms === null) return [];
-  const epoch = Date.UTC(2000, 0, 1, 12, 0);
-  const days = (ms - epoch) / 86400000;
+  const dateInfo = astroDayCount(date, time, place);
+  if (!dateInfo) return [];
+  const { days } = dateInfo;
+  const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
+  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
+  const sunLongitude = normalizeDegree(sunMean + 1.914602 * sinDeg(sunAnomaly) + 0.019993 * sinDeg(2 * sunAnomaly));
+  const moonMean = normalizeDegree(218.316 + 13.176396 * days);
+  const moonAnomaly = normalizeDegree(134.963 + 13.064993 * days);
+  const moonElongation = normalizeDegree(297.85 + 12.190749 * days);
+  const moonArgument = normalizeDegree(93.272 + 13.22935 * days);
+  const moonLongitude = normalizeDegree(
+    moonMean +
+    6.289 * sinDeg(moonAnomaly) +
+    1.274 * sinDeg(2 * moonElongation - moonAnomaly) +
+    0.658 * sinDeg(2 * moonElongation) +
+    0.214 * sinDeg(2 * moonAnomaly) -
+    0.186 * sinDeg(sunAnomaly) -
+    0.114 * sinDeg(2 * moonArgument)
+  );
   return ASTRO_PLANETS.map(planet => {
-    const degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
+    let degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
+    if (planet.id === 'sun') degree = sunLongitude;
+    if (planet.id === 'moon') degree = moonLongitude;
+    const retroPhase = planet.retroCycle ? normalizeDegree(days * 360 / planet.retroCycle + planet.offset) : 0;
+    const retrograde = Boolean(planet.retroCycle && cosDeg(retroPhase) < -0.58);
     const sign = zodiacFromDegree(degree);
-    return { ...planet, degree, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, element:sign.element, keywords:sign.keywords };
+    return { ...planet, degree, retrograde, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, element:sign.element, keywords:sign.keywords };
   });
 }
 function astroHash(value = '') {
@@ -2722,25 +2766,41 @@ function astroHash(value = '') {
   }
   return hash >>> 0;
 }
-function symbolicAscendant(date = '', time = '12:00', name = '', place = null) {
-  const ms = astroDateUTC(date, time, place?.timezone || '');
-  const solar = planetPositions(date, '12:00', place).find(p => p.id === 'sun')?.degree || 0;
-  const days = ms !== null ? (ms - Date.UTC(2000, 0, 1, 12, 0)) / 86400000 : 0;
+function localSiderealDegree(date = '', time = '12:00', place = null) {
+  const dateInfo = astroDayCount(date, time, place);
+  if (!dateInfo) return 0;
   const longitude = Number.isFinite(Number(place?.lon)) ? Number(place.lon) : 0;
-  const nameOffset = place?.lat ? 0 : astroHash(name) % 18;
-  const degree = normalizeDegree(100.46 + 0.985647 * days + longitude + solar * .18 + nameOffset);
+  const t = (dateInfo.jd - 2451545.0) / 36525;
+  return normalizeDegree(280.46061837 + 360.98564736629 * (dateInfo.jd - 2451545.0) + 0.000387933 * t * t - (t * t * t) / 38710000 + longitude);
+}
+function symbolicAscendant(date = '', time = '12:00', name = '', place = null) {
+  const lst = localSiderealDegree(date, time, place);
+  const lat = Number.isFinite(Number(place?.lat)) ? Math.max(-66, Math.min(66, Number(place.lat))) : 0;
+  const eps = 23.439291;
+  let degree = normalizeDegree(radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
+  if (!Number.isFinite(degree)) degree = normalizeDegree(lst + (astroHash(name) % 18));
+  if (!place?.lat) degree = normalizeDegree(degree + (astroHash(name) % 18));
   return zodiacFromDegree(degree);
 }
-function calculateAstroProfile(name = '', date = '', time = '', place = null) {
+function symbolicMc(date = '', time = '12:00', place = null) {
+  const lst = localSiderealDegree(date, time, place);
+  const eps = 23.439291;
+  return zodiacFromDegree(normalizeDegree(radToDeg(Math.atan2(sinDeg(lst), cosDeg(lst) * cosDeg(eps)))));
+}
+function calculateAstroProfile(name = '', date = '', time = '', place = null, options = {}) {
   if (!name || !date || !time) return null;
   const planets = planetPositions(date, time, place);
   if (!planets.length) return null;
-  const sun = sunSignFromDate(date);
+  const sunBody = planets.find(p => p.id === 'sun');
+  const sun = { ...zodiacFromDegree(sunBody?.degree || 0) };
   const asc = symbolicAscendant(date, time, name, place);
   const moon = planets.find(p => p.id === 'moon');
+  const mc = symbolicMc(date, time, place);
+  const houseSystem = options.houseSystem || getAstroHouseSystem();
   const houses = ASTRO_HOUSES.map((label, index) => {
-    const sign = ASTRO_SIGNS[(asc.index + index) % 12];
-    return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element };
+    const cusp = houseSystem === 'equal' ? normalizeDegree(asc.absolute + index * 30) : normalizeDegree(asc.index * 30 + index * 30);
+    const sign = zodiacFromDegree(cusp);
+    return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element, cusp, degree:sign.degree };
   });
   const aspects = [];
   planets.forEach((a, i) => planets.slice(i + 1).forEach(b => {
@@ -2749,7 +2809,9 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null) {
     const aspect = ASTRO_ASPECTS.map(item => ({ ...item, delta:Math.abs(angle - item.angle) })).sort((x,y) => x.delta - y.delta)[0];
     if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, orb:aspect.delta.toFixed(1), text:aspect.text });
   }));
-  return { name, date, time, place, sun, moon, asc, planets, houses, aspects:aspects.slice(0, 6) };
+  const timeZoneOffset = timeZoneOffsetMinutes(place?.timezone || '', new Date(astroDateUTC(date, time, place?.timezone || '') || Date.now()));
+  const quality = place?.timezone && Number.isFinite(Number(place?.lat)) && Number.isFinite(Number(place?.lon)) ? 'Lugar y zona horaria seleccionados' : 'Lugar manual: ascendente y casas menos afinados';
+  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 8), houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset };
 }
 function astroAdviceForElement(element = '') {
   const map = {
@@ -2760,16 +2822,23 @@ function astroAdviceForElement(element = '') {
   };
   return map[element] || 'busca un gesto simple que te devuelva centro';
 }
+function astroEngineNoticeHTML(chart = null) {
+  const quality = chart?.quality || 'Usa fecha, hora, lugar, coordenadas y zona horaria cuando hay ciudad seleccionada.';
+  return `<div class="astro-engine-note" role="note"><strong>${escapeHTML(astroEngineLabel())}</strong><span>${escapeHTML(quality)} · Sin Swiss Ephemeris ni marcas externas.</span></div>`;
+}
 function astroWheelHTML(chart) {
   const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${index * 30}deg" aria-hidden="true">${sign.symbol}</span>`).join('');
-  const planets = chart.planets.map(planet => `<span class="astro-planet-dot" style="--angle:${planet.degree}deg" title="${escapeHTML(`${planet.name} en ${planet.sign}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}`)}">${planet.symbol}</span>`).join('');
-  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div><span class="astro-asc-line" style="--angle:${chart.asc.absolute}deg" aria-hidden="true"></span>${planets}</div>`;
+  const planets = chart.planets.map((planet, index) => {
+    const radius = [-.27, -.325, -.38][index % 3];
+    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${planet.degree}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}</span>`;
+  }).join('');
+  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div><span class="astro-asc-line" style="--angle:${chart.asc.absolute}deg" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${chart.mc.absolute}deg" aria-hidden="true"></span>${planets}</div>`;
 }
 function astroPositionsHTML(chart) {
-  return `<div class="astro-panel-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
 }
 function astroHousesHTML(chart) {
-  return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)}</small></span></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${house.degree}°</small></span></article>`).join('')}</div>`;
 }
 function astroAspectsHTML(chart) {
   return chart.aspects.length
@@ -2784,20 +2853,27 @@ function astroReadingText(chart) {
 Fecha: ${chart.date} · Hora de nacimiento: ${chart.time}
 Lugar: ${chart.place?.label || 'No indicado'}${chart.place?.timezone ? ` · Zona horaria: ${chart.place.timezone}` : ''}
 ${Number.isFinite(Number(chart.place?.lat)) ? `Coordenadas: ${chart.place.lat}, ${chart.place.lon}` : 'Coordenadas: no seleccionadas'}
+Motor: ${chart.engine}
+Sistema de casas: ${astroHouseSystemLabel(chart.houseSystem)}
+Calidad del cálculo: ${chart.quality}
 
 Sol en ${chart.sun.symbol} ${chart.sun.name}: tu dirección principal busca ${chart.sun.keywords.join(', ')}.
 Luna en ${chart.moon.signSymbol} ${chart.moon.sign}: tu mundo emocional se ordena desde ${chart.moon.keywords.join(', ')}.
 Ascendente simbólico en ${chart.asc.symbol} ${chart.asc.name}: la primera puerta de la experiencia habla de ${chart.asc.keywords.join(', ')}.
+Medio Cielo simbólico en ${chart.mc.symbol} ${chart.mc.name}: el propósito visible toma ese color de fondo.
 
 Elemento dominante: ${element}. Consejo: ${astroAdviceForElement(element)}.
+
+Posiciones aproximadas:
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.signDegree}° ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
 
 Aspectos principales:
 ${aspects}
 
 Casas simbólicas:
-${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.symbol} ${h.sign}`).join('\n')}
+${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degree}° ${h.symbol} ${h.sign}`).join('\n')}
 
-Nota: lectura simbólica local. El lugar se usa para zona horaria y ascendente aproximado; no sustituye un cálculo astrológico profesional con efemérides completas.`;
+Nota: lectura simbólica local con motor abierto propio. El lugar se usa para zona horaria, ascendente y casas aproximadas; no sustituye un cálculo astrológico profesional con efemérides completas.`;
 }
 function astroReadingItems(chart) {
   return chart.planets.map(p => ({ kind:'astro', name:`${p.name} en ${p.sign}`, subtitle:p.role, image:'', symbol:p.symbol, position:p.element }));
@@ -2810,17 +2886,20 @@ function showAstros() {
   const place = getBirthPlace() || profile.birthPlace || null;
   const placeValue = escapeHTML(place?.label || '');
   const placeData = escapeHTML(place ? JSON.stringify(place) : '');
+  const houseSystem = getAstroHouseSystem();
   openModal({ icon:'☉', title:'Astros', subtitle:'Carta astral simbólica y tirada diaria con IA opcional.', body:`
     <div class="result-card astro-hero">
       <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio del Oráculo"></div>
       <h3>Rueda astral del Oráculo</h3>
       <p>Introduce nombre, fecha, hora local y lugar de nacimiento. Todo se guarda en este dispositivo y la IA solo se usa si la conectas.</p>
+      ${astroEngineNoticeHTML()}
     </div>
     <div class="form-grid mt astro-form">
       <div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('astroName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
       <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
       <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
       <div class="field astro-place-field"><label>Lugar de nacimiento</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="Barcelona, España" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">Busca y elige una ciudad para usar coordenadas y zona horaria.</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
+      <div class="field"><label>Sistema de casas</label><select id="astroHouseSystem" class="input"><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>Casa entera simbólica</option><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>Casas iguales simbólicas</option></select></div>
       <div class="field"><label>Pregunta o intención</label>${inputWithMic('astroIntention', 'placeholder="Claridad para hoy, amor, trabajo..."')}</div>
     </div>
     <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">Crear carta astral</button><button class="btn" data-act="astro-daily" type="button">Tirada astral del día</button></div>
@@ -2837,6 +2916,7 @@ function getAstroFormData() {
     date:$('#astroDate')?.value || getBirthDate() || profile.birth || '',
     time:$('#astroTime')?.value || getBirthTime() || profile.birthTime || '',
     place,
+    houseSystem:$('#astroHouseSystem')?.value || getAstroHouseSystem(),
     intention:($('#astroIntention')?.value || localStorage.getItem(LS.intention) || profile.intention || 'Claridad').trim()
   };
 }
@@ -2845,13 +2925,14 @@ function persistAstroData(data) {
   if (data.date) setBirthDate(data.date);
   if (data.time) setBirthTime(data.time);
   if (data.place?.label) setBirthPlace(data.place);
+  if (data.houseSystem) setAstroHouseSystem(data.houseSystem);
   setProfile({ birth:data.date, birthTime:data.time, birthPlace:data.place || getProfile().birthPlace, sign:sunSignFromDate(data.date)?.name || getProfile().sign, intention:data.intention || getProfile().intention });
 }
 function renderAstroReading(chart, text, title) {
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente simbólico:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Lugar:</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p></div>
+      <div class="result-card astro-summary-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Medio Cielo:</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p><p><strong>Lugar:</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
     <h3 class="section-title">Posiciones</h3>
     ${astroPositionsHTML(chart)}
@@ -2864,11 +2945,11 @@ function renderAstroReading(chart, text, title) {
 function calcAstroChart() {
   const data = getAstroFormData();
   if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
-  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place);
+  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
   if (!chart) return toast('Revisa la fecha y la hora.');
   persistAstroData(data);
   const text = astroReadingText(chart);
-  setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, astro:chart } });
+  setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, houseSystem:data.houseSystem, astro:chart } });
   renderAstroReading(chart, text, `Carta astral · ${data.name}`);
 }
 function dailyAstroCards(chart, todayChart, intention = '') {
@@ -2885,9 +2966,11 @@ function dailyAstroText(chart, todayChart, cards, intention) {
 Nacimiento: ${chart.date} · Hora: ${chart.time}
 Lugar: ${chart.place?.label || 'No indicado'}
 Intención: ${intention || 'Claridad'}
+Motor: ${chart.engine}
+Sistema de casas: ${astroHouseSystemLabel(chart.houseSystem)}
 
 Base natal:
-Sol en ${chart.sun.name}. Luna en ${chart.moon.sign}. Ascendente simbólico en ${chart.asc.name}.
+Sol en ${chart.sun.name}. Luna en ${chart.moon.sign}. Ascendente simbólico en ${chart.asc.name}. Medio Cielo simbólico en ${chart.mc.name}.
 
 Astros de hoy:
 Sol en ${todayChart.sun.name}. Luna en ${todayChart.moon.sign}. Elemento lunar: ${todayChart.moon.element}.
@@ -2900,17 +2983,17 @@ Hoy conviene mirar la intención desde ${todayChart.moon.element.toLowerCase()} 
 async function dailyAstroReading() {
   const data = getAstroFormData();
   if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
-  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place);
+  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
   if (!chart) return toast('Revisa la fecha y la hora.');
   persistAstroData(data);
   const now = new Date();
   const today = todayKey();
   const todayTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const todayChart = calculateAstroProfile(data.name, today, todayTime, data.place);
+  const todayChart = calculateAstroProfile(data.name, today, todayTime, data.place, { houseSystem:data.houseSystem });
   const cards = dailyAstroCards(chart, todayChart, data.intention);
   let text = dailyAstroText(chart, todayChart, cards, data.intention);
   const title = `Tirada astral del día · ${data.name}`;
-  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, astro:chart, astroToday:todayChart } });
+  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, houseSystem:data.houseSystem, astro:chart, astroToday:todayChart } });
   let ai = '';
   if (localStorage.getItem(LS.puter) === 'true') {
     mostrarPensando();
@@ -2926,7 +3009,7 @@ ${text}`, { prefix:readingPersonalPrefix(lastReading) }));
   openModal({ icon:'☉', title, subtitle:`${today} · ${data.intention || 'Claridad'}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(todayChart)}
-      <div class="astro-day-grid">${cards.map(card => `<article class="astro-day-card"><span class="astro-symbol" aria-hidden="true">${card.symbol}</span><strong>${escapeHTML(card.title)}</strong><p>${escapeHTML(card.planet.name)} en ${escapeHTML(card.sign)}</p><small>${escapeHTML(card.text)}.</small></article>`).join('')}</div>
+      <div><div class="astro-day-grid">${cards.map(card => `<article class="astro-day-card"><span class="astro-symbol" aria-hidden="true">${card.symbol}</span><strong>${escapeHTML(card.title)}</strong><p>${escapeHTML(card.planet.name)} en ${escapeHTML(card.sign)}</p><small>${escapeHTML(card.text)}.</small></article>`).join('')}</div>${astroEngineNoticeHTML(todayChart)}</div>
     </div>
     <div class="result-card mt"><h3>Síntesis astral</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(lastReading.text,'Astros')}</div>` });
 }
@@ -3755,7 +3838,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-16-cities'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-17-astro-open'); } catch {}
   }
 }
 
