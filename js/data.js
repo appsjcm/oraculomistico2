@@ -1,3 +1,4 @@
+import { tEn as traducirEn } from './i18n.js';
 // data.js - Arcanos Mayores, Menores, Runas, Fases Lunares
 import { imgObj } from './config.js';
 
@@ -209,10 +210,36 @@ export function aplicarIdiomaTarot(idioma = 'es') {
     });
 }
 
-/** Carga el idioma y lo aplica. */
+/* Las 24 runas se traducen en la capa de datos, igual que las cartas:
+   asi los doce sitios que las pintan no necesitan enterarse. El nombre
+   (Fehu, Uruz...) es un nombre propio y no cambia en ningun idioma.
+   Se guarda el texto castellano original para poder volver a el. */
+const RUNAS_ES = RUNAS.map(r => ({ up: r.up, rv: r.rv }));
+
+export function aplicarIdiomaRunas(idioma = 'es') {
+    const tr = (k) => {
+        /* Con el idioma explicito: t() mira el de la interfaz, que aun
+           puede no haber cambiado cuando se prepara el contenido. */
+        const v = traducirEn(idioma, k);
+        return v && v !== k ? v : null;
+    };
+    RUNAS.forEach((runa, i) => {
+        if (idioma === 'es') {
+            runa.up = RUNAS_ES[i].up;
+            runa.rv = RUNAS_ES[i].rv;
+            return;
+        }
+        runa.up = tr('rn' + i + 'U') || RUNAS_ES[i].up;
+        const rv = tr('rn' + i + 'R');
+        runa.rv = rv !== null ? rv : RUNAS_ES[i].rv;
+    });
+}
+
+/** Carga el idioma y lo aplica al mazo y a las runas. */
 export async function usarIdiomaTarot(idioma = 'es') {
     await cargarIdioma(idioma);
     aplicarIdiomaTarot(idioma);
+    aplicarIdiomaRunas(idioma);
     return idioma;
 }
 
