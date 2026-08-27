@@ -29,6 +29,7 @@ const LS = {
   performanceMode: 'oraculo.performanceMode.v1',
   birthDate: 'oraculo.birthDate.v1',
   birthTime: 'oraculo.birthTime.v1',
+  birthPlace: 'oraculo.birthPlace.v1',
   effects3d: 'oraculo.3d.preference.v14'
 };
 
@@ -43,6 +44,8 @@ let voiceSpeechSession = 0;
 let remoteSpeechAudio = null;
 let lastGeneratedSpeech = null;
 let cachedWebVoices = [];
+let astroCitiesCache = null;
+let astroCityMatches = [];
 
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
@@ -1633,7 +1636,7 @@ document.addEventListener('error', (event) => {
 
 
 function getProfile() {
-  return { birth:'', birthTime:'', sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
+  return { birth:'', birthTime:'', birthPlace:null, sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
 }
 function setProfile(profile) { storeSet(LS.profile, { ...getProfile(), ...profile }); }
 function isPrivateMode() { return localStorage.getItem(LS.privateMode) === 'true'; }
@@ -1802,7 +1805,7 @@ function showPrivacyCenter() {
   openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>Las lecturas, el perfil y el chat permanecen en este navegador. Al usar Puter IA, el texto enviado se procesa mediante ese servicio.</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
 function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast('Chat borrado.'); } }
-function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); updateHome(); toast('Perfil borrado.'); } }
+function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); updateHome(); toast('Perfil borrado.'); } }
 function factoryResetData() {
   if (!confirm('¿Restablecer todos los datos de Oráculo Místico en este navegador?')) return;
   Object.values(LS).forEach(key => localStorage.removeItem(key));
@@ -1853,6 +1856,7 @@ function showMiOraculo() {
   const profile = getProfile();
   if (!profile.birth) profile.birth = getBirthDate();
   if (!profile.birthTime) profile.birthTime = getBirthTime();
+  if (!profile.birthPlace) profile.birthPlace = getBirthPlace();
   const diary = storeGet(LS.diary, []);
   const favs = diary.filter(d => d.favorite).slice(0, 3);
   const last = diary.slice(0, 3);
@@ -1865,6 +1869,7 @@ function showMiOraculo() {
     <div class="form-grid mt">
       <div class="field"><label>Fecha de nacimiento</label><input class="input" id="profileBirth" type="date" value="${escapeHTML(profile.birth || '')}"></div>
       <div class="field"><label>Hora de nacimiento</label><input class="input" id="profileBirthTime" type="time" value="${escapeHTML(profile.birthTime || '')}"></div>
+      <div class="field"><label>Lugar de nacimiento</label><input class="input" id="profileBirthPlace" value="${escapeHTML(profile.birthPlace?.label || '')}" placeholder="Ciudad, país"></div>
       <div class="field"><label>Signo / energía</label><input class="input" id="profileSign" value="${escapeHTML(profile.sign || '')}" placeholder="Aries, Luna, Agua..."></div>
       <div class="field"><label>Intención principal</label><input class="input" id="profileIntention" value="${escapeHTML(profile.intention || '')}" placeholder="Claridad, amor, calma..."></div>
       <div class="field"><label>Tirada favorita</label><select id="profileSpread"><option value="one" ${profile.favoriteSpread==='one'?'selected':''}>Carta rápida</option><option value="three" ${(profile.favoriteSpread||'three')==='three'?'selected':''}>Pasado · Presente · Futuro</option><option value="love" ${profile.favoriteSpread==='love'?'selected':''}>Amor</option><option value="decision" ${profile.favoriteSpread==='decision'?'selected':''}>Decisión</option><option value="celtic" ${profile.favoriteSpread==='celtic'?'selected':''}>Cruz Celta</option></select></div>
@@ -1891,6 +1896,7 @@ function importBackupFromFile(file) {
       if (data.profile) storeSet(LS.profile, data.profile);
       if (data.birthDate) localStorage.setItem(LS.birthDate, data.birthDate);
       if (data.birthTime) localStorage.setItem(LS.birthTime, data.birthTime);
+      if (data.birthPlace) localStorage.setItem(LS.birthPlace, typeof data.birthPlace === 'string' ? data.birthPlace : JSON.stringify(data.birthPlace));
       if (data.theme) localStorage.setItem(LS.theme, data.theme);
       if (data.pdfStyle) localStorage.setItem(LS.pdfStyle, data.pdfStyle);
       if (Array.isArray(data.diary)) storeSet(LS.diary, data.diary);
@@ -2025,6 +2031,7 @@ function backupData() {
     profile:getProfile(),
     birthDate:getBirthDate(),
     birthTime:getBirthTime(),
+    birthPlace:getBirthPlace(),
     theme:getTheme(),
     privateMode:isPrivateMode(),
     pdfStyle:getPdfStyle(),
@@ -2440,6 +2447,81 @@ function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || '';
 function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
 function getBirthTime() { try { return localStorage.getItem(LS.birthTime) || ''; } catch { return ''; } }
 function setBirthTime(v) { try { if (/^\d{2}:\d{2}$/.test(v)) localStorage.setItem(LS.birthTime, v); } catch {} }
+function getBirthPlace() {
+  try {
+    const raw = localStorage.getItem(LS.birthPlace);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function setBirthPlace(place) {
+  try {
+    if (place?.label) localStorage.setItem(LS.birthPlace, JSON.stringify(place));
+  } catch {}
+}
+function normalizeCityText(value = '') {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function countryLabel(code = '') {
+  const map = { ES:'España', AD:'Andorra', PT:'Portugal', FR:'Francia', US:'Estados Unidos', MX:'México', AR:'Argentina', CO:'Colombia', CL:'Chile', PE:'Perú', VE:'Venezuela', UY:'Uruguay', IT:'Italia', DE:'Alemania', GB:'Reino Unido', CN:'China' };
+  return map[code] || code;
+}
+function cityLabel(city) {
+  if (!city) return '';
+  return `${city.name}, ${countryLabel(city.country)}${city.admin ? ` · ${city.admin}` : ''}`;
+}
+async function loadAstroCities() {
+  if (astroCitiesCache) return astroCitiesCache;
+  const response = await fetch('data/cities500-astro.json');
+  if (!response.ok) throw new Error('No se pudo cargar la base de ciudades');
+  const payload = await response.json();
+  astroCitiesCache = (payload.cities || []).map((row, index) => {
+    const city = { id:index, name:row[0], ascii:row[1], country:row[2], admin:row[3], lat:row[4], lon:row[5], timezone:row[6], population:row[7] };
+    city.label = cityLabel(city);
+    city.search = normalizeCityText(`${city.name} ${city.ascii} ${city.country} ${countryLabel(city.country)} ${city.admin}`);
+    return city;
+  });
+  return astroCitiesCache;
+}
+function serializeBirthPlace(city) {
+  if (!city) return '';
+  return JSON.stringify({ label:city.label || cityLabel(city), name:city.name, country:city.country, admin:city.admin || '', lat:Number(city.lat), lon:Number(city.lon), timezone:city.timezone || '', population:Number(city.population || 0) });
+}
+async function updateAstroCitySuggestions(query = '') {
+  const box = $('#astroPlaceSuggestions');
+  if (!box) return;
+  const q = normalizeCityText(query);
+  if (q.length < 2) {
+    astroCityMatches = [];
+    box.innerHTML = '<p class="subtle">Escribe al menos dos letras para buscar ciudad.</p>';
+    return;
+  }
+  box.innerHTML = '<p class="subtle">Buscando ciudades...</p>';
+  try {
+    const cities = await loadAstroCities();
+    const terms = q.split(' ').filter(Boolean);
+    astroCityMatches = cities
+      .filter(city => terms.every(term => city.search.includes(term)))
+      .sort((a,b) => {
+        const aStart = normalizeCityText(a.name).startsWith(terms[0]) ? 1 : 0;
+        const bStart = normalizeCityText(b.name).startsWith(terms[0]) ? 1 : 0;
+        return bStart - aStart || b.population - a.population;
+      })
+      .slice(0, 8);
+    box.innerHTML = astroCityMatches.map((city, index) => `<button class="astro-city-option" data-astro-city="${index}" type="button"><strong>${escapeHTML(city.label)}</strong><small>${escapeHTML(city.timezone)} · ${Number(city.population || 0).toLocaleString('es-ES')} hab.</small></button>`).join('') || '<p class="subtle">No encuentro esa ciudad. Puedes escribir el lugar manualmente.</p>';
+  } catch {
+    box.innerHTML = '<p class="subtle">No se pudo cargar la base de ciudades. Puedes escribir el lugar manualmente.</p>';
+  }
+}
+function selectAstroCity(index) {
+  const city = astroCityMatches[Number(index)];
+  if (!city) return;
+  const input = $('#astroPlace');
+  const hidden = $('#astroPlaceData');
+  if (input) input.value = city.label;
+  if (hidden) hidden.value = serializeBirthPlace(city);
+  const box = $('#astroPlaceSuggestions');
+  if (box) box.innerHTML = `<p class="subtle">Ciudad seleccionada: ${escapeHTML(city.label)}.</p>`;
+}
 
 function showNumerologia() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
@@ -2584,11 +2666,24 @@ const ASTRO_HOUSES = ['Yo','Recursos','Palabra','Hogar','Creatividad','Rutina','
 function normalizeDegree(value) {
   return ((Number(value) % 360) + 360) % 360;
 }
-function astroDateUTC(date = '', time = '12:00') {
+function timeZoneOffsetMinutes(timeZone = '', utcDate = new Date()) {
+  if (!timeZone || !Intl?.DateTimeFormat) return 0;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone, hour12:false, year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit'
+    }).formatToParts(utcDate).reduce((acc, part) => ({ ...acc, [part.type]:part.value }), {});
+    const asUTC = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour === '24' ? '0' : parts.hour), Number(parts.minute), Number(parts.second));
+    return Math.round((asUTC - utcDate.getTime()) / 60000);
+  } catch { return 0; }
+}
+function astroDateUTC(date = '', time = '12:00', timeZone = '') {
   const parts = dateParts(date);
   if (!parts) return null;
   const [hour = 12, minute = 0] = String(time || '12:00').split(':').map(Number);
-  return Date.UTC(parts.year, parts.month - 1, parts.day, Number.isFinite(hour) ? hour : 12, Number.isFinite(minute) ? minute : 0);
+  const localAsUTC = Date.UTC(parts.year, parts.month - 1, parts.day, Number.isFinite(hour) ? hour : 12, Number.isFinite(minute) ? minute : 0);
+  const offset = timeZoneOffsetMinutes(timeZone, new Date(localAsUTC));
+  return localAsUTC - offset * 60000;
 }
 function zodiacFromDegree(degree) {
   const normalized = normalizeDegree(degree);
@@ -2608,9 +2703,9 @@ function sunSignFromDate(date = '') {
   const index = md >= 1222 || md <= 119 ? 9 : (range?.[2] ?? 0);
   return { ...ASTRO_SIGNS[index], index };
 }
-function planetPositions(date = '', time = '12:00') {
-  const ms = astroDateUTC(date, time);
-  if (!ms) return [];
+function planetPositions(date = '', time = '12:00', place = null) {
+  const ms = astroDateUTC(date, time, place?.timezone || '');
+  if (ms === null) return [];
   const epoch = Date.UTC(2000, 0, 1, 12, 0);
   const days = (ms - epoch) / 86400000;
   return ASTRO_PLANETS.map(planet => {
@@ -2627,19 +2722,21 @@ function astroHash(value = '') {
   }
   return hash >>> 0;
 }
-function symbolicAscendant(date = '', time = '12:00', name = '') {
-  const [hour = 12, minute = 0] = String(time || '12:00').split(':').map(Number);
-  const solar = planetPositions(date, '12:00').find(p => p.id === 'sun')?.degree || 0;
-  const nameOffset = astroHash(name) % 18;
-  const degree = normalizeDegree(solar + ((hour || 0) + (minute || 0) / 60) * 15 + nameOffset);
+function symbolicAscendant(date = '', time = '12:00', name = '', place = null) {
+  const ms = astroDateUTC(date, time, place?.timezone || '');
+  const solar = planetPositions(date, '12:00', place).find(p => p.id === 'sun')?.degree || 0;
+  const days = ms !== null ? (ms - Date.UTC(2000, 0, 1, 12, 0)) / 86400000 : 0;
+  const longitude = Number.isFinite(Number(place?.lon)) ? Number(place.lon) : 0;
+  const nameOffset = place?.lat ? 0 : astroHash(name) % 18;
+  const degree = normalizeDegree(100.46 + 0.985647 * days + longitude + solar * .18 + nameOffset);
   return zodiacFromDegree(degree);
 }
-function calculateAstroProfile(name = '', date = '', time = '') {
+function calculateAstroProfile(name = '', date = '', time = '', place = null) {
   if (!name || !date || !time) return null;
-  const planets = planetPositions(date, time);
+  const planets = planetPositions(date, time, place);
   if (!planets.length) return null;
   const sun = sunSignFromDate(date);
-  const asc = symbolicAscendant(date, time, name);
+  const asc = symbolicAscendant(date, time, name, place);
   const moon = planets.find(p => p.id === 'moon');
   const houses = ASTRO_HOUSES.map((label, index) => {
     const sign = ASTRO_SIGNS[(asc.index + index) % 12];
@@ -2652,7 +2749,7 @@ function calculateAstroProfile(name = '', date = '', time = '') {
     const aspect = ASTRO_ASPECTS.map(item => ({ ...item, delta:Math.abs(angle - item.angle) })).sort((x,y) => x.delta - y.delta)[0];
     if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, orb:aspect.delta.toFixed(1), text:aspect.text });
   }));
-  return { name, date, time, sun, moon, asc, planets, houses, aspects:aspects.slice(0, 6) };
+  return { name, date, time, place, sun, moon, asc, planets, houses, aspects:aspects.slice(0, 6) };
 }
 function astroAdviceForElement(element = '') {
   const map = {
@@ -2685,6 +2782,8 @@ function astroReadingText(chart) {
   const aspects = chart.aspects.map(item => `${item.name} entre ${item.a} y ${item.b}: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta lectura simbólica.';
   return `CARTA ASTRAL SIMBÓLICA · ${chart.name}
 Fecha: ${chart.date} · Hora de nacimiento: ${chart.time}
+Lugar: ${chart.place?.label || 'No indicado'}${chart.place?.timezone ? ` · Zona horaria: ${chart.place.timezone}` : ''}
+${Number.isFinite(Number(chart.place?.lat)) ? `Coordenadas: ${chart.place.lat}, ${chart.place.lon}` : 'Coordenadas: no seleccionadas'}
 
 Sol en ${chart.sun.symbol} ${chart.sun.name}: tu dirección principal busca ${chart.sun.keywords.join(', ')}.
 Luna en ${chart.moon.signSymbol} ${chart.moon.sign}: tu mundo emocional se ordena desde ${chart.moon.keywords.join(', ')}.
@@ -2698,7 +2797,7 @@ ${aspects}
 Casas simbólicas:
 ${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.symbol} ${h.sign}`).join('\n')}
 
-Nota: lectura simbólica local. Para una carta astronómica exacta harían falta lugar de nacimiento y cálculo de efemérides profesional.`;
+Nota: lectura simbólica local. El lugar se usa para zona horaria y ascendente aproximado; no sustituye un cálculo astrológico profesional con efemérides completas.`;
 }
 function astroReadingItems(chart) {
   return chart.planets.map(p => ({ kind:'astro', name:`${p.name} en ${p.sign}`, subtitle:p.role, image:'', symbol:p.symbol, position:p.element }));
@@ -2708,16 +2807,20 @@ function showAstros() {
   const profile = getProfile();
   const d = escapeHTML(getBirthDate() || profile.birth || '');
   const tm = escapeHTML(getBirthTime() || profile.birthTime || '');
+  const place = getBirthPlace() || profile.birthPlace || null;
+  const placeValue = escapeHTML(place?.label || '');
+  const placeData = escapeHTML(place ? JSON.stringify(place) : '');
   openModal({ icon:'☉', title:'Astros', subtitle:'Carta astral simbólica y tirada diaria con IA opcional.', body:`
     <div class="result-card astro-hero">
       <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio del Oráculo"></div>
       <h3>Rueda astral del Oráculo</h3>
-      <p>Introduce nombre, fecha y hora local de nacimiento. Todo se guarda en este dispositivo y la IA solo se usa si la conectas.</p>
+      <p>Introduce nombre, fecha, hora local y lugar de nacimiento. Todo se guarda en este dispositivo y la IA solo se usa si la conectas.</p>
     </div>
     <div class="form-grid mt astro-form">
       <div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('astroName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
       <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
       <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
+      <div class="field astro-place-field"><label>Lugar de nacimiento</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="Barcelona, España" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">Busca y elige una ciudad para usar coordenadas y zona horaria.</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
       <div class="field"><label>Pregunta o intención</label>${inputWithMic('astroIntention', 'placeholder="Claridad para hoy, amor, trabajo..."')}</div>
     </div>
     <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">Crear carta astral</button><button class="btn" data-act="astro-daily" type="button">Tirada astral del día</button></div>
@@ -2725,10 +2828,15 @@ function showAstros() {
 }
 function getAstroFormData() {
   const profile = getProfile();
+  let place = null;
+  try { place = JSON.parse($('#astroPlaceData')?.value || 'null'); } catch {}
+  const placeLabel = ($('#astroPlace')?.value || place?.label || getBirthPlace()?.label || profile.birthPlace?.label || '').trim();
+  if (!place && placeLabel) place = { label:placeLabel };
   return {
     name:($('#astroName')?.value || localStorage.getItem(LS.name) || '').trim(),
     date:$('#astroDate')?.value || getBirthDate() || profile.birth || '',
     time:$('#astroTime')?.value || getBirthTime() || profile.birthTime || '',
+    place,
     intention:($('#astroIntention')?.value || localStorage.getItem(LS.intention) || profile.intention || 'Claridad').trim()
   };
 }
@@ -2736,13 +2844,14 @@ function persistAstroData(data) {
   if (data.name) localStorage.setItem(LS.name, data.name);
   if (data.date) setBirthDate(data.date);
   if (data.time) setBirthTime(data.time);
-  setProfile({ birth:data.date, birthTime:data.time, sign:sunSignFromDate(data.date)?.name || getProfile().sign, intention:data.intention || getProfile().intention });
+  if (data.place?.label) setBirthPlace(data.place);
+  setProfile({ birth:data.date, birthTime:data.time, birthPlace:data.place || getProfile().birthPlace, sign:sunSignFromDate(data.date)?.name || getProfile().sign, intention:data.intention || getProfile().intention });
 }
 function renderAstroReading(chart, text, title) {
-  openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}`, body:`
+  openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente simbólico:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p></div>
+      <div class="result-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente simbólico:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Lugar:</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p></div>
     </div>
     <h3 class="section-title">Posiciones</h3>
     ${astroPositionsHTML(chart)}
@@ -2754,12 +2863,12 @@ function renderAstroReading(chart, text, title) {
 }
 function calcAstroChart() {
   const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time) return toast('Completa nombre, fecha y hora de nacimiento.');
-  const chart = calculateAstroProfile(data.name, data.date, data.time);
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place);
   if (!chart) return toast('Revisa la fecha y la hora.');
   persistAstroData(data);
   const text = astroReadingText(chart);
-  setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, intention:data.intention, astro:chart } });
+  setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, astro:chart } });
   renderAstroReading(chart, text, `Carta astral · ${data.name}`);
 }
 function dailyAstroCards(chart, todayChart, intention = '') {
@@ -2774,6 +2883,7 @@ function dailyAstroCards(chart, todayChart, intention = '') {
 function dailyAstroText(chart, todayChart, cards, intention) {
   return `TIRADA ASTRAL DEL DÍA · ${chart.name}
 Nacimiento: ${chart.date} · Hora: ${chart.time}
+Lugar: ${chart.place?.label || 'No indicado'}
 Intención: ${intention || 'Claridad'}
 
 Base natal:
@@ -2789,18 +2899,18 @@ Hoy conviene mirar la intención desde ${todayChart.moon.element.toLowerCase()} 
 }
 async function dailyAstroReading() {
   const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time) return toast('Completa nombre, fecha y hora de nacimiento.');
-  const chart = calculateAstroProfile(data.name, data.date, data.time);
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place);
   if (!chart) return toast('Revisa la fecha y la hora.');
   persistAstroData(data);
   const now = new Date();
   const today = todayKey();
   const todayTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const todayChart = calculateAstroProfile(data.name, today, todayTime);
+  const todayChart = calculateAstroProfile(data.name, today, todayTime, data.place);
   const cards = dailyAstroCards(chart, todayChart, data.intention);
   let text = dailyAstroText(chart, todayChart, cards, data.intention);
   const title = `Tirada astral del día · ${data.name}`;
-  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, intention:data.intention, astro:chart, astroToday:todayChart } });
+  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, astro:chart, astroToday:todayChart } });
   let ai = '';
   if (localStorage.getItem(LS.puter) === 'true') {
     mostrarPensando();
@@ -3505,7 +3615,7 @@ function handleAction(action) {
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
     'open-manual': () => window.open('docs/manual_usuario_oraculo_mistico_v1_0.pdf', '_blank'),
     'mi-oraculo': showMiOraculo,
-    'save-profile': () => { const birth=$('#profileBirth')?.value || ''; const birthTime=$('#profileBirthTime')?.value || ''; setProfile({ birth, birthTime, sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); setBirthDate(birth); setBirthTime(birthTime); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast('Mi Oráculo guardado.'); showMiOraculo(); },
+    'save-profile': () => { const birth=$('#profileBirth')?.value || ''; const birthTime=$('#profileBirthTime')?.value || ''; const placeLabel=($('#profileBirthPlace')?.value || '').trim(); const birthPlace=placeLabel ? { ...(getBirthPlace() || {}), label:placeLabel } : null; setProfile({ birth, birthTime, birthPlace, sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); setBirthDate(birth); setBirthTime(birthTime); if (birthPlace) setBirthPlace(birthPlace); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast('Mi Oráculo guardado.'); showMiOraculo(); },
     'profile-favorite-spread': () => drawTarotSpread(getProfile().favoriteSpread || 'three'),
     'toggle-private': () => { setPrivateMode(!isPrivateMode()); updateHome(); showMiOraculo(); },
     'import-backup': () => { const input=document.createElement('input'); input.type='file'; input.accept='application/json,.json'; input.onchange=()=>importBackupFromFile(input.files?.[0]); input.click(); },
@@ -3592,6 +3702,8 @@ function attachGlobalEvents() {
     if (openRune) return showRuneDetail(RUNAS.find(r => r.name === openRune));
     const grabIndex = e.target.closest('[data-grab-index]')?.dataset.grabIndex;
     if (grabIndex !== undefined) return showGrabDetail(grabovoiEntries[Number(grabIndex)]);
+    const astroCity = e.target.closest('[data-astro-city]')?.dataset.astroCity;
+    if (astroCity !== undefined) return selectAstroCity(astroCity);
     const addSymbol = e.target.closest('[data-add-symbol]')?.dataset.addSymbol;
     if (addSymbol) { const t=$('#dreamText'); if(t) t.value = `${t.value}${t.value?' ':''}${addSymbol}`; }
     const copyQuestion = e.target.closest('[data-copy-question]')?.dataset.copyQuestion;
@@ -3621,6 +3733,11 @@ function attachGlobalEvents() {
       const box = $('#grabPdfList');
       if (box) box.innerHTML = renderGrabovoiPdfList(list);
     }
+    if (e.target.id === 'astroPlace') {
+      const hidden = $('#astroPlaceData');
+      if (hidden) hidden.value = '';
+      updateAstroCitySuggestions(e.target.value || '');
+    }
   });
   document.addEventListener('change', e => {
     if (e.target?.id === 'voiceLanguage' || e.target?.id === 'voiceFilter') refreshDeviceVoiceSelect();
@@ -3638,7 +3755,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-16-astros'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-16-cities'); } catch {}
   }
 }
 
