@@ -41,17 +41,17 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-fase16-57">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-fase16-57">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-idiomas-62">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-fase20-astro-wheel">
-  <link rel="stylesheet" href="styles/astro.css?v=1.0-fase20-astro-wheel">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-idiomas-62">
+  <link rel="stylesheet" href="styles/astro.css?v=1.0-idiomas-62">
   <script type="importmap">
   {
     "imports": {
@@ -73,15 +73,15 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-shell.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-voz.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-fase20-astro-wheel"></script>
-  <script defer src="js/v2-movil.js?v=1.0-fase20-astro-wheel"></script>
-  <script type="module" src="js/oraculo-3d.js?v=1.0-fase20-astro-wheel"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-shell.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-voz.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-idiomas-62"></script>
+  <script defer src="js/v2-movil.js?v=1.0-idiomas-62"></script>
+  <script type="module" src="js/oraculo-3d.js?v=1.0-idiomas-62"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -133,7 +133,7 @@
 
       <div class="om-cover-actions hero-actions">
         <button class="om-btn om-btn-primary" data-om-nav="santuario" type="button" data-i18n="omEnter">Entrar al Oráculo</button>
-        <button class="om-btn om-btn-quiet" data-action="daily" type="button">Mensaje del día</button>
+        <button class="om-btn om-btn-quiet" data-action="daily" data-i18n="dailyMessage" type="button">Mensaje del día</button>
         <button class="om-btn om-btn-quiet" data-om-nav="santuario" type="button" data-i18n="omExplore">Explorar</button>
       </div>
 
@@ -231,7 +231,7 @@
       </button>
       <button class="premium-feature-card" data-action="daily" type="button">
         <span>🌟</span>
-        <strong>Mensaje del día</strong>
+        <strong data-i18n="dailyMessage">Mensaje del día</strong>
         <small>Carta, runa y guía simbólica en un toque.</small>
       </button>
     </section>
@@ -686,7 +686,7 @@
         </button>
         <button class="premium-path-card" data-premium-action="daily-reading" type="button">
           <span>🌟</span>
-          <strong>Mensaje del día</strong>
+          <strong data-i18n="dailyMessage">Mensaje del día</strong>
           <small>Carta, runa y energía diaria.</small>
         </button>
         <button class="premium-path-card" data-premium-action="ritual-chat" type="button">
@@ -819,7 +819,7 @@
           <span>🃏</span><strong>Tarot</strong><small>Lectura con cartas</small>
         </button>
         <button class="premium-entry-card" data-premium-action="daily-reading" type="button">
-          <span>🌟</span><strong>Mensaje del día</strong><small>Rápido y directo</small>
+          <span>🌟</span><strong data-i18n="dailyMessage">Mensaje del día</strong><small data-i18n="dailyFast">Rápido y directo</small>
         </button>
         <button class="premium-entry-card" data-premium-action="ritual-chat" type="button">
           <span>🕯️</span><strong>Chat ritual</strong><small>Más guiado</small>
