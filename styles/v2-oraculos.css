@@ -583,3 +583,79 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
 .om-bib-plegable[open] summary span { transform: rotate(45deg); }
 .om-bib-plegable > p { margin: 0; padding: 0 var(--om-s-4) var(--om-s-4); font-size: var(--om-t-md); line-height: var(--om-lh-body); color: var(--om-ivory-2); }
 .om-bib-plegable summary:hover { background: var(--om-surface-2); }
+
+/* ============================================================
+   Grabovoi · seleccion multiple
+   Cada fila lleva su casilla a la izquierda y la ficha a la
+   derecha: la casilla marca, el resto abre el detalle.
+   ============================================================ */
+.grabovoi-fila {
+  display: flex;
+  align-items: stretch;
+  gap: var(--om-s-2);
+  margin-bottom: var(--om-s-2);
+}
+
+.grabovoi-marca {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  /* 44px: objetivo tactil comodo tambien en movil. */
+  min-width: 44px;
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-md);
+  background: var(--om-surface-1);
+  cursor: pointer;
+}
+
+.grabovoi-marca input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--om-gold, #f4cf75);
+  cursor: pointer;
+}
+
+.grabovoi-marca:hover,
+.grabovoi-marca:focus-within {
+  border-color: var(--om-gold, #f4cf75);
+}
+
+.grabovoi-fila .grabovoi-ficha {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+/* Marcada: se distingue por borde y fondo, no solo por la casilla. */
+.grabovoi-fila.marcada .grabovoi-ficha {
+  border-color: var(--om-gold, #f4cf75);
+  background: var(--om-gold-veil, rgba(244, 207, 117, .10));
+}
+
+.grabovoi-fila.marcada .grabovoi-marca {
+  border-color: var(--om-gold, #f4cf75);
+  background: var(--om-gold-veil, rgba(244, 207, 117, .12));
+}
+
+.grabovoi-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--om-s-2);
+}
+
+.grabovoi-barra .btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.grabovoi-cats {
+  max-height: 108px;
+  overflow-y: auto;
+}
+
+@media (max-width: 520px) {
+  .grabovoi-barra { flex-direction: column; align-items: stretch; }
+  .grabovoi-barra .btn { width: 100%; }
+}
