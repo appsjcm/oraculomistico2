@@ -1,8 +1,8 @@
 export const ORACULO_3D_ASSETS = {
   orb: {
-    label: 'Orbe del Oraculo',
+    label: 'Orbe del Oráculo', i18n: 'a3dOrb',
     path: 'assets/3d/tripo/orbe-del-oraculo.glb',
-    fallback: '🔮',
+    fallback: '◉',
     section: 'Inicio',
     scale: 1.15,
     camera: [0, 0.35, 4.2],
@@ -10,9 +10,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: ['portal', 'tarotTable']
   },
   grimoire: {
-    label: 'Mi Grimorio',
+    label: 'Mi Grimorio', i18n: 'a3dGrimoire',
     path: 'assets/3d/tripo/mi-grimorio.glb',
-    fallback: '📖',
+    fallback: '❖',
     section: 'Grimorio',
     scale: 1,
     camera: [0, 0.45, 4.4],
@@ -20,9 +20,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: ['library']
   },
   tarotTable: {
-    label: 'Mesa de Lectura',
+    label: 'Mesa de Lectura', i18n: 'a3dTable',
     path: 'assets/3d/tripo/mesa-de-lectura.glb',
-    fallback: '🃏',
+    fallback: '◈',
     section: 'Tarot',
     scale: 1,
     camera: [0, 0.65, 4.8],
@@ -30,9 +30,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: ['tarotCard']
   },
   tarotCard: {
-    label: 'Carta Arcana',
+    label: 'Carta Arcana', i18n: 'a3dCard',
     path: 'assets/3d/tripo/carta-arcana.glb',
-    fallback: '🂠',
+    fallback: '✶',
     section: 'Tarot',
     scale: 1.05,
     camera: [0, 0.2, 4],
@@ -40,7 +40,7 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   runes: {
-    label: 'Runas de Obsidiana',
+    label: 'Runas de Obsidiana', i18n: 'a3dRunes',
     path: 'assets/3d/tripo/runas-de-obsidiana.glb',
     fallback: 'ᚱ',
     section: 'Runas',
@@ -50,9 +50,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   moon: {
-    label: 'Luna Celestial',
+    label: 'Luna Celestial', i18n: 'a3dMoon',
     path: 'assets/3d/tripo/luna-celestial.glb',
-    fallback: '🌙',
+    fallback: '☾',
     section: 'Luna',
     scale: 1,
     camera: [0, 0.25, 4.1],
@@ -60,9 +60,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   dreamMirror: {
-    label: 'Espejo de los Suenos',
+    label: 'Espejo de los Sueños', i18n: 'a3dMirror',
     path: 'assets/3d/tripo/espejo-de-los-suenos.glb',
-    fallback: '🪞',
+    fallback: '❂',
     section: 'Suenos',
     scale: 1,
     camera: [0, 0.4, 4.5],
@@ -70,9 +70,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   astrolabe: {
-    label: 'Astrolabio Celestial',
+    label: 'Astrolabio Celestial', i18n: 'a3dAstrolabe',
     path: 'assets/3d/tripo/astrolabio-celestial.glb',
-    fallback: '☌',
+    fallback: '☍',
     section: 'Numerologia y Sinastria',
     scale: 1,
     camera: [0, 0.35, 4.5],
@@ -80,7 +80,7 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   portal: {
-    label: 'Portal del Oraculo',
+    label: 'Portal del Oráculo', i18n: 'a3dPortal',
     path: 'assets/3d/tripo/portal-del-oraculo.glb',
     fallback: '◎',
     section: 'Transiciones',
@@ -90,9 +90,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: []
   },
   pedestal: {
-    label: 'Pedestal del Santuario',
+    label: 'Pedestal del Santuario', i18n: 'a3dPedestal',
     path: 'assets/3d/tripo/pedestal-del-santuario.glb',
-    fallback: '✦',
+    fallback: '✧',
     section: 'Santuario',
     scale: 1,
     camera: [0, 0.45, 4.4],
@@ -100,9 +100,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: ['orb']
   },
   library: {
-    label: 'Biblioteca Arcana',
+    label: 'Biblioteca Arcana', i18n: 'a3dLibrary',
     path: 'assets/3d/tripo/biblioteca-arcana.glb',
-    fallback: '📚',
+    fallback: '✦',
     section: 'Biblioteca Arcana',
     scale: 1,
     camera: [0, 0.45, 4.6],
@@ -110,9 +110,9 @@ export const ORACULO_3D_ASSETS = {
     prefetch: ['grimoire']
   },
   dailyRelic: {
-    label: 'Reliquia del Oraculo',
+    label: 'Reliquia del Oráculo', i18n: 'a3dRelic',
     path: 'assets/3d/tripo/reliquia-del-oraculo.glb',
-    fallback: '✧',
+    fallback: '✹',
     section: 'Mensaje del Dia',
     scale: 1.08,
     camera: [0, 0.3, 4.2],

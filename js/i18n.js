@@ -234,6 +234,8 @@ export function applyAppTranslations(root = document) {
    ============================================================ */
 const V2_STRINGS = {
   es: {
+    a3dOrb:'Orbe del Oráculo', a3dGrimoire:'Mi Grimorio', a3dTable:'Mesa de Lectura', a3dCard:'Carta Arcana', a3dRunes:'Runas de Obsidiana', a3dMoon:'Luna Celestial', a3dMirror:'Espejo de los Sueños', a3dAstrolabe:'Astrolabio Celestial', a3dPortal:'Portal del Oráculo', a3dPedestal:'Pedestal del Santuario', a3dLibrary:'Biblioteca Arcana', a3dRelic:'Reliquia del Oráculo',
+    a3dLight:'versión ligera',
     spOne:'Carta rápida', spThree:'Pasado · Presente · Futuro', spFive:'Tirada de 5 cartas', spLove:'Tirada del amor', spYesno:'Sí o No orientativo', spDecision:'Tirada de decisión', spWeek:'Semana', spChakras:'7 Chakras', spHorseshoe:'Herradura', spStar:'Estrella', spPyramid:'Pirámide', spElements:'5 Elementos', spKarma:'Karma', spWork:'Trabajo / estudios', spBlockage:'Bloqueo y consejo', spRelation:'Relación', spMonth:'Mes completo', spCeltic:'Cruz Celta', spAstrologic:'Astrológica', spKarmic:'Relaciones kármicas',
     cerSub:'Revelación carta a carta, con calma.', cerTitle:'El oráculo prepara tu lectura...', cerText:'Respira hondo. Cada carta aparecerá a su ritmo.',
     pdfSubtitle:'Lectura simbólica',
@@ -339,6 +341,8 @@ const V2_STRINGS = {
     omPanels: 'Paneles avanzados', omPanelsSub: 'Las herramientas de las versiones anteriores'
   },
   ca: {
+    a3dOrb:'Orbe de l’Oracle', a3dGrimoire:'El meu Grimori', a3dTable:'Taula de Lectura', a3dCard:'Carta Arcana', a3dRunes:'Runes d’Obsidiana', a3dMoon:'Lluna Celestial', a3dMirror:'Mirall dels Somnis', a3dAstrolabe:'Astrolabi Celestial', a3dPortal:'Portal de l’Oracle', a3dPedestal:'Pedestal del Santuari', a3dLibrary:'Biblioteca Arcana', a3dRelic:'Relíquia de l’Oracle',
+    a3dLight:'versió lleugera',
     spOne:'Carta ràpida', spThree:'Passat · Present · Futur', spFive:'Tirada de 5 cartes', spLove:'Tirada de l’amor', spYesno:'Sí o No orientatiu', spDecision:'Tirada de decisió', spWeek:'Setmana', spChakras:'7 Xacres', spHorseshoe:'Ferradura', spStar:'Estrella', spPyramid:'Piràmide', spElements:'5 Elements', spKarma:'Karma', spWork:'Feina / estudis', spBlockage:'Bloqueig i consell', spRelation:'Relació', spMonth:'Mes complet', spCeltic:'Creu Celta', spAstrologic:'Astrològica', spKarmic:'Relacions kàrmiques',
     cerSub:'Carta a carta, amb calma.', cerTitle:'L’oracle prepara la teva lectura...', cerText:'Respira. Cada carta arribarà al seu ritme.',
     pdfSubtitle:'Lectura simbòlica',
@@ -389,6 +393,8 @@ const V2_STRINGS = {
     omPanels: 'Plafons avançats', omPanelsSub: 'Les eines de les versions anteriors'
   },
   en: {
+    a3dOrb:'Orb of the Oracle', a3dGrimoire:'My Grimoire', a3dTable:'Reading Table', a3dCard:'Arcane Card', a3dRunes:'Obsidian Runes', a3dMoon:'Celestial Moon', a3dMirror:'Mirror of Dreams', a3dAstrolabe:'Celestial Astrolabe', a3dPortal:'Portal of the Oracle', a3dPedestal:'Pedestal of the Sanctuary', a3dLibrary:'Arcane Library', a3dRelic:'Relic of the Oracle',
+    a3dLight:'light version',
     spOne:'Single card', spThree:'Past · Present · Future', spFive:'Five-card spread', spLove:'Love spread', spYesno:'Yes or No, as a guide', spDecision:'Decision spread', spWeek:'The week', spChakras:'Seven Chakras', spHorseshoe:'Horseshoe', spStar:'Star', spPyramid:'Pyramid', spElements:'Five Elements', spKarma:'Karma', spWork:'Work / study', spBlockage:'Blockage and advice', spRelation:'Relationship', spMonth:'Full month', spCeltic:'Celtic Cross', spAstrologic:'Astrological', spKarmic:'Karmic relationships',
     cerSub:'Card by card, unhurried.', cerTitle:'The oracle is preparing your reading...', cerText:'Breathe. Each card will arrive in its own time.',
     pdfSubtitle:'Symbolic reading',
@@ -494,6 +500,8 @@ const V2_STRINGS = {
     omPanels: 'Advanced panels', omPanelsSub: 'Tools from earlier versions'
   },
   fr: {
+    a3dOrb:'Orbe de l’Oracle', a3dGrimoire:'Mon Grimoire', a3dTable:'Table de Lecture', a3dCard:'Carte Arcane', a3dRunes:'Runes d’Obsidienne', a3dMoon:'Lune Céleste', a3dMirror:'Miroir des Rêves', a3dAstrolabe:'Astrolabe Céleste', a3dPortal:'Portail de l’Oracle', a3dPedestal:'Piédestal du Sanctuaire', a3dLibrary:'Bibliothèque Arcane', a3dRelic:'Relique de l’Oracle',
+    a3dLight:'version légère',
     spOne:'Carte unique', spThree:'Passé · Présent · Futur', spFive:'Tirage de 5 cartes', spLove:'Tirage de l’amour', spYesno:'Oui ou Non, à titre indicatif', spDecision:'Tirage de décision', spWeek:'La semaine', spChakras:'Sept Chakras', spHorseshoe:'Fer à cheval', spStar:'Étoile', spPyramid:'Pyramide', spElements:'Cinq Éléments', spKarma:'Karma', spWork:'Travail / études', spBlockage:'Blocage et conseil', spRelation:'Relation', spMonth:'Mois complet', spCeltic:'Croix Celtique', spAstrologic:'Astrologique', spKarmic:'Relations karmiques',
     cerSub:'Carte après carte, sans hâte.', cerTitle:'L’oracle prépare ta lecture...', cerText:'Respire. Chaque carte viendra à son rythme.',
     pdfSubtitle:'Lecture symbolique',
@@ -544,6 +552,8 @@ const V2_STRINGS = {
     omPanels: 'Panneaux avancés', omPanelsSub: 'Les outils des versions précédentes'
   },
   de: {
+    a3dOrb:'Orb des Orakels', a3dGrimoire:'Mein Grimoire', a3dTable:'Lesetisch', a3dCard:'Arkane Karte', a3dRunes:'Obsidianrunen', a3dMoon:'Himmlischer Mond', a3dMirror:'Spiegel der Träume', a3dAstrolabe:'Himmlisches Astrolabium', a3dPortal:'Portal des Orakels', a3dPedestal:'Podest des Heiligtums', a3dLibrary:'Arkane Bibliothek', a3dRelic:'Reliquie des Orakels',
+    a3dLight:'leichte Version',
     spOne:'Einzelkarte', spThree:'Vergangenheit · Gegenwart · Zukunft', spFive:'Fünf-Karten-Legung', spLove:'Liebeslegung', spYesno:'Ja oder Nein, als Hinweis', spDecision:'Entscheidungslegung', spWeek:'Die Woche', spChakras:'Sieben Chakren', spHorseshoe:'Hufeisen', spStar:'Stern', spPyramid:'Pyramide', spElements:'Fünf Elemente', spKarma:'Karma', spWork:'Arbeit / Studium', spBlockage:'Blockade und Rat', spRelation:'Beziehung', spMonth:'Ganzer Monat', spCeltic:'Keltisches Kreuz', spAstrologic:'Astrologisch', spKarmic:'Karmische Beziehungen',
     cerSub:'Karte für Karte, in Ruhe.', cerTitle:'Das Orakel bereitet deine Lesung vor...', cerText:'Atme. Jede Karte kommt zu ihrer Zeit.',
     pdfSubtitle:'Symbolische Lesung',
@@ -594,6 +604,8 @@ const V2_STRINGS = {
     omPanels: 'Erweiterte Bereiche', omPanelsSub: 'Werkzeuge früherer Versionen'
   },
   zh: {
+    a3dOrb:'神谕之球', a3dGrimoire:'我的魔典', a3dTable:'解读之桌', a3dCard:'奥秘之牌', a3dRunes:'黑曜石卢恩', a3dMoon:'天界之月', a3dMirror:'梦之镜', a3dAstrolabe:'天界星盘', a3dPortal:'神谕之门', a3dPedestal:'圣所基座', a3dLibrary:'奥秘图书馆', a3dRelic:'神谕遗物',
+    a3dLight:'轻量版本',
     spOne:'单张牌', spThree:'过去 · 现在 · 未来', spFive:'五张牌阵', spLove:'爱情牌阵', spYesno:'是或否（参考）', spDecision:'抉择牌阵', spWeek:'一周', spChakras:'七脉轮', spHorseshoe:'马蹄铁', spStar:'星形', spPyramid:'金字塔', spElements:'五元素', spKarma:'业力', spWork:'工作／学业', spBlockage:'阻碍与建议', spRelation:'关系', spMonth:'整月', spCeltic:'凯尔特十字', spAstrologic:'占星', spKarmic:'业力关系',
     cerSub:'一张一张，不必着急。', cerTitle:'神谕正在准备你的解读……', cerText:'深呼吸。每张牌都会在它的时刻出现。',
     pdfSubtitle:'Symbolic reading',

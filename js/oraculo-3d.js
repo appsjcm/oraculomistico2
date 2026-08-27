@@ -196,11 +196,43 @@ function disposeObject(THREE, root) {
   });
 }
 
+/* La etiqueta estaba fija en espanol y sin acentos, y es justo lo que
+   lee un lector de pantalla. Ahora sale del i18n del motor. */
+function etiquetaAsset(asset) {
+  const tr = window.OraculoI18n?.t;
+  if (asset.i18n && tr) {
+    const v = tr(asset.i18n);
+    if (v && v !== asset.i18n) return v;
+  }
+  return asset.label || '';
+}
+
 function makeFallback(stage, assetId, reason = '') {
   const asset = assetById(assetId);
+  const tr = window.OraculoI18n?.t;
+  const nombre = etiquetaAsset(asset);
+  const matiz = tr ? tr('a3dLight') : '';
   stage.classList.add('om-3d-fallback-active');
-  stage.innerHTML = `<div class="om-3d-fallback" role="img" aria-label="${asset.label}"><span>${asset.fallback}</span></div>`;
+  /* El aro se dibuja aqui y no con un SVG externo: son cuatro trazos y
+     asi no anade ni una peticion mas ni depende de la cache. */
+  stage.innerHTML = `<div class="om-3d-fallback" role="img" aria-label="${escaparAttr(nombre)}${matiz ? ' · ' + escaparAttr(matiz) : ''}">
+      <svg class="om-3d-aro" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <defs><linearGradient id="om3dOro-${assetId}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fff4c9"/><stop offset="48%" stop-color="#f4cf75"/><stop offset="100%" stop-color="#9a6825"/>
+        </linearGradient></defs>
+        <circle cx="60" cy="60" r="55" fill="none" stroke="url(#om3dOro-${assetId})" stroke-width="1.6" opacity=".85"/>
+        <circle cx="60" cy="60" r="47" fill="none" stroke="#fff8dd" stroke-opacity=".22" stroke-width=".8"/>
+        <g stroke="url(#om3dOro-${assetId})" stroke-width="1.2" opacity=".55" stroke-linecap="round">
+          <path d="M60 3 v7"/><path d="M60 110 v7"/><path d="M3 60 h7"/><path d="M110 60 h7"/>
+        </g>
+      </svg>
+      <span aria-hidden="true">${asset.fallback}</span>
+    </div>`;
   updateReport(assetId, { status: 'fallback', path: asset.path, reason });
+}
+
+function escaparAttr(v = '') {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 class OracleScene {
@@ -333,13 +365,25 @@ class OracleScene {
       this.scene?.remove(this.model);
       disposeObject(this.THREE, this.model);
     }
+    /* dispose() libera programas y render targets, pero NO el contexto
+       WebGL: para eso hace falta forceContextLoss(). El navegador solo
+       admite unos 16 contextos vivos y, al pasarse, mata los primeros
+       en silencio y esos lienzos se quedan en negro. */
     this.renderer?.dispose?.();
+    try { this.renderer?.forceContextLoss?.(); } catch {}
     this.renderer?.domElement?.remove?.();
+    this.renderer = null;
+    this.scene = null;
+    this.model = null;
   }
 }
 
 function mountStage(stage) {
-  const assetId = stage.dataset.oraculo3dAsset || 'orb';
+  /* dataset NO camelliza un guion seguido de digito: la clave real de
+     data-oraculo-3d-asset es dataset['oraculo-3dAsset'], asi que
+     .oraculo3dAsset era siempre undefined y TODA escena caia al orbe.
+     Se lee el atributo directamente, que no tiene ambiguedad. */
+  const assetId = stage.getAttribute('data-oraculo-3d-asset') || 'orb';
   const quality = detectQuality();
   if (!quality.enabled) {
     makeFallback(stage, assetId, quality.reason);
