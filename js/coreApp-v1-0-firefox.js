@@ -318,12 +318,18 @@ function runeSvgDataUrl(sym = 'ᚱ') {
 }
 function getPdfReadingHighlight(reading = lastReading) {
   const meta = reading?.meta || {};
+  /* Si quien genera el PDF ya trae su propio destacado, manda ese. */
+  if (meta.highlight?.label && meta.highlight?.value) return meta.highlight;
   if (Array.isArray(meta.grabovoiSelections) && meta.grabovoiSelections.length) {
     const codes = meta.grabovoiSelections.map(item => item.codigo).filter(Boolean);
+    const n = codes.length;
+    /* La etiqueta decia siempre 'Numerologia + Grabovoi', tambien en una
+       hoja de secuencias suelta, donde no hay numerologia por medio. */
+    const esHoja = reading?.type === 'Grabovoi';
     return {
-      label:'Numerologia + Grabovoi',
-      value:codes.slice(0, 3).join(' · ') + (codes.length > 3 ? ` +${codes.length - 3}` : ''),
-      detail:`${getReadingSubjectName(reading) || reading.title || 'Lectura'} · ${codes.length} secuencia${codes.length === 1 ? '' : 's'} seleccionada${codes.length === 1 ? '' : 's'}`
+      label: esHoja ? t('gbSheet') : t('gbNumGrab'),
+      value: codes.slice(0, 3).join(' · ') + (n > 3 ? ` +${n - 3}` : ''),
+      detail: `${esHoja ? '' : (getReadingSubjectName(reading) || reading.title || '') + ' · '}${n === 1 ? t('gbSelOne') : t('gbSel', { n })}`
     };
   }
   if (reading?.type === 'Sueños' && meta.dreamElement) {
@@ -3211,11 +3217,148 @@ async function handleChatGrabovoi(query = '') {
   }
   addChat('oracle', warning, `<div class="actions mt">${sourceButtons}${code ? '<button class="btn compact" data-act="pdf-options">📄 PDF con aviso externo</button>' : ''}</div>`);
 }
-async function showGrabovoi() {
-  const entries = await loadGrabovoi();
-  openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`<p class="notice">${escapeHTML(t('gbNotice'))}</p><div class="field mt"><label>${escapeHTML(t('gbSearch'))}</label>${inputWithMic('grabSearch', `placeholder="${escapeHTML(t('gbSearchPh'))}"`)}</div><div id="grabList" class="diary-list mt">${renderGrabList(entries.slice(0,40))}</div>` });
+/* ============================================================
+   Grabovoi: seleccion multiple y PDF conjunto
+   Antes solo se podia abrir una ficha, y el PDF conjunto exigia
+   haber creado antes una lectura numerologica. Ahora se marcan
+   varias secuencias aqui mismo y se exportan juntas.
+   La seleccion vive en un Set de codigos, no en el DOM: asi
+   buscar o cambiar de categoria no borra lo ya marcado.
+   ============================================================ */
+const GRAB_MAX = 12;
+/* La clave es el indice en el catalogo, no el codigo: 23 codigos
+   estan repetidos en hasta 4 entradas distintas (varias formas de
+   nombrar el mismo numero), y marcando una se arrastraban todas. */
+const grabSeleccion = new Set();
+let grabCategoria = '';
+let grabConsulta = '';
+
+function grabDisponibles() {
+  return grabovoiEntries.filter(e => !isHealthGrabovoiEntry(e));
 }
-function renderGrabList(list) { return list.map((e,i)=>`<button class="choice" data-grab-index="${grabovoiEntries.indexOf(e)}"><strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong><small>${escapeHTML(e.categoria || '')}</small></button>`).join('\n\n') || '<p class="subtle">Sin resultados.</p>'; }
+
+function grabCategorias() {
+  return [...new Set(grabDisponibles().map(e => e.categoria).filter(Boolean))].sort();
+}
+
+function grabFiltradas() {
+  const q = normalizeGrabovoiSearch(grabConsulta);
+  const terminos = q ? q.split(' ').filter(Boolean) : [];
+  return grabDisponibles().filter(e => {
+    if (grabCategoria && e.categoria !== grabCategoria) return false;
+    if (!terminos.length) return true;
+    const heno = normalizeGrabovoiSearch(`${e.codigo} ${e.nombre} ${e.categoria} ${e.uso}`);
+    return terminos.every(t => heno.includes(t));
+  }).slice(0, 80);
+}
+
+function grabTextoContador() {
+  const n = grabSeleccion.size;
+  if (!n) return t('gbNone');
+  return n === 1 ? t('gbCountOne') : t('gbCount', { n });
+}
+
+function renderGrabChips() {
+  const cats = grabCategorias();
+  const chip = (valor, etiqueta) =>
+    `<button class="tab${grabCategoria === valor ? ' active' : ''}" data-grab-cat="${escapeHTML(valor)}" type="button">${escapeHTML(etiqueta)}</button>`;
+  return `<div class="tabs mt grabovoi-cats">${chip('', t('gbAllCats'))}${cats.map(c => chip(c, c)).join('')}</div>`;
+}
+
+function renderGrabList(list) {
+  if (!list || !list.length) return `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
+  return list.map(e => {
+    const idx = grabovoiEntries.indexOf(e);
+    const marcada = grabSeleccion.has(idx);
+    return `<div class="grabovoi-fila${marcada ? ' marcada' : ''}">
+      <label class="grabovoi-marca">
+        <input type="checkbox" data-grab-pick="${idx}" ${marcada ? 'checked' : ''}>
+        <span class="sr-only">${escapeHTML(t('gbPick'))}</span>
+      </label>
+      <button class="choice grabovoi-ficha" data-grab-index="${idx}" type="button">
+        <strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong>
+        <small>${escapeHTML(e.categoria || t('gbSeq'))}</small>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function refrescarGrabList() {
+  const caja = $('#grabList');
+  if (caja) caja.innerHTML = renderGrabList(grabFiltradas());
+  const cont = $('#grabCount');
+  if (cont) cont.textContent = grabTextoContador();
+  const boton = $('#grabPdfBtn');
+  if (boton) boton.disabled = grabSeleccion.size === 0;
+  const chips = $('.grabovoi-cats');
+  if (chips) chips.outerHTML = renderGrabChips();
+}
+
+async function showGrabovoi() {
+  await loadGrabovoi();
+  grabConsulta = '';
+  grabCategoria = '';
+  openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`
+    <p class="notice">${escapeHTML(t('gbNotice'))}</p>
+    <div class="field mt"><label>${escapeHTML(t('gbSearch'))}</label>${inputWithMic('grabSearch', `placeholder="${escapeHTML(t('gbSearchPh'))}"`)}</div>
+    ${renderGrabChips()}
+    <div class="grabovoi-barra mt">
+      <span id="grabCount" class="chip" aria-live="polite">${escapeHTML(grabTextoContador())}</span>
+      <button class="btn compact" data-act="grab-clear" type="button">${escapeHTML(t('gbClear'))}</button>
+      <button class="btn primary compact" id="grabPdfBtn" data-act="grab-pdf" type="button" ${grabSeleccion.size ? '' : 'disabled'}>📄 ${escapeHTML(t('gbMakePdf'))}</button>
+    </div>
+    <p class="subtle">${escapeHTML(t('gbMax', { n: GRAB_MAX }))}</p>
+    <div id="grabList" class="diary-list mt">${renderGrabList(grabFiltradas())}</div>` });
+}
+
+/** Las secuencias marcadas, en el orden del catalogo. */
+function grabSeleccionadas() {
+  return [...grabSeleccion]
+    .map(i => grabovoiEntries[i])
+    .filter(Boolean)
+    .slice(0, GRAB_MAX);
+}
+
+/** Texto del PDF conjunto. Funciona sin lectura numerologica previa. */
+function buildGrabovoiSheetText(entries = []) {
+  const bloques = entries.map((entry, i) => {
+    const guia = buildGrabovoiInterpretation(entry);
+    return `${i + 1}. ${entry.nombre}
+${t('gbCode')}: ${guia.code}
+${t('gbCat')}: ${entry.categoria || '—'}
+${t('gbPurpose')}: ${entry.uso || t('gbSeq')}
+${t('gbMethod')}: ${guia.method.name}
+${guia.method.description}
+${t('gbPractice')}:
+${guia.steps.slice(0, 5).map((paso, j) => `  ${j + 1}. ${paso}`).join('\n')}`;
+  }).join('\n\n');
+  return `${t('gbSheet').toUpperCase()}
+${t('gbSheetSub', { n: entries.length })}
+
+${bloques}
+
+${t('gbSheetNote')}`;
+}
+
+function exportGrabovoiSheetPDF() {
+  const entries = grabSeleccionadas();
+  if (!entries.length) return toast(t('gbPickSome'));
+  const texto = buildGrabovoiSheetText(entries);
+  const titulo = `${t('gbSheet')} · ${entries.length}`;
+  const lectura = {
+    type: 'Grabovoi',
+    title: titulo,
+    text: texto,
+    items: [],
+    meta: {
+      grabovoiSelections: entries.map(e => ({ nombre:e.nombre, codigo:e.codigo, categoria:e.categoria || '', uso:e.uso || '' }))
+    },
+    date: new Date().toISOString()
+  };
+  setLastReading(lectura);
+  exportPDF(titulo, texto, lectura);
+}
+
 function buildGrabovoiInterpretation(entry) {
   const code = String(entry.codigo || '').trim();
   const digits = code.match(/\d/g) || [];
@@ -3803,6 +3946,8 @@ function handleAction(action) {
     'clear-profile': clearProfileData,
     'factory-reset': factoryResetData,
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast('Guía completada.'); },
+    'grab-clear': () => { grabSeleccion.clear(); refrescarGrabList(); },
+    'grab-pdf': () => exportGrabovoiSheetPDF(),
     'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'toggle-large-text': () => { const p=storeGet(LS.prefs,{}); p.largeText=!p.largeText; storeSet(LS.prefs,p); updateHome(); showSettings(); },
@@ -3894,6 +4039,17 @@ function attachGlobalEvents() {
     if (openCard) return showCardDetail(ALL_TAROT.find(c => c.name === openCard));
     const openRune = e.target.closest('[data-open-rune]')?.dataset.openRune;
     if (openRune) return showRuneDetail(RUNAS.find(r => r.name === openRune));
+    /* La casilla se gestiona en el evento change; aqui solo se evita
+       que el clic sobre ella abra la ficha. */
+    if (e.target.closest('[data-grab-pick]')) return;
+
+    const grabCat = e.target.closest('[data-grab-cat]');
+    if (grabCat) {
+      grabCategoria = grabCat.dataset.grabCat || '';
+      refrescarGrabList();
+      return;
+    }
+
     const grabIndex = e.target.closest('[data-grab-index]')?.dataset.grabIndex;
     if (grabIndex !== undefined) return showGrabDetail(grabovoiEntries[Number(grabIndex)]);
     const astroCity = e.target.closest('[data-astro-city]')?.dataset.astroCity;
@@ -3913,14 +4069,35 @@ function attachGlobalEvents() {
     const delDiary = e.target.closest('[data-delete-diary]')?.dataset.deleteDiary;
     if (delDiary) { storeSet(LS.diary, storeGet(LS.diary,[]).filter(x=>x.id!==delDiary)); showBiblioteca($('#diaryFilter')?.value || 'all'); }
   });
+  /* Marcar una secuencia. Se controla aqui y no en el clic para que
+     funcione tambien con teclado. */
+  document.addEventListener('change', e => {
+    const pick = e.target.closest?.('[data-grab-pick]');
+    if (!pick) return;
+    const idx = Number(pick.dataset.grabPick);
+    if (!Number.isInteger(idx)) return;
+    if (pick.checked) {
+      if (grabSeleccion.size >= GRAB_MAX) {
+        pick.checked = false;
+        toast(t('gbMax', { n: GRAB_MAX }));
+        return;
+      }
+      grabSeleccion.add(idx);
+    } else {
+      grabSeleccion.delete(idx);
+    }
+    refrescarGrabList();
+  });
+
   document.addEventListener('input', e => {
     if (e.target.id === 'globalSearchInput') { const box=$('#globalSearchResults'); if(box) box.innerHTML = renderGlobalSearchResults(e.target.value || ''); return; }
     if (e.target.id === 'diarySearch') { showBiblioteca($('#diaryFilter')?.value || 'all'); return; }
     if (e.target.id === 'diaryFilter') { showBiblioteca(e.target.value || 'all'); return; }
     if (e.target.id === 'grabSearch') {
-      const q = e.target.value.toLowerCase().trim();
-      const list = grabovoiEntries.filter(x => `${x.codigo} ${x.nombre} ${x.categoria} ${x.uso}`.toLowerCase().includes(q)).slice(0, 60);
-      $('#grabList').innerHTML = renderGrabList(list);
+      /* La seleccion vive en grabSeleccion, no en el DOM: repintar la
+         lista al buscar ya no borra lo que hubiera marcado. */
+      grabConsulta = e.target.value || '';
+      refrescarGrabList();
     }
     if (e.target.id === 'grabPdfSearch') {
       const list = grabovoiPdfCandidates(lastReading, e.target.value || '');
