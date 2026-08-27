@@ -32,6 +32,47 @@
   color: rgba(255, 250, 239, .82);
 }
 
+.astro-place-field {
+  grid-column: span 2;
+}
+
+.astro-city-suggestions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.astro-city-option {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(145, 194, 255, .22);
+  border-radius: 8px;
+  background: rgba(6, 9, 22, .58);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.astro-city-option:hover,
+.astro-city-option:focus-visible {
+  border-color: rgba(244, 207, 117, .54);
+  background: rgba(244, 207, 117, .10);
+  outline: none;
+}
+
+.astro-city-option strong {
+  color: rgb(255, 250, 239);
+  font-size: .95rem;
+}
+
+.astro-city-option small {
+  color: rgba(255, 250, 239, .64);
+}
+
 .astro-grid {
   display: grid;
   grid-template-columns: minmax(230px, .9fr) minmax(0, 1.1fr);
@@ -190,6 +231,10 @@
   .astro-grid,
   .astro-day-grid {
     grid-template-columns: 1fr;
+  }
+
+  .astro-place-field {
+    grid-column: auto;
   }
 
   .astro-wheel {
