@@ -2777,7 +2777,7 @@ function symbolicAscendant(date = '', time = '12:00', name = '', place = null) {
   const lst = localSiderealDegree(date, time, place);
   const lat = Number.isFinite(Number(place?.lat)) ? Math.max(-66, Math.min(66, Number(place.lat))) : 0;
   const eps = 23.439291;
-  let degree = normalizeDegree(radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
+  let degree = normalizeDegree(180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
   if (!Number.isFinite(degree)) degree = normalizeDegree(lst + (astroHash(name) % 18));
   if (!place?.lat) degree = normalizeDegree(degree + (astroHash(name) % 18));
   return zodiacFromDegree(degree);
@@ -3838,7 +3838,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-17-astro-open'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-18-ascendant-fix'); } catch {}
   }
 }
 
