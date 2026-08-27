@@ -28,6 +28,7 @@ const LS = {
   migration: 'oraculo.migrationVersion.v1',
   performanceMode: 'oraculo.performanceMode.v1',
   birthDate: 'oraculo.birthDate.v1',
+  birthTime: 'oraculo.birthTime.v1',
   effects3d: 'oraculo.3d.preference.v14'
 };
 
@@ -269,6 +270,7 @@ function splitReadingText(text = '') {
 function cleanPdfText(value = '') {
   return String(value || '')
     .replace(/[🌟✨🔮🃏🌙ᚱ🤖📄📋📤⭐🎙️⏹️🔊]/g, '')
+    .replace(/[☉☽☿♀♂♃♄♈♉♊♋♌♍♎♏♐♑♒♓]/g, '')
     .replace(/[•]/g, '-')
     .replace(/[–—]/g, '-')
     .trim();
@@ -318,6 +320,14 @@ function getPdfReadingHighlight(reading = lastReading) {
       label:'Números importantes',
       value:`${meta.numbers.life} · ${meta.numbers.expression} · ${meta.numbers.personalYear}`,
       detail:`Camino de vida ${meta.numbers.life} · Expresión ${meta.numbers.expression} · Año personal ${meta.numbers.personalYear}`
+    };
+  }
+  if (reading?.type === 'Astros' && meta.astro) {
+    const astro = meta.astro;
+    return {
+      label:'Triada astral',
+      value:`${astro.sun?.symbol || '☉'} ${astro.sun?.name || ''} · ${astro.moon?.signSymbol || '☽'} ${astro.moon?.sign || ''} · ${astro.asc?.symbol || 'ASC'} ${astro.asc?.name || ''}`,
+      detail:`${getReadingSubjectName(reading) || reading.title || 'Lectura astral'} · ${meta.birthDate || astro.date || ''} ${meta.birthTime || astro.time || ''}`.trim()
     };
   }
   if (reading?.type === 'Grabovoi' && meta.grabovoiCode) {
@@ -1565,13 +1575,14 @@ function showFirstReading() {
       <button class="choice" data-act="tarot-one"><strong>🃏 Carta rápida</strong><small>Una carta para orientar tu pregunta.</small></button>
       <button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un símbolo breve para empezar.</small></button>
       <button class="choice" data-act="tarot-three"><strong>🃏 Tirada 3 cartas</strong><small>Pasado, presente y consejo.</small></button>
+      <button class="choice" data-module="astros"><strong>☉ Astros</strong><small>Carta astral y tirada astral del día.</small></button>
       <button class="choice" data-module="numerologia"><strong>🔢 Numerología</strong><small>Perfil completo y sinastría entre dos personas.</small></button>
     </div>` });
 }
 
 function showMap() {
   const modules = [
-    ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['suenos','💭','Sueños'],
+    ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
   openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Todos los apartados en un solo lugar.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>Abrir este apartado.</small></button>`).join('\n\n')}</div>` });
@@ -1622,7 +1633,7 @@ document.addEventListener('error', (event) => {
 
 
 function getProfile() {
-  return { birth:'', sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
+  return { birth:'', birthTime:'', sign:'', intention:'Claridad', favoriteSpread:'three', favoriteModule:'Tarot', ...(storeGet(LS.profile, {}) || {}) };
 }
 function setProfile(profile) { storeSet(LS.profile, { ...getProfile(), ...profile }); }
 function isPrivateMode() { return localStorage.getItem(LS.privateMode) === 'true'; }
@@ -1778,7 +1789,7 @@ function copyDiagnostics() { copyText(diagnosticsText()); }
 function downloadDiagnostics() { downloadTextFile('oraculo-diagnostico.json', diagnosticsText()); }
 
 const SEARCH_ITEMS = [
-  ['Tarot','tarot'], ['Runas','runas'], ['Luna','luna'], ['Sueños','suenos'],
+  ['Tarot','tarot'], ['Runas','runas'], ['Luna','luna'], ['Astros','astros'], ['Sueños','suenos'],
   ['Numerología','numerologia'], ['Grabovoi','grabovoi'], ['Biblioteca','biblioteca'], ['Chat Ritual','chat']
 ];
 function renderGlobalSearchResults(query = '') {
@@ -1786,12 +1797,12 @@ function renderGlobalSearchResults(query = '') {
   const items = SEARCH_ITEMS.filter(([label]) => !q || label.toLowerCase().includes(q));
   return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>Abrir módulo</small></button>`).join('') || '<p class="subtle">Sin resultados.</p>';
 }
-function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>Buscar módulo</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
+function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>Buscar módulo</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
 function showPrivacyCenter() {
   openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>Las lecturas, el perfil y el chat permanecen en este navegador. Al usar Puter IA, el texto enviado se procesa mediante ese servicio.</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
 function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast('Chat borrado.'); } }
-function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); updateHome(); toast('Perfil borrado.'); } }
+function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); updateHome(); toast('Perfil borrado.'); } }
 function factoryResetData() {
   if (!confirm('¿Restablecer todos los datos de Oráculo Místico en este navegador?')) return;
   Object.values(LS).forEach(key => localStorage.removeItem(key));
@@ -1840,6 +1851,8 @@ function saveDiaryNote(id) {
 }
 function showMiOraculo() {
   const profile = getProfile();
+  if (!profile.birth) profile.birth = getBirthDate();
+  if (!profile.birthTime) profile.birthTime = getBirthTime();
   const diary = storeGet(LS.diary, []);
   const favs = diary.filter(d => d.favorite).slice(0, 3);
   const last = diary.slice(0, 3);
@@ -1851,6 +1864,7 @@ function showMiOraculo() {
     </div>
     <div class="form-grid mt">
       <div class="field"><label>Fecha de nacimiento</label><input class="input" id="profileBirth" type="date" value="${escapeHTML(profile.birth || '')}"></div>
+      <div class="field"><label>Hora de nacimiento</label><input class="input" id="profileBirthTime" type="time" value="${escapeHTML(profile.birthTime || '')}"></div>
       <div class="field"><label>Signo / energía</label><input class="input" id="profileSign" value="${escapeHTML(profile.sign || '')}" placeholder="Aries, Luna, Agua..."></div>
       <div class="field"><label>Intención principal</label><input class="input" id="profileIntention" value="${escapeHTML(profile.intention || '')}" placeholder="Claridad, amor, calma..."></div>
       <div class="field"><label>Tirada favorita</label><select id="profileSpread"><option value="one" ${profile.favoriteSpread==='one'?'selected':''}>Carta rápida</option><option value="three" ${(profile.favoriteSpread||'three')==='three'?'selected':''}>Pasado · Presente · Futuro</option><option value="love" ${profile.favoriteSpread==='love'?'selected':''}>Amor</option><option value="decision" ${profile.favoriteSpread==='decision'?'selected':''}>Decisión</option><option value="celtic" ${profile.favoriteSpread==='celtic'?'selected':''}>Cruz Celta</option></select></div>
@@ -1875,6 +1889,8 @@ function importBackupFromFile(file) {
       if (data.voice) storeSet(LS.voice, data.voice);
       if (data.ceremony) storeSet('oraculo.ceremony.v1', data.ceremony);
       if (data.profile) storeSet(LS.profile, data.profile);
+      if (data.birthDate) localStorage.setItem(LS.birthDate, data.birthDate);
+      if (data.birthTime) localStorage.setItem(LS.birthTime, data.birthTime);
       if (data.theme) localStorage.setItem(LS.theme, data.theme);
       if (data.pdfStyle) localStorage.setItem(LS.pdfStyle, data.pdfStyle);
       if (Array.isArray(data.diary)) storeSet(LS.diary, data.diary);
@@ -2007,6 +2023,8 @@ function backupData() {
     voice:storeGet(LS.voice,{}),
     ceremony:getCeremonyPrefs(),
     profile:getProfile(),
+    birthDate:getBirthDate(),
+    birthTime:getBirthTime(),
     theme:getTheme(),
     privateMode:isPrivateMode(),
     pdfStyle:getPdfStyle(),
@@ -2420,20 +2438,23 @@ function numerologyCard(label, number, description) {
    nombre que ya se guardaba, y nunca sale del dispositivo. */
 function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || ''; } catch { return ''; } }
 function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
+function getBirthTime() { try { return localStorage.getItem(LS.birthTime) || ''; } catch { return ''; } }
+function setBirthTime(v) { try { if (/^\d{2}:\d{2}$/.test(v)) localStorage.setItem(LS.birthTime, v); } catch {} }
 
 function showNumerologia() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
   const d = escapeHTML(getBirthDate());
+  const tm = escapeHTML(getBirthTime());
   openModal({ icon:'🔢', title:t('nuTitle'), subtitle:t('nuSub'), body:`
     <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio Celestial"></div>
     <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuPersonal'))}</h3><p>${escapeHTML(t('nuPersonalIntro'))}</p></div>
-    <div class="form-grid mt"><div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('numName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div><div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="numDate" class="input" type="date" value="${d}"></div></div>
+    <div class="form-grid mt"><div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('numName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div><div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="numDate" class="input" type="date" value="${d}"></div><div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="numTime" class="input" type="time" value="${tm}" aria-describedby="numTimeHelp"><small id="numTimeHelp" class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div></div>
     <div class="actions mt"><button class="btn primary" data-act="calc-num">${escapeHTML(t('nuMake'))}</button></div>
     <hr class="soft-line">
     <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuSynTitle'))}</h3><p>${escapeHTML(t('nuSynIntro'))}</p></div>
     <div class="synastry-grid mt">
-      <div class="result-card"><h3>${escapeHTML(t('nuPersonA'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameA" class="input" value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateA" class="input" type="date" value="${d}"></div></div>
-      <div class="result-card"><h3>${escapeHTML(t('nuPersonB'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameB" class="input" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateB" class="input" type="date"></div></div>
+      <div class="result-card"><h3>${escapeHTML(t('nuPersonA'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameA" class="input" value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateA" class="input" type="date" value="${d}"></div><div class="field mt"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="synTimeA" class="input" type="time" value="${tm}"></div></div>
+      <div class="result-card"><h3>${escapeHTML(t('nuPersonB'))}</h3><div class="field"><label>${escapeHTML(t('nuName'))}</label><input id="synNameB" class="input" placeholder="${escapeHTML(t('nuNamePh'))}"></div><div class="field mt"><label>${escapeHTML(t('nuBirth'))}</label><input id="synDateB" class="input" type="date"></div><div class="field mt"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="synTimeB" class="input" type="time"></div></div>
     </div>
     <div class="actions mt"><button class="btn primary" data-act="calc-synastry">${escapeHTML(t('nuSynMake'))}</button></div>
     <p class="notice mt">${escapeHTML(t('nuNotice'))}</p>` });
@@ -2442,10 +2463,13 @@ function showNumerologia() {
 function calcNumerologia() {
   const name = $('#numName')?.value?.trim() || '';
   const date = $('#numDate')?.value || '';
+  const time = $('#numTime')?.value || '';
   if (!name || !date) return toast(t('nuNeedNameDate'));
   const profile = calculateNumerologyProfile(name, date);
   if (!profile) return toast(t('nuCheckDate'));
+  localStorage.setItem(LS.name, name);
   setBirthDate(date);
+  setBirthTime(time);
   const year = new Date().getFullYear();
   const fields = [
     [t('nuLife'), profile.life, t('nuLifeD')],
@@ -2457,11 +2481,11 @@ function calcNumerologia() {
     [t('nuMat'), profile.maturity, t('nuMatD')],
     [t('nuYear'), profile.personalYear, t('nuYearD', { year })]
   ];
-  const text = `${t('nuReading').toUpperCase()} · ${name}\n${date}\n\n${fields.map(([label, number, description]) => {
+  const text = `${t('nuReading').toUpperCase()} · ${name}\n${date}${time ? ` · ${t('nuBirthTime')}: ${time}` : ''}\n\n${fields.map(([label, number, description]) => {
     const meaning = numerologyMeaning(number);
     return `${label}: ${number} · ${meaning.title}\n${description}\n${t('nuStrength')}: ${meaning.gift}.\n${t('nuChallenge')}: ${meaning.challenge}.\n${t('nuAdvice')}: ${meaning.advice}.`;
   }).join('\n\n')}\n\n${t('nuSynthesisText')}`;
-  setLastReading({ type:'Numerología', title:`${t('nuTitle')} · ${name}`, text, items:[], meta:{ numbers:profile, name, birthDate:date } });
+  setLastReading({ type:'Numerología', title:`${t('nuTitle')} · ${name}`, text, items:[], meta:{ numbers:{ ...profile, time }, name, birthDate:date, birthTime:time } });
   openModal({ icon:'🔢', title:t('nuReading'), subtitle:`${name} · ${date}`, body:`
     <div class="numerology-results">${fields.map(([label, number, description]) => numerologyCard(label, number, description)).join('')}</div>
     <div class="result-card mt"><h3>${escapeHTML(t('nuSynthesis'))}</h3><p>${escapeHTML(t('nuSynthesisText'))}</p>${readingActions(text,'Numerología')}</div>` });
@@ -2491,13 +2515,18 @@ function synastryTheme(a, b) {
 function calculateSynastry() {
   const nameA = $('#synNameA')?.value?.trim() || '';
   const dateA = $('#synDateA')?.value || '';
+  const timeA = $('#synTimeA')?.value || '';
   const nameB = $('#synNameB')?.value?.trim() || '';
   const dateB = $('#synDateB')?.value || '';
+  const timeB = $('#synTimeB')?.value || '';
   if (!nameA || !dateA || !nameB || !dateB) return toast(t('nuNeedBoth'));
   const a = calculateNumerologyProfile(nameA, dateA);
   const b = calculateNumerologyProfile(nameB, dateB);
   if (!a || !b) return toast(t('nuCheckDate'));
   setBirthDate(dateA);
+  setBirthTime(timeA);
+  a.time = timeA;
+  b.time = timeB;
   const relationship = reduceNum(a.life + b.life);
   const m = numerologyMeaning(relationship);
   const sections = [
@@ -2518,6 +2547,278 @@ function calculateSynastry() {
     </div>
     <div class="numerology-results mt">${sections.map(([label, nA, nB, interp]) => `<article class="result-card numerology-card"><div class="numerology-pair">${nA}<span>·</span>${nB}</div><div><h3>${escapeHTML(label)}</h3><p>${escapeHTML(interp)}</p></div></article>`).join('')}</div>
     <div class="result-card mt"><h3>${escapeHTML(t('synRelNumber'))}: ${relationship} · ${escapeHTML(m.title)}</h3><p>${escapeHTML(advice)}</p><p class="notice">${escapeHTML(t('synNotice'))}</p>${readingActions(text,'Numerología · Sinastría')}</div>` });
+}
+
+const ASTRO_SIGNS = [
+  { name:'Aries', symbol:'♈', element:'Fuego', mode:'Cardinal', keywords:['inicio','valor','impulso'] },
+  { name:'Tauro', symbol:'♉', element:'Tierra', mode:'Fijo', keywords:['cuerpo','calma','valor'] },
+  { name:'Géminis', symbol:'♊', element:'Aire', mode:'Mutable', keywords:['palabra','curiosidad','vínculos'] },
+  { name:'Cáncer', symbol:'♋', element:'Agua', mode:'Cardinal', keywords:['cuidado','memoria','hogar'] },
+  { name:'Leo', symbol:'♌', element:'Fuego', mode:'Fijo', keywords:['brillo','corazón','creatividad'] },
+  { name:'Virgo', symbol:'♍', element:'Tierra', mode:'Mutable', keywords:['orden','servicio','detalle'] },
+  { name:'Libra', symbol:'♎', element:'Aire', mode:'Cardinal', keywords:['equilibrio','belleza','acuerdo'] },
+  { name:'Escorpio', symbol:'♏', element:'Agua', mode:'Fijo', keywords:['profundidad','verdad','transformación'] },
+  { name:'Sagitario', symbol:'♐', element:'Fuego', mode:'Mutable', keywords:['sentido','viaje','confianza'] },
+  { name:'Capricornio', symbol:'♑', element:'Tierra', mode:'Cardinal', keywords:['estructura','tiempo','responsabilidad'] },
+  { name:'Acuario', symbol:'♒', element:'Aire', mode:'Fijo', keywords:['visión','comunidad','libertad'] },
+  { name:'Piscis', symbol:'♓', element:'Agua', mode:'Mutable', keywords:['intuición','entrega','sueño'] }
+];
+const ASTRO_PLANETS = [
+  { id:'sun', name:'Sol', symbol:'☉', role:'identidad y dirección', cycle:365.2422, offset:280 },
+  { id:'moon', name:'Luna', symbol:'☽', role:'emoción y necesidad íntima', cycle:27.3217, offset:218 },
+  { id:'mercury', name:'Mercurio', symbol:'☿', role:'mente y palabra', cycle:87.969, offset:249 },
+  { id:'venus', name:'Venus', symbol:'♀', role:'vínculos y deseo', cycle:224.701, offset:182 },
+  { id:'mars', name:'Marte', symbol:'♂', role:'acción y coraje', cycle:686.98, offset:327 },
+  { id:'jupiter', name:'Júpiter', symbol:'♃', role:'expansión y confianza', cycle:4332.59, offset:25 },
+  { id:'saturn', name:'Saturno', symbol:'♄', role:'límite y madurez', cycle:10759.22, offset:40 }
+];
+const ASTRO_ASPECTS = [
+  { name:'Conjunción', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
+  { name:'Sextil', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
+  { name:'Cuadratura', angle:90, orb:6, text:'la tensión muestra dónde conviene ajustar el rumbo' },
+  { name:'Trígono', angle:120, orb:6, text:'hay fluidez natural para integrar esas energías' },
+  { name:'Oposición', angle:180, orb:7, text:'dos polos se miran y piden equilibrio consciente' }
+];
+const ASTRO_HOUSES = ['Yo','Recursos','Palabra','Hogar','Creatividad','Rutina','Vínculos','Transformación','Visión','Propósito','Comunidad','Alma'];
+
+function normalizeDegree(value) {
+  return ((Number(value) % 360) + 360) % 360;
+}
+function astroDateUTC(date = '', time = '12:00') {
+  const parts = dateParts(date);
+  if (!parts) return null;
+  const [hour = 12, minute = 0] = String(time || '12:00').split(':').map(Number);
+  return Date.UTC(parts.year, parts.month - 1, parts.day, Number.isFinite(hour) ? hour : 12, Number.isFinite(minute) ? minute : 0);
+}
+function zodiacFromDegree(degree) {
+  const normalized = normalizeDegree(degree);
+  const index = Math.floor(normalized / 30) % 12;
+  return { ...ASTRO_SIGNS[index], degree:Math.round(normalized % 30), index, absolute:normalized };
+}
+function sunSignFromDate(date = '') {
+  const parts = dateParts(date);
+  if (!parts) return null;
+  const md = parts.month * 100 + parts.day;
+  const ranges = [
+    [321, 419, 0], [420, 520, 1], [521, 620, 2], [621, 722, 3],
+    [723, 822, 4], [823, 922, 5], [923, 1022, 6], [1023, 1121, 7],
+    [1122, 1221, 8], [120, 218, 10], [219, 320, 11]
+  ];
+  const range = ranges.find(([start, end]) => md >= start && md <= end);
+  const index = md >= 1222 || md <= 119 ? 9 : (range?.[2] ?? 0);
+  return { ...ASTRO_SIGNS[index], index };
+}
+function planetPositions(date = '', time = '12:00') {
+  const ms = astroDateUTC(date, time);
+  if (!ms) return [];
+  const epoch = Date.UTC(2000, 0, 1, 12, 0);
+  const days = (ms - epoch) / 86400000;
+  return ASTRO_PLANETS.map(planet => {
+    const degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
+    const sign = zodiacFromDegree(degree);
+    return { ...planet, degree, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, element:sign.element, keywords:sign.keywords };
+  });
+}
+function astroHash(value = '') {
+  let hash = 2166136261;
+  for (const ch of String(value)) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+function symbolicAscendant(date = '', time = '12:00', name = '') {
+  const [hour = 12, minute = 0] = String(time || '12:00').split(':').map(Number);
+  const solar = planetPositions(date, '12:00').find(p => p.id === 'sun')?.degree || 0;
+  const nameOffset = astroHash(name) % 18;
+  const degree = normalizeDegree(solar + ((hour || 0) + (minute || 0) / 60) * 15 + nameOffset);
+  return zodiacFromDegree(degree);
+}
+function calculateAstroProfile(name = '', date = '', time = '') {
+  if (!name || !date || !time) return null;
+  const planets = planetPositions(date, time);
+  if (!planets.length) return null;
+  const sun = sunSignFromDate(date);
+  const asc = symbolicAscendant(date, time, name);
+  const moon = planets.find(p => p.id === 'moon');
+  const houses = ASTRO_HOUSES.map((label, index) => {
+    const sign = ASTRO_SIGNS[(asc.index + index) % 12];
+    return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element };
+  });
+  const aspects = [];
+  planets.forEach((a, i) => planets.slice(i + 1).forEach(b => {
+    const diff = Math.abs(a.degree - b.degree);
+    const angle = Math.min(diff, 360 - diff);
+    const aspect = ASTRO_ASPECTS.map(item => ({ ...item, delta:Math.abs(angle - item.angle) })).sort((x,y) => x.delta - y.delta)[0];
+    if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, orb:aspect.delta.toFixed(1), text:aspect.text });
+  }));
+  return { name, date, time, sun, moon, asc, planets, houses, aspects:aspects.slice(0, 6) };
+}
+function astroAdviceForElement(element = '') {
+  const map = {
+    Fuego:'actúa con intención, sin quemar etapas',
+    Tierra:'ponlo en agenda, en cuerpo y en pasos concretos',
+    Aire:'nombra lo que piensas antes de decidir',
+    Agua:'escucha la emoción sin dejar que decida sola'
+  };
+  return map[element] || 'busca un gesto simple que te devuelva centro';
+}
+function astroWheelHTML(chart) {
+  const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${index * 30}deg" aria-hidden="true">${sign.symbol}</span>`).join('');
+  const planets = chart.planets.map(planet => `<span class="astro-planet-dot" style="--angle:${planet.degree}deg" title="${escapeHTML(`${planet.name} en ${planet.sign}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}`)}">${planet.symbol}</span>`).join('');
+  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div><span class="astro-asc-line" style="--angle:${chart.asc.absolute}deg" aria-hidden="true"></span>${planets}</div>`;
+}
+function astroPositionsHTML(chart) {
+  return `<div class="astro-panel-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
+}
+function astroHousesHTML(chart) {
+  return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)}</small></span></article>`).join('')}</div>`;
+}
+function astroAspectsHTML(chart) {
+  return chart.aspects.length
+    ? `<div class="astro-aspects">${chart.aspects.map(item => `<article class="astro-aspect"><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><p>${escapeHTML(item.text)}.</p></article>`).join('')}</div>`
+    : '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
+}
+function astroReadingText(chart) {
+  const dominant = chart.planets.reduce((acc, p) => ({ ...acc, [p.element]:(acc[p.element] || 0) + 1 }), {});
+  const element = Object.entries(dominant).sort((a,b) => b[1] - a[1])[0]?.[0] || chart.sun.element;
+  const aspects = chart.aspects.map(item => `${item.name} entre ${item.a} y ${item.b}: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta lectura simbólica.';
+  return `CARTA ASTRAL SIMBÓLICA · ${chart.name}
+Fecha: ${chart.date} · Hora de nacimiento: ${chart.time}
+
+Sol en ${chart.sun.symbol} ${chart.sun.name}: tu dirección principal busca ${chart.sun.keywords.join(', ')}.
+Luna en ${chart.moon.signSymbol} ${chart.moon.sign}: tu mundo emocional se ordena desde ${chart.moon.keywords.join(', ')}.
+Ascendente simbólico en ${chart.asc.symbol} ${chart.asc.name}: la primera puerta de la experiencia habla de ${chart.asc.keywords.join(', ')}.
+
+Elemento dominante: ${element}. Consejo: ${astroAdviceForElement(element)}.
+
+Aspectos principales:
+${aspects}
+
+Casas simbólicas:
+${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.symbol} ${h.sign}`).join('\n')}
+
+Nota: lectura simbólica local. Para una carta astronómica exacta harían falta lugar de nacimiento y cálculo de efemérides profesional.`;
+}
+function astroReadingItems(chart) {
+  return chart.planets.map(p => ({ kind:'astro', name:`${p.name} en ${p.sign}`, subtitle:p.role, image:'', symbol:p.symbol, position:p.element }));
+}
+function showAstros() {
+  const n = escapeHTML(localStorage.getItem(LS.name) || '');
+  const profile = getProfile();
+  const d = escapeHTML(getBirthDate() || profile.birth || '');
+  const tm = escapeHTML(getBirthTime() || profile.birthTime || '');
+  openModal({ icon:'☉', title:'Astros', subtitle:'Carta astral simbólica y tirada diaria con IA opcional.', body:`
+    <div class="result-card astro-hero">
+      <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio del Oráculo"></div>
+      <h3>Rueda astral del Oráculo</h3>
+      <p>Introduce nombre, fecha y hora local de nacimiento. Todo se guarda en este dispositivo y la IA solo se usa si la conectas.</p>
+    </div>
+    <div class="form-grid mt astro-form">
+      <div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('astroName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
+      <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
+      <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
+      <div class="field"><label>Pregunta o intención</label>${inputWithMic('astroIntention', 'placeholder="Claridad para hoy, amor, trabajo..."')}</div>
+    </div>
+    <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">Crear carta astral</button><button class="btn" data-act="astro-daily" type="button">Tirada astral del día</button></div>
+    <p class="notice mt">Uso simbólico y de entretenimiento. Esta sección no usa imágenes, logos ni contenido de otras apps.</p>` });
+}
+function getAstroFormData() {
+  const profile = getProfile();
+  return {
+    name:($('#astroName')?.value || localStorage.getItem(LS.name) || '').trim(),
+    date:$('#astroDate')?.value || getBirthDate() || profile.birth || '',
+    time:$('#astroTime')?.value || getBirthTime() || profile.birthTime || '',
+    intention:($('#astroIntention')?.value || localStorage.getItem(LS.intention) || profile.intention || 'Claridad').trim()
+  };
+}
+function persistAstroData(data) {
+  if (data.name) localStorage.setItem(LS.name, data.name);
+  if (data.date) setBirthDate(data.date);
+  if (data.time) setBirthTime(data.time);
+  setProfile({ birth:data.date, birthTime:data.time, sign:sunSignFromDate(data.date)?.name || getProfile().sign, intention:data.intention || getProfile().intention });
+}
+function renderAstroReading(chart, text, title) {
+  openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}`, body:`
+    <div class="astro-grid">
+      ${astroWheelHTML(chart)}
+      <div class="result-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente simbólico:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p></div>
+    </div>
+    <h3 class="section-title">Posiciones</h3>
+    ${astroPositionsHTML(chart)}
+    <h3 class="section-title">Aspectos</h3>
+    ${astroAspectsHTML(chart)}
+    <h3 class="section-title">Casas</h3>
+    ${astroHousesHTML(chart)}
+    <div class="result-card mt"><h3>Síntesis</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
+}
+function calcAstroChart() {
+  const data = getAstroFormData();
+  if (!data.name || !data.date || !data.time) return toast('Completa nombre, fecha y hora de nacimiento.');
+  const chart = calculateAstroProfile(data.name, data.date, data.time);
+  if (!chart) return toast('Revisa la fecha y la hora.');
+  persistAstroData(data);
+  const text = astroReadingText(chart);
+  setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, intention:data.intention, astro:chart } });
+  renderAstroReading(chart, text, `Carta astral · ${data.name}`);
+}
+function dailyAstroCards(chart, todayChart, intention = '') {
+  const seed = astroHash(`${chart.name}|${chart.date}|${chart.time}|${todayKey()}|${intention}`);
+  const pool = [
+    { title:'Clima', planet:todayChart.planets[(seed + 1) % todayChart.planets.length], text:'la atmósfera del día pide observar antes de responder' },
+    { title:'Reto', planet:todayChart.planets[(seed + 3) % todayChart.planets.length], text:'la fricción útil está en no actuar por costumbre' },
+    { title:'Consejo', planet:todayChart.planets[(seed + 5) % todayChart.planets.length], text:'elige una acción pequeña, visible y amable contigo' }
+  ];
+  return pool.map(card => ({ ...card, sign:card.planet.sign, symbol:card.planet.symbol, element:card.planet.element }));
+}
+function dailyAstroText(chart, todayChart, cards, intention) {
+  return `TIRADA ASTRAL DEL DÍA · ${chart.name}
+Nacimiento: ${chart.date} · Hora: ${chart.time}
+Intención: ${intention || 'Claridad'}
+
+Base natal:
+Sol en ${chart.sun.name}. Luna en ${chart.moon.sign}. Ascendente simbólico en ${chart.asc.name}.
+
+Astros de hoy:
+Sol en ${todayChart.sun.name}. Luna en ${todayChart.moon.sign}. Elemento lunar: ${todayChart.moon.element}.
+
+${cards.map(card => `${card.title}: ${card.symbol} ${card.planet.name} en ${card.sign}. ${card.text}. Consejo: ${astroAdviceForElement(card.element)}.`).join('\n\n')}
+
+Síntesis:
+Hoy conviene mirar la intención desde ${todayChart.moon.element.toLowerCase()} y responder con el cuerpo presente. La lectura no predice; orienta un gesto consciente para este día.`;
+}
+async function dailyAstroReading() {
+  const data = getAstroFormData();
+  if (!data.name || !data.date || !data.time) return toast('Completa nombre, fecha y hora de nacimiento.');
+  const chart = calculateAstroProfile(data.name, data.date, data.time);
+  if (!chart) return toast('Revisa la fecha y la hora.');
+  persistAstroData(data);
+  const now = new Date();
+  const today = todayKey();
+  const todayTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const todayChart = calculateAstroProfile(data.name, today, todayTime);
+  const cards = dailyAstroCards(chart, todayChart, data.intention);
+  let text = dailyAstroText(chart, todayChart, cards, data.intention);
+  const title = `Tirada astral del día · ${data.name}`;
+  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, intention:data.intention, astro:chart, astroToday:todayChart } });
+  let ai = '';
+  if (localStorage.getItem(LS.puter) === 'true') {
+    mostrarPensando();
+    ai = cleanClosedReading(await askAI(`Amplía esta tirada astral diaria de forma simbólica, clara y cerrada. No pidas más datos, no formules preguntas al final, no hagas predicciones absolutas y no des consejos médicos, legales ni financieros. Usa solo estas posiciones y esta intención; no menciones ninguna app externa ni marca ajena.
+
+${text}`, { prefix:readingPersonalPrefix(lastReading) }));
+    ocultarPensando();
+    if (ai) {
+      lastReading.ai = ai;
+      text = `${text}\n\nInterpretación IA:\n${ai}`;
+    }
+  }
+  openModal({ icon:'☉', title, subtitle:`${today} · ${data.intention || 'Claridad'}`, body:`
+    <div class="astro-grid">
+      ${astroWheelHTML(todayChart)}
+      <div class="astro-day-grid">${cards.map(card => `<article class="astro-day-card"><span class="astro-symbol" aria-hidden="true">${card.symbol}</span><strong>${escapeHTML(card.title)}</strong><p>${escapeHTML(card.planet.name)} en ${escapeHTML(card.sign)}</p><small>${escapeHTML(card.text)}.</small></article>`).join('')}</div>
+    </div>
+    <div class="result-card mt"><h3>Síntesis astral</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(lastReading.text,'Astros')}</div>` });
 }
 
 async function loadGrabovoi() {
@@ -2824,7 +3125,7 @@ function showGrabDetail(e) {
 function showBiblioteca(filter = 'all') {
   const diary = storeGet(LS.diary, []);
   const q = ($('#diarySearch')?.value || '').toLowerCase().trim();
-  const types = ['all','favorites','Tarot','Runas','Sueños','Luna','Numerología','Grabovoi','Mensaje del día'];
+  const types = ['all','favorites','Tarot','Runas','Sueños','Luna','Astros','Numerología','Grabovoi','Mensaje del día'];
   let list = diary;
   if (filter === 'favorites') list = list.filter(d => d.favorite);
   else if (filter !== 'all') list = list.filter(d => String(d.type || '').toLowerCase().includes(filter.toLowerCase()));
@@ -3026,6 +3327,7 @@ function showChatRitual() {
         <button class="btn compact" data-chat-quick="tirada del amor">❤️ Amor</button>
         <button class="btn compact" data-chat-quick="sácame una runa">ᚱ Runa</button>
         <button class="btn compact" data-chat-quick="mensaje del día">🌟 Día</button>
+        <button class="btn compact" data-chat-quick="tirada astral del día">☉ Astros</button>
       </div>
       <div class="chat-input-row">
         ${textareaWithMic('chatInput', 'rows="3" placeholder="Escribe: hazme una tirada de amor, sácame una runa, interpreta mi sueño..."')}
@@ -3037,6 +3339,7 @@ function showChatRitual() {
 }
 function detectChatIntent(text) {
   const t = text.toLowerCase();
+  if (/astro|astral|carta natal|carta astral|zodiaco|hor[oó]scopo|tr[aá]nsito|astros/.test(t)) return { kind:/d[ií]a|diaria|hoy/.test(t) ? 'astroDaily' : 'astros' };
   if (/cruz celta|celt/.test(t)) return { kind:'tarot', spread:'celtic' };
   if (/amor|relaci[oó]n|pareja/.test(t) && /tarot|tirada|carta/.test(t)) return { kind:'tarot', spread:'love' };
   if (/decisi[oó]n|elegir|opci[oó]n/.test(t)) return { kind:'tarot', spread:'decision' };
@@ -3101,6 +3404,8 @@ async function processChatMessage(text) {
   if (intent.kind === 'privacy') { showPrivacyCenter(); addChat('oracle','He abierto Privacidad y datos.'); return; }
   if (intent.kind === 'search') { showGlobalSearch(); addChat('oracle','He abierto el buscador global.'); return; }
   if (intent.kind === 'guided') { showGuidedReveal(); addChat('oracle','He abierto una tirada guiada paso a paso.'); return; }
+  if (intent.kind === 'astros') { showAstros(); addChat('oracle','He abierto Astros. Completa nombre, fecha y hora de nacimiento para crear la carta astral o la tirada del día.'); return; }
+  if (intent.kind === 'astroDaily') { showAstros(); addChat('oracle','He abierto la tirada astral del día. Si ya tienes tus datos guardados, pulsa “Tirada astral del día”.'); return; }
   if (intent.kind === 'daily') { daily(); addChat('oracle','He abierto tu mensaje del día en una lectura visual. También puedes pedirme: “hazlo aquí en el chat”.'); return; }
   if (intent.kind === 'moon') { showLuna(); addChat('oracle','He abierto la lectura lunar. Si prefieres, escribe “hazlo aquí en el chat” y lo mantenemos privado.'); return; }
   if (intent.kind === 'dream') return addChat('oracle','Cuéntame el sueño con todos los detalles que recuerdes. También puedes abrir el módulo Sueños si quieres guardar la interpretación.', `<div class="actions mt"><button class="btn compact" data-module="suenos">💭 Abrir Sueños</button></div>`);
@@ -3112,7 +3417,7 @@ async function processChatMessage(text) {
     mostrarPensando();
     const memory = getChatMemoryContext(14);
     const userName = getUserName();
-    const answer = await askAI(`Responde como Oráculo Místico en español. Sé cálido, útil y simbólico. No des consejos médicos, legales ni financieros. ${!followsLastReading && userName ? `La persona se llama ${userName}; úsalo de forma natural, sin repetirlo demasiado.` : ''} ${followsLastReading ? 'Si respondes sobre la última lectura activa, respeta el destinatario indicado en esa lectura y no uses el nombre del perfil si es distinto.' : ''} Recuerda el hilo reciente de la conversación y responde con continuidad. Ten en cuenta el perfil personal si existe: intención ${getProfile().intention || 'no indicada'}, signo/energía ${getProfile().sign || 'no indicado'}. Si conviene, recomienda o realiza una tirada de tarot, runa, luna, sueños, numerología o Grabovoi.
+    const answer = await askAI(`Responde como Oráculo Místico en español. Sé cálido, útil y simbólico. No des consejos médicos, legales ni financieros. ${!followsLastReading && userName ? `La persona se llama ${userName}; úsalo de forma natural, sin repetirlo demasiado.` : ''} ${followsLastReading ? 'Si respondes sobre la última lectura activa, respeta el destinatario indicado en esa lectura y no uses el nombre del perfil si es distinto.' : ''} Recuerda el hilo reciente de la conversación y responde con continuidad. Ten en cuenta el perfil personal si existe: intención ${getProfile().intention || 'no indicada'}, signo/energía ${getProfile().sign || 'no indicado'}. Si conviene, recomienda o realiza una tirada de tarot, runa, luna, sueños, astrología simbólica, numerología o Grabovoi.
 
 Historial reciente:
 ${memory}
@@ -3153,6 +3458,8 @@ function handleAction(action) {
     'runes-library': showRunesLibrary,
     'moon-reading': moonReading,
     'dream-reading': dreamReading,
+    'astro-chart': calcAstroChart,
+    'astro-daily': dailyAstroReading,
     'calc-num': calcNumerologia,
     'calc-synastry': calculateSynastry,
     'biblioteca': () => showBiblioteca('all'),
@@ -3198,7 +3505,7 @@ function handleAction(action) {
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
     'open-manual': () => window.open('docs/manual_usuario_oraculo_mistico_v1_0.pdf', '_blank'),
     'mi-oraculo': showMiOraculo,
-    'save-profile': () => { setProfile({ birth: $('#profileBirth')?.value || '', sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast('Mi Oráculo guardado.'); showMiOraculo(); },
+    'save-profile': () => { const birth=$('#profileBirth')?.value || ''; const birthTime=$('#profileBirthTime')?.value || ''; setProfile({ birth, birthTime, sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); setBirthDate(birth); setBirthTime(birthTime); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast('Mi Oráculo guardado.'); showMiOraculo(); },
     'profile-favorite-spread': () => drawTarotSpread(getProfile().favoriteSpread || 'three'),
     'toggle-private': () => { setPrivateMode(!isPrivateMode()); updateHome(); showMiOraculo(); },
     'import-backup': () => { const input=document.createElement('input'); input.type='file'; input.accept='application/json,.json'; input.onchange=()=>importBackupFromFile(input.files?.[0]); input.click(); },
@@ -3263,7 +3570,7 @@ ${base}`;
   actionMap[action]?.();
 }
 function openModule(module) {
-  const map = { map: showMap, tarot: showTarot, runas: showRunas, luna: showLuna, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
+  const map = { map: showMap, tarot: showTarot, runas: showRunas, luna: showLuna, astros: showAstros, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
   map[module]?.();
 }
 
@@ -3331,7 +3638,7 @@ function attachGlobalEvents() {
 
 async function registerSW() {
   if ('serviceWorker' in navigator) {
-    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-15-polish'); } catch {}
+    try { await navigator.serviceWorker.register('service-worker.js?v=1.0-fase-16-astros'); } catch {}
   }
 }
 
