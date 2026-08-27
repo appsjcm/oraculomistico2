@@ -1,3 +1,6 @@
+/* Atajo al i18n del motor. No es un sistema nuevo: delega en el
+   mismo diccionario, y si aun no ha cargado devuelve la clave. */
+function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
 /* Oráculo Místico · Premium UI v2
    JS ligero y no invasivo: no cambia la lógica del tarot.
 */
@@ -685,7 +688,7 @@
       if (premium) {
         const action = premium.dataset.premiumAction;
         if (!['save-quick-note','clear-quick-note'].includes(action)) {
-          pushActivity('Acción premium', action);
+          pushActivity(OI('activityAction'), action);
         }
       }
 
@@ -1307,10 +1310,10 @@ const shuffle=(a)=>{const n=[...a];for(let i=n.length-1;i>0;i--){const j=Math.fl
 const spreadLabel=(c)=>c===1?"Mensaje central":c===3?"Pasado · Presente · Consejo":c===5?"Camino completo":`${c} cartas`;
 const pos=(c,i)=>({1:["Mensaje"],3:["Pasado","Presente","Consejo"],5:["Raíz","Reto","Energía","Consejo","Resultado"]}[c]||[])[i]||`Carta ${i+1}`;
 const drawSpread=(count)=>{const r=$("#premiumSpreadResult");if(!r)return;const drawn=shuffle(CARDS).slice(0,count);lastSpread={id:`spread-${Date.now()}`,createdAt:new Date().toISOString(),type:spreadLabel(count),cards:drawn};r.innerHTML=drawn.map((c,i)=>`<article class="premium-drawn-card${c.img?" has-art":""}"><span class="draw-position">${escapeHTML(pos(count,i))}</span>${cardArt(c,"draw-art")}<h3>${escapeHTML(c.name)}</h3><p>${escapeHTML(cardText(c))}</p></article>`).join("");toast(`Tirada generada: ${spreadLabel(count)}`)};
-const saveSpread=()=>{if(!lastSpread){toast("Primero genera una tirada.");return}const v=getVault();if(!v.some(i=>i.id===lastSpread.id)){v.unshift(lastSpread);setVault(v.slice(0,30))}renderVault();toast("Tirada guardada en el vault.")};
+const saveSpread=()=>{if(!lastSpread){toast("Primero genera una tirada.");return}const v=getVault();if(!v.some(i=>i.id===lastSpread.id)){v.unshift(lastSpread);setVault(v.slice(0,30))}renderVault();toast(OI("savedSpread"))};
 const formatDate=(iso)=>{try{return new Intl.DateTimeFormat("es-ES",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(iso))}catch(e){return iso}};
 const renderVault=()=>{const root=$("#premiumVaultRealList");if(!root)return;const v=getVault();updateStats();if(!v.length){root.innerHTML='<div class="premium-empty-state"><strong>Aún no hay tiradas guardadas.</strong><span>Genera una lectura y pulsa “Guardar tirada”.</span></div>';return}root.innerHTML=v.map(item=>`<article class="premium-vault-entry"><strong>${escapeHTML(item.type)}</strong><span>${escapeHTML(formatDate(item.createdAt))}</span><div class="premium-vault-cards">${item.cards.map(c=>`<em>${escapeHTML(c.name)}</em>`).join("")}</div></article>`).join("")};
-const clearVault=()=>{setVault([]);renderVault();toast("Vault vaciado.")};
+const clearVault=()=>{setVault([]);renderVault();toast(OI("savedCleared"))};
 const scrollEngine=()=>{const e=$("#premiumNativeEngine");if(e){e.scrollIntoView({behavior:"smooth",block:"start"});e.animate?.([{boxShadow:"0 0 0 rgba(247,217,139,0)"},{boxShadow:"0 0 80px rgba(247,217,139,.22)"},{boxShadow:"0 24px 90px rgba(0,0,0,.42)"}],{duration:900,easing:"ease-out"})}};
 const applySettings=(s=getSettings())=>{document.body.classList.toggle("premium-native-engine-off",!s.nativeEngine);document.body.classList.toggle("premium-compact-cards",!!s.compactCards);const n=$("#premiumNativeEngineToggle"),c=$("#premiumCompactCards");if(n)n.checked=!!s.nativeEngine;if(c)c.checked=!!s.compactCards};
 const bind=()=>{const search=$("#premiumRealCardSearch");if(search)search.addEventListener("input",()=>{activeQuery=search.value;resetPaging();renderCards()});$$(".engine-filter").forEach(b=>b.addEventListener("click",()=>{activeFilter=b.dataset.cardFilter||"all";$$('.engine-filter').forEach(x=>x.classList.toggle('active',x===b));resetPaging();renderCards()}));$$('[data-native-spread]').forEach(b=>b.addEventListener('click',()=>{if(!getSettings().nativeEngine){toast('Activa los Arcanos en Ajustes.');return}drawSpread(Number(b.dataset.nativeSpread||'1'))}));document.addEventListener('click',ev=>{const action=ev.target?.closest?.('[data-premium-action]')?.dataset?.premiumAction;if(action==='save-native-spread')saveSpread();if(action==='render-native-vault'){renderVault();toast('Lecturas guardadas actualizadas.')}if(action==='clear-native-vault')clearVault();if(action==='open-native-engine')scrollEngine();if(action==='load-more-cards'){shownCards+=PAGE_SIZE;renderCards()}});const n=$('#premiumNativeEngineToggle'),c=$('#premiumCompactCards');if(n)n.addEventListener('change',()=>saveSettings({nativeEngine:n.checked}));if(c)c.addEventListener('change',()=>saveSettings({compactCards:c.checked}))};
