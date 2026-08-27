@@ -8,8 +8,8 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Oráculo Místico</title>
-  <meta name="description" content="Oráculo Místico: tarot, runas, luna, sueños, numerología completa, sinastría, diario local, voz y Chat Ritual.">
-  <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, numerología, sinastría, diario místico, lectura simbólica">
+  <meta name="description" content="Oráculo Místico: tarot, runas, luna, sueños, astrología simbólica, numerología completa, sinastría, diario local, voz y Chat Ritual.">
+  <meta name="keywords" content="oráculo místico, tarot, runas, luna, sueños, carta astral, astrología, numerología, sinastría, diario místico, lectura simbólica">
   <link rel="canonical" href="https://appsjcm.github.io/oraculomistico2/">
   <meta property="og:title" content="Oráculo Místico">
   <meta property="og:description" content="Tarot, runas, luna, sueños, numerología, sinastría, diario y voz en una experiencia simbólica.">
@@ -30,7 +30,7 @@
     "@type": "WebApplication",
     "name": "Oráculo Místico",
     "url": "https://appsjcm.github.io/oraculomistico2/",
-    "description": "Tarot, runas, luna, sueños, numerología completa, sinastría, diario local, voz y Chat Ritual.",
+    "description": "Tarot, runas, luna, sueños, carta astral simbólica, numerología completa, sinastría, diario local, voz y Chat Ritual.",
     "applicationCategory": "LifestyleApplication",
     "operatingSystem": "Web",
     "inLanguage": "es",
@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-visual-48">
   <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-visual-48">
   <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-visual-48">
+  <link rel="stylesheet" href="styles/astro.css?v=1.0-fase-16-astros">
   <script type="importmap">
   {
     "imports": {
@@ -65,14 +66,14 @@
        borra las cachés viejas al activarse, así que aquí basta con dejar
        constancia de la versión instalada. */
     (() => {
-      const build = '1.0-fase-15-polish';
+      const build = '1.0-fase-16-astros';
       const key = 'oraculo.publicBuild';
       try { localStorage.setItem(key, build); } catch {}
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-visual-48"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-fase-16-astros"></script>
   <script defer src="js/premium-ui-v12.js?v=1.0-visual-48"></script>
   <script defer src="js/v2-shell.js?v=1.0-visual-48"></script>
   <script defer src="js/v2-ritual.js?v=1.0-visual-48"></script>
@@ -151,7 +152,7 @@
       <header class="om-section-head">
         <p class="om-eyebrow" data-i18n="omSanctuary">El Santuario</p>
         <h2 id="omSanctuaryTitle" data-i18n="omSanctuaryTitle">Elige por dónde entrar</h2>
-        <p class="om-section-sub" data-i18n="omSanctuarySub">Ocho caminos hacia la misma pregunta.</p>
+        <p class="om-section-sub" data-i18n="omSanctuarySub">Nueve caminos hacia la misma pregunta.</p>
       </header>
 
       <div class="om-3d-strip" aria-hidden="true">
@@ -176,6 +177,11 @@
           <span class="om-altar-icon" aria-hidden="true">🌙</span>
           <span class="om-altar-name" data-i18n="moon">Luna</span>
           <span class="om-altar-desc" data-i18n="omMoonSub">Fase actual y su lectura simbólica</span>
+        </button>
+        <button class="om-altar" data-module="astros" type="button" style="--om-altar-hue: 205">
+          <span class="om-altar-icon" aria-hidden="true">☉</span>
+          <span class="om-altar-name" data-i18n="astrology">Astros</span>
+          <span class="om-altar-desc" data-i18n="astrologySub">Carta astral y tirada del día</span>
         </button>
         <button class="om-altar" data-module="suenos" type="button" style="--om-altar-hue: 265">
           <span class="om-altar-icon" aria-hidden="true">💭</span>
@@ -705,6 +711,7 @@
       <button class="module-card premium-card-highlight" data-module="tarot" type="button"><span>🃏</span><strong data-i18n="tarot">Tarot</strong><small data-i18n="tarotSub">Carta, tiradas y biblioteca</small></button>
       <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong data-i18n="runes">Runas</strong><small data-i18n="runesSub">Runa rápida y tiradas</small></button>
       <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong data-i18n="moon">Luna</strong><small data-i18n="moonSub">Lectura lunar guiada</small></button>
+      <button class="module-card" data-module="astros" type="button"><span>☉</span><strong data-i18n="astrology">Astros</strong><small data-i18n="astrologySub">Carta astral y tirada del día</small></button>
       <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong data-i18n="dreams">Sueños</strong><small data-i18n="dreamsSub">Interpretación simbólica</small></button>
       <button class="module-card" data-module="numerologia" type="button"><span>🔢</span><strong data-i18n="numerology">Numerología</strong><small data-i18n="numerologySub">Perfil completo y sinastría</small></button>
       <button class="module-card" data-module="grabovoi" type="button"><span>📜</span><strong data-i18n="grabovoi">Grabovoi</strong><small data-i18n="grabovoiSub">Secuencias y formas de uso</small></button>

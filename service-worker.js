@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-visual-48';
+const CACHE_NAME = 'oraculo-v1-0-public-fase-16-astros';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './styles/v2-oraculos.css',
   './styles/oraculo-3d.css',
   './styles/visual-performance-polish.css',
+  './styles/astro.css',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
