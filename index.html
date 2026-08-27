@@ -41,16 +41,16 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-catala-41-fase-14">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-catala-41-fase-14">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-idiomas-46">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-catala-41-fase-14">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-catala-41-fase-14">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-catala-41-fase-14">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-catala-41-fase-14">
-  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-fase-14-num-grab">
-  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-fase-15-polish">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-idiomas-46">
+  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-idiomas-46">
   <script type="importmap">
   {
     "imports": {
@@ -72,15 +72,15 @@
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-catala-41-fase-14-subjects"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-shell.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-voz.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-catala-41-fase-14"></script>
-  <script defer src="js/v2-movil.js?v=1.0-catala-41-fase-14"></script>
-  <script type="module" src="js/oraculo-3d.js?v=1.0-fase-14-fit"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-shell.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-voz.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-idiomas-46"></script>
+  <script defer src="js/v2-movil.js?v=1.0-idiomas-46"></script>
+  <script type="module" src="js/oraculo-3d.js?v=1.0-idiomas-46"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -113,7 +113,7 @@
       </div>
 
       <!-- El Orbe del Oráculo -->
-      <div class="om-3d-stage om-3d-hero" data-oraculo-3d-asset="orb" data-om-nav="santuario" role="button" tabindex="0" aria-label="Abrir el Santuario"></div>
+      <div class="om-3d-stage om-3d-hero" data-oraculo-3d-asset="orb" data-om-nav="santuario" role="button" tabindex="0" data-i18n-aria="openSanctuary" aria-label="Abrir el Santuario"></div>
       <button id="omOrb" class="om-orb" type="button" aria-describedby="omOrbHint" aria-hidden="true" tabindex="-1">
         <span class="om-orb-body" aria-hidden="true">
           <span class="om-orb-core"></span>
@@ -121,7 +121,7 @@
           <span class="om-orb-sheen"></span>
         </span>
         <span class="om-orb-ring" aria-hidden="true"></span>
-        <span class="sr-only">Abrir el Santuario</span>
+        <span class="sr-only" data-i18n="openSanctuary">Abrir el Santuario</span>
       </button>
 
       <div class="om-cover-text">
@@ -164,27 +164,27 @@
       <div class="om-altars">
         <button class="om-altar" data-module="tarot" type="button" style="--om-altar-hue: 42">
           <span class="om-altar-icon" aria-hidden="true">🃏</span>
-          <span class="om-altar-name">Tarot</span>
+          <span class="om-altar-name" data-i18n="tarot">Tarot</span>
           <span class="om-altar-desc" data-i18n="omTarotSub">78 cartas, tiradas y ritual completo</span>
         </button>
         <button class="om-altar" data-module="runas" type="button" style="--om-altar-hue: 205">
           <span class="om-altar-icon" aria-hidden="true">ᚱ</span>
-          <span class="om-altar-name">Runas</span>
+          <span class="om-altar-name" data-i18n="runes">Runas</span>
           <span class="om-altar-desc" data-i18n="omRunesSub">El Futhark antiguo, piedra a piedra</span>
         </button>
         <button class="om-altar" data-module="luna" type="button" style="--om-altar-hue: 220">
           <span class="om-altar-icon" aria-hidden="true">🌙</span>
-          <span class="om-altar-name">Luna</span>
+          <span class="om-altar-name" data-i18n="moon">Luna</span>
           <span class="om-altar-desc" data-i18n="omMoonSub">Fase actual y su lectura simbólica</span>
         </button>
         <button class="om-altar" data-module="suenos" type="button" style="--om-altar-hue: 265">
           <span class="om-altar-icon" aria-hidden="true">💭</span>
-          <span class="om-altar-name">Sueños</span>
+          <span class="om-altar-name" data-i18n="dreams">Sueños</span>
           <span class="om-altar-desc" data-i18n="omDreamsSub">Escribe lo soñado y encuentra sus símbolos</span>
         </button>
         <button class="om-altar" data-module="numerologia" type="button" style="--om-altar-hue: 38">
           <span class="om-altar-icon" aria-hidden="true">🔢</span>
-          <span class="om-altar-name">Numerología</span>
+          <span class="om-altar-name" data-i18n="numerology">Numerología</span>
           <span class="om-altar-desc" data-i18n="omNumSub">Tu perfil numérico y la sinastría</span>
         </button>
         <button class="om-altar" data-module="grabovoi" type="button" style="--om-altar-hue: 30">
@@ -451,7 +451,7 @@
       <div class="premium-suite-head">
         <span class="premium-section-kicker">✦ Tirada Express Real</span>
         <h2>Baraja local con lectura de 1, 3 o 5 cartas</h2>
-        <p>Elige una tirada, genera cartas al azar y guárdala en tu vault personal.</p>
+        <p data-i18n="savedInvite">Elige una tirada, deja que las cartas salgan y consérvala en tus Lecturas guardadas.</p>
       </div>
       <div class="premium-native-spread-actions">
         <button type="button" data-native-spread="1">1 carta</button>
@@ -469,8 +469,8 @@
         <p>Las tiradas se guardan en este navegador usando almacenamiento local.</p>
       </div>
       <div class="premium-inline-actions">
-        <button type="button" data-premium-action="render-native-vault">Actualizar vault</button>
-        <button type="button" data-premium-action="clear-native-vault">Vaciar vault</button>
+        <button type="button" data-premium-action="render-native-vault" data-i18n="savedRefresh">Actualizar</button>
+        <button type="button" data-premium-action="clear-native-vault" data-i18n="savedClear">Vaciar</button>
       </div>
       <div id="premiumVaultRealList" class="premium-vault-real-list" aria-live="polite"><div class="premium-empty-state"><strong>Aún no hay tiradas guardadas.</strong><span>Genera una lectura y pulsa “Guardar tirada”.</span></div></div>
     </section>
@@ -511,7 +511,7 @@
       </div>
     </section>
 
-    <section class="premium-spread-lab card-glass" aria-label="Tarot Flow Lab">
+    <section class="premium-spread-lab card-glass" data-i18n-aria="readingTable" aria-label="Mesa de Lectura">
       <div class="premium-suite-head">
         <span class="premium-section-kicker">✦ Mesa de Lectura</span>
         <h2>Pantalla de tirada más espectacular</h2>
@@ -756,7 +756,7 @@
 
         <p class="om-group-label" data-i18n="omGroupOracle">Oráculo y voz</p>
         <div class="om-rows">
-          <button class="om-row" data-action="connect-ai" type="button"><span>🤖</span><b>Conectar IA</b><small>Ampliar lecturas con inteligencia artificial</small></button>
+          <button class="om-row" data-action="connect-ai" type="button"><span>🤖</span><b data-i18n="connectAI">Conectar IA</b><small data-i18n="connectAISub">Ampliar lecturas con inteligencia artificial</small></button>
           <button class="om-row" data-om-voz type="button"><span>🪄</span><b>La Voz del Oráculo</b><small>Reproducir, pausar, silenciar y velocidad</small></button>
           <button class="om-row" data-action="control-center" type="button"><span>🧭</span><b>Centro de control</b><small>Buscar, estado y privacidad</small></button>
           <button class="om-row" data-premium-action="open-palette" type="button"><span>⌘</span><b>Buscar</b><small>Ir a cualquier módulo o acción por su nombre</small></button>
@@ -852,11 +852,11 @@
     <div class="premium-native-splash-bg"></div>
     <div class="premium-native-splash-card">
       <span class="premium-section-kicker">✦ Oráculo Místico</span>
-      <h2>Bienvenido al Santuario</h2>
-      <p>Una experiencia cercana a una app, con control visual y transiciones cuidadas.</p>
+      <h2 data-i18n="welcomeTitle">Bienvenido al Santuario</h2>
+      <p data-i18n="welcomeText">Tómate un momento antes de entrar. Las lecturas se guardan solo en este dispositivo.</p>
       <div class="premium-native-splash-actions">
-        <button class="btn primary" data-premium-action="dismiss-native-splash" type="button">Entrar</button>
-        <button class="btn ghost" data-premium-action="dont-show-native-splash" type="button">No mostrar más</button>
+        <button class="btn primary" data-premium-action="dismiss-native-splash" data-i18n="welcomeEnter" type="button">Entrar</button>
+        <button class="btn ghost" data-premium-action="dont-show-native-splash" data-i18n="welcomeNever" type="button">No mostrar más</button>
       </div>
     </div>
   </div>
@@ -948,7 +948,7 @@
         <label class="premium-setting-row">
           <div>
             <strong>Motor local real</strong>
-            <small>Activa biblioteca, tiradas y vault nativo sin depender de servidores.</small>
+            <small data-i18n="offlineFeature">Activa la Biblioteca Arcana, las tiradas y tus Lecturas guardadas sin depender de servidores.</small>
           </div>
           <input id="premiumNativeEngineToggle" type="checkbox">
         </label>
