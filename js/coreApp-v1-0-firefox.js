@@ -1563,7 +1563,15 @@ function updateHome() {
   const name = localStorage.getItem(LS.name) || '';
   applyAppTranslations(document);
   $('#userGreeting').textContent = name ? `${getAppLanguage() === 'en' ? 'Hello' : getAppLanguage() === 'fr' ? 'Bonjour' : getAppLanguage() === 'de' ? 'Hallo' : getAppLanguage() === 'zh' ? '你好' : getAppLanguage() === 'ca' ? 'Hola' : 'Hola'}, ${name}` : t('greeting');
-  $('#iaStatusChip').textContent = localStorage.getItem(LS.puter) === 'true' ? '🤖 IA: conectada' : `🤖 ${t('aiSymbolic')}`;
+  /* Se reconstruye el span interior en lugar de pisar el textContent:
+     al pisarlo se destruia el data-i18n y el chip se quedaba en el
+     idioma que hubiera al arrancar, en TODAS las pantallas. */
+  const chipIA = $('#iaStatusChip');
+  if (chipIA) {
+    const conectada = localStorage.getItem(LS.puter) === 'true';
+    const clave = conectada ? 'aiConnected' : 'aiSymbolic';
+    chipIA.innerHTML = `🤖 <span data-i18n="${clave}">${escapeHTML(t(clave))}</span>`;
+  }
   const intention = localStorage.getItem(LS.intention) || getProfile().intention || 'libre';
   $('#intentionChip').textContent = `🧭 Intención: ${intention}${isPrivateMode() ? ' · privado' : ''}`;
   const platformChip = $('#platformStatusChip');
@@ -1821,7 +1829,7 @@ const SEARCH_ITEMS = [
 function renderGlobalSearchResults(query = '') {
   const q = query.toLowerCase().trim();
   const items = SEARCH_ITEMS.filter(([label]) => !q || label.toLowerCase().includes(q));
-  return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>Abrir módulo</small></button>`).join('') || '<p class="subtle">Sin resultados.</p>';
+  return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>Abrir módulo</small></button>`).join('') || `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
 }
 function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>Buscar módulo</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
 function showPrivacyCenter() {
@@ -2372,6 +2380,22 @@ function moonReading() {
 const dreamSymbols = {
   agua:'Emociones, intuición y limpieza interior.', volar:'Deseo de libertad, perspectiva y expansión.', casa:'Tu mundo interno, seguridad y memoria.', persecución:'Algo pide atención; puede ser estrés o evitación.', dientes:'Cambios, comunicación o preocupación por la imagen.', animal:'Instinto, guía y energía natural.', escuela:'Aprendizaje, evaluación o crecimiento.', noche:'Misterio, descanso y partes ocultas de ti.'
 };
+/* Los simbolos de sueno tenian doble papel: etiqueta visible y palabra
+   que se busca en el texto. En otro idioma la etiqueta salia en
+   castellano y la deteccion no encontraba nada, porque quien escribe
+   lo hace en su lengua. La clave interna no cambia. */
+function indiceSimbolo(clave) { return Object.keys(dreamSymbols).indexOf(clave); }
+
+function simboloSueno(clave) {
+  const i = indiceSimbolo(clave);
+  if (i < 0) return { etiqueta: clave, significado: dreamSymbols[clave] || '', palabras: [clave] };
+  return {
+    etiqueta: t('ds' + i + 'L'),
+    significado: t('ds' + i + 'M'),
+    palabras: String(t('ds' + i + 'W')).split('|').map(x => x.trim().toLowerCase()).filter(Boolean)
+  };
+}
+
 const dreamElements = {
   Agua:{
     words:['agua','mar','río','rio','lluvia','lago','océano','oceano','piscina','ola','barco','nadar','lágrima','lagrima','inundación','inundacion'],
@@ -2408,16 +2432,18 @@ function showSuenos() {
      lecturas ya guardadas y hay codigo que lo compara. Solo cambia la
      etiqueta que se ve. */
   const opc = (id, pares) => `<select id="${id}">${pares.map(([k, v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select>`;
-  openModal({ icon:'💭', title:t('drTitle'), subtitle:t('drSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="${escapeHTML(t('a3dMirror'))}"></div><div class="form-grid"><div class="field"><label>${escapeHTML(t('drDescribe'))}</label>${textareaWithMic('dreamText', `placeholder="${escapeHTML(t('drDescribePh'))}"`)}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label>${escapeHTML(t('drMood'))}</label>${opc('dreamMood', [['drCuriosity','Curiosidad'],['drCalm','Tranquilidad'],['drFear','Miedo'],['drJoy','Alegría'],['drConfusion','Confusión']])}</div><div class="field"><label>${escapeHTML(t('drType'))}</label>${opc('dreamType', [['drSymbolic','Simbólica'],['drEmotional','Emocional'],['drPractical','Práctica'],['drSpiritual','Espiritual suave']])}</div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(s=>`<button class="tab" data-add-symbol="${s}">${s}</button>`).join('\n\n')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">${escapeHTML(t('drGo'))}</button></div>` });
+  openModal({ icon:'💭', title:t('drTitle'), subtitle:t('drSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="${escapeHTML(t('a3dMirror'))}"></div><div class="form-grid"><div class="field"><label>${escapeHTML(t('drDescribe'))}</label>${textareaWithMic('dreamText', `placeholder="${escapeHTML(t('drDescribePh'))}"`)}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label>${escapeHTML(t('drMood'))}</label>${opc('dreamMood', [['drCuriosity','Curiosidad'],['drCalm','Tranquilidad'],['drFear','Miedo'],['drJoy','Alegría'],['drConfusion','Confusión']])}</div><div class="field"><label>${escapeHTML(t('drType'))}</label>${opc('dreamType', [['drSymbolic','Simbólica'],['drEmotional','Emocional'],['drPractical','Práctica'],['drSpiritual','Espiritual suave']])}</div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(k=>`<button class="tab" data-add-symbol="${escapeHTML(simboloSueno(k).etiqueta)}">${escapeHTML(simboloSueno(k).etiqueta)}</button>`).join('')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">${escapeHTML(t('drGo'))}</button></div>` });
 }
 function dreamReading() {
   const dream = $('#dreamText')?.value || '';
   const subject = getReadingSubject('dreamSubject');
   const mood = $('#dreamMood')?.value || 'Curiosidad';
   const type = $('#dreamType')?.value || 'Simbólica';
-  const found = Object.keys(dreamSymbols).filter(k => dream.toLowerCase().includes(k));
+  const texto = dream.toLowerCase();
+  const found = Object.keys(dreamSymbols).filter(k =>
+    texto.includes(k) || simboloSueno(k).palabras.some(w => w && texto.includes(w)));
   const element = analyzeDreamElement(dream, found);
-  const symbols = found.length ? found.map(k => `${k}: ${dreamSymbols[k]}`).join('\n') : t('drNoSymbols');
+  const symbols = found.length ? found.map(k => `${simboloSueno(k).etiqueta}: ${simboloSueno(k).significado}`).join('\n') : t('drNoSymbols');
   const text = `${subjectPrefix(subject)}Sueño: ${dream || 'Sin descripción'}\nEmoción: ${mood}\nLectura: ${type}\nElemento predominante: ${element.name}\n${element.explanation}\n\nSímbolos:\n${symbols}\n\nConsejo: observa qué emoción se repite y qué parte del sueño pide orden, descanso o claridad.`;
   setLastReading({ type:'Sueños', title:subject ? `Interpretación de sueño · ${subject}` : 'Interpretación de sueño', text, items:[], meta:subjectMeta(subject, { dreamElement:element, dreamSymbols:found, mood, readingType:type }) });
   openModal({ icon:'💭', title:t('drResult'), subtitle:subjectSubtitle(`${mood} · ${type}`, subject), body:`<div class="result-card"><h3>${escapeHTML(t('drElement'))}: ${escapeHTML(element.name)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}<p>${escapeHTML(element.explanation)}</p></div><div class="result-card mt"><h3>${escapeHTML(t('drReadingSym'))}</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Sueños')}</div>` });
@@ -2712,7 +2738,7 @@ function radToDeg(value) { return Number(value) * 180 / Math.PI; }
 function sinDeg(value) { return Math.sin(degToRad(value)); }
 function cosDeg(value) { return Math.cos(degToRad(value)); }
 function tanDeg(value) { return Math.tan(degToRad(value)); }
-function astroEngineLabel() { return 'Motor astral abierto · aproximación simbólica'; }
+function astroEngineLabel() { return t('asEngine'); }
 function astroHouseSystemLabel(system = 'whole') {
   return system === 'equal' ? 'Casas iguales simbólicas' : 'Casa entera simbólica';
 }
@@ -2888,7 +2914,7 @@ function astroWheelHTML(chart) {
     const radius = [-.27, -.325, -.38][index % 3];
     return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}</span>`;
   }).join('');
-  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(`Rueda astral simbólica de ${chart.name}`)}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div>`;
+  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
@@ -2943,23 +2969,23 @@ function showAstros() {
   const placeValue = escapeHTML(place?.label || '');
   const placeData = escapeHTML(place ? JSON.stringify(place) : '');
   const houseSystem = getAstroHouseSystem();
-  openModal({ icon:'☉', title:'Astros', subtitle:'Carta astral simbólica y tirada diaria con IA opcional.', body:`
+  openModal({ icon:'☉', title:t('asTitle'), subtitle:t('asSub'), body:`
     <div class="result-card astro-hero">
-      <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio del Oráculo"></div>
-      <h3>Rueda astral del Oráculo</h3>
-      <p>Introduce nombre, fecha, hora local y lugar de nacimiento. Todo se guarda en este dispositivo y la IA solo se usa si la conectas.</p>
+      <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="${escapeHTML(t('a3dAstrolabe'))}"></div>
+      <h3>${escapeHTML(t('asWheel'))}</h3>
+      <p>${escapeHTML(t('asIntro'))}</p>
       ${astroEngineNoticeHTML()}
     </div>
     <div class="form-grid mt astro-form">
       <div class="field"><label>${escapeHTML(t('nuName'))}</label>${inputWithMic('astroName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
       <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
       <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
-      <div class="field astro-place-field"><label>Lugar de nacimiento</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="Barcelona, España" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">Busca y elige una ciudad para usar coordenadas y zona horaria.</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
-      <div class="field"><label>Sistema de casas</label><select id="astroHouseSystem" class="input"><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>Casas iguales simbólicas</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>Casa entera simbólica</option></select></div>
-      <div class="field"><label>Pregunta o intención</label>${inputWithMic('astroIntention', 'placeholder="Claridad para hoy, amor, trabajo..."')}</div>
+      <div class="field astro-place-field"><label>${escapeHTML(t('asPlace'))}</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="${escapeHTML(t('asPlacePh'))}" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">${escapeHTML(t('asPlaceHelp'))}</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
+      <div class="field"><label>${escapeHTML(t('asHouses'))}</label><select id="astroHouseSystem" class="input"><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>${escapeHTML(t('asHousesEqual'))}</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>${escapeHTML(t('asHousesWhole'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('asIntent'))}</label>${inputWithMic('astroIntention', `placeholder="${escapeHTML(t('asIntentPh'))}"`)}</div>
     </div>
-    <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">Crear carta astral</button><button class="btn" data-act="astro-daily" type="button">Tirada astral del día</button></div>
-    <p class="notice mt">Uso simbólico y de entretenimiento. Esta sección no usa imágenes, logos ni contenido de otras apps.</p>` });
+    <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">${escapeHTML(t('asChart'))}</button><button class="btn" data-act="astro-daily" type="button">${escapeHTML(t('asDaily'))}</button></div>
+    <p class="notice mt">${escapeHTML(t('asNotice'))}</p>` });
 }
 function getAstroFormData() {
   const profile = getProfile();
@@ -3187,7 +3213,7 @@ async function handleChatGrabovoi(query = '') {
 }
 async function showGrabovoi() {
   const entries = await loadGrabovoi();
-  openModal({ icon:'📜', title:'Grabovoi simbólico', subtitle:'Consulta cada secuencia con explicación y forma de uso.', body:`<p class="notice">Contenido simbólico y de entretenimiento. No es consejo médico ni promete resultados.</p><div class="field mt"><label>Buscar código o tema</label>${inputWithMic('grabSearch', 'placeholder="amor, calma, 147..."')}</div><div id="grabList" class="diary-list mt">${renderGrabList(entries.slice(0,40))}</div>` });
+  openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`<p class="notice">${escapeHTML(t('gbNotice'))}</p><div class="field mt"><label>${escapeHTML(t('gbSearch'))}</label>${inputWithMic('grabSearch', `placeholder="${escapeHTML(t('gbSearchPh'))}"`)}</div><div id="grabList" class="diary-list mt">${renderGrabList(entries.slice(0,40))}</div>` });
 }
 function renderGrabList(list) { return list.map((e,i)=>`<button class="choice" data-grab-index="${grabovoiEntries.indexOf(e)}"><strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong><small>${escapeHTML(e.categoria || '')}</small></button>`).join('\n\n') || '<p class="subtle">Sin resultados.</p>'; }
 function buildGrabovoiInterpretation(entry) {
@@ -3288,20 +3314,20 @@ function renderGrabovoiPdfList(list = []) {
     const index = grabovoiEntries.indexOf(entry);
     return `<label class="choice grabovoi-pdf-choice">
       <input type="checkbox" data-grab-pdf-index="${index}">
-      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || 'Secuencia simbólica')}</small></span>
+      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || t('gbSeq'))}</small></span>
     </label>`;
-  }).join('\n') || '<p class="subtle">No hay resultados. Prueba con amor, calma, éxito, protección, trabajo o el número exacto.</p>';
+  }).join('\n') || `<p class="subtle">${escapeHTML(t('gbPdfNone'))}</p>`;
 }
 async function showNumerologyGrabovoiPdfPicker() {
   if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');
   await loadGrabovoi();
   const subject = getReadingSubjectName();
   const candidates = grabovoiPdfCandidates(lastReading);
-  openModal({ icon:'📜', title:'PDF Numerología + Grabovoi', subtitle:subject ? `Para ${subject}` : 'Elige varias secuencias', body:`
-    <p class="notice">Marca una o varias secuencias para añadirlas al mismo PDF de la lectura numerológica. Es contenido simbólico y de entretenimiento; no promete resultados ni sustituye asesoramiento profesional.</p>
-    <div class="field mt"><label>Buscar secuencia o tema</label>${inputWithMic('grabPdfSearch', 'placeholder="amor, calma, éxito, protección, 147..."')}</div>
+  openModal({ icon:'📜', title:t('gbPdfTitle'), subtitle:subject ? `${t('lblFor')} ${subject}` : t('gbPdfPick'), body:`
+    <p class="notice">${escapeHTML(t('gbPdfNotice'))}</p>
+    <div class="field mt"><label>${escapeHTML(t('gbPdfSearch'))}</label>${inputWithMic('grabPdfSearch', `placeholder="${escapeHTML(t('gbPdfSearchPh'))}"`)}</div>
     <div id="grabPdfList" class="diary-list mt">${renderGrabovoiPdfList(candidates.length ? candidates : grabovoiEntries.filter(entry => !isHealthGrabovoiEntry(entry)).slice(0, 36))}</div>
-    <div class="actions mt"><button class="btn primary" data-act="export-numerology-grabovoi-pdf" type="button">Crear PDF conjunto</button><button class="btn" data-act="pdf-options" type="button">Volver</button></div>` });
+    <div class="actions mt"><button class="btn primary" data-act="export-numerology-grabovoi-pdf" type="button">${escapeHTML(t('gbPdfGo'))}</button><button class="btn" data-act="pdf-options" type="button">${escapeHTML(t('gbBack'))}</button></div>` });
 }
 function selectedGrabovoiPdfEntries() {
   return $$('[data-grab-pdf-index]:checked')
