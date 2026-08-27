@@ -534,3 +534,31 @@ body.om-teclado .om-ritual-panel { max-height: calc(var(--om-vv-alto, 100svh) - 
   display: inline-flex; align-items: center;
   min-height: 44px; padding: 0 var(--om-s-2);
 }
+
+/* ============================================================
+   Fase 16 · El separador lunar, por fin en uso
+   moon-divider.svg se descargaba en cada visita (premium-ui-v12.js:151)
+   y se precacheaba, pero su unica regla apuntaba a .premium-hero, que
+   no existe en el HTML: no se pintaba nunca. Esta hecho justo para
+   separar portada y Santuario, y ya esta en cache: coste cero.
+   ============================================================ */
+.om-sanctuary {
+  position: relative;
+}
+
+.om-sanctuary::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: min(760px, 92vw);
+  height: 46px;
+  background: url("../assets/premium/moon-divider.svg") center / contain no-repeat;
+  opacity: .5;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .om-sanctuary::before { height: 32px; opacity: .42; }
+}

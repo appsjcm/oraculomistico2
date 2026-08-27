@@ -294,3 +294,28 @@ body.performance-mode .result-card {
     transition-duration: .001ms !important;
   }
 }
+
+/* ============================================================
+   Fase 16 · Contencion a nivel de elemento
+   Ya habia content-visibility en las secciones grandes, pero no
+   en las listas repetidas. La Biblioteca Arcana pinta 78 fichas
+   con imagen: sin contencion, cualquier cambio de una obliga a
+   recalcular el resto.
+   El tamano declarado es el real medido (129x240), asi la barra
+   de desplazamiento no da saltos al entrar en vista.
+   ============================================================ */
+@supports (content-visibility: auto) {
+  .om-bib-ficha {
+    content-visibility: auto;
+    contain-intrinsic-size: 129px 240px;
+  }
+}
+
+/* Estas si se benefician de aislarse aunque no entren y salgan de
+   vista: su contenido no afecta al de al lado. */
+.om-bib-ficha,
+.om-altar,
+.spread-card,
+.numerology-card {
+  contain: layout paint style;
+}

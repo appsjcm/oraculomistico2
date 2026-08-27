@@ -23,13 +23,22 @@ function prefersReducedMotion() {
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+/* Esta sonda abria un contexto WebGL real y no lo cerraba, y se llamaba
+   desde detectQuality() en cada montaje: bastaba subir y bajar unas
+   veces para agotar los ~16 contextos que admite el navegador.
+   Ahora se responde una sola vez y se cierra la sonda. */
+let webglSoporte = null;
 function webglAvailable() {
+  if (webglSoporte !== null) return webglSoporte;
   try {
     const canvas = document.createElement('canvas');
-    return Boolean(window.WebGLRenderingContext && (canvas.getContext('webgl2') || canvas.getContext('webgl')));
+    const ctx = window.WebGLRenderingContext && (canvas.getContext('webgl2') || canvas.getContext('webgl'));
+    webglSoporte = Boolean(ctx);
+    ctx?.getExtension?.('WEBGL_lose_context')?.loseContext?.();
   } catch {
-    return false;
+    webglSoporte = false;
   }
+  return webglSoporte;
 }
 
 function detectQuality() {
@@ -191,6 +200,13 @@ function disposeObject(THREE, root) {
     node.geometry?.dispose?.();
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     materials.filter(Boolean).forEach(material => {
+      /* material.dispose() NO libera las texturas que referencia, y en un
+         GLB de este tamano las texturas son casi todo el peso en VRAM.
+         Se recorren las propiedades del material buscando texturas. */
+      for (const clave of Object.keys(material)) {
+        const valor = material[clave];
+        if (valor && valor.isTexture) valor.dispose?.();
+      }
       material.dispose?.();
     });
   });
@@ -444,26 +460,108 @@ function observeStages(root = document) {
     stages.slice(0, 1).forEach(mountStage);
     return;
   }
+  /* Con rootMargin de 180px las seis escenas de portada y Santuario
+     cruzaban a la vez y se montaban las seis: en modo Alto eso eran
+     ~320 MB de descarga y seis contextos WebGL con 1,9 millones de
+     triangulos cada uno. Ahora se monta por seccion, la mas visible
+     primero, y con tope de escenas vivas. */
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
+      visibilidad.set(entry.target, entry.isIntersecting ? entry.intersectionRatio : 0);
       if (entry.isIntersecting) mountStage(entry.target);
       else unmountStage(entry.target);
     });
-  }, { rootMargin: '180px 0px', threshold: 0.05 });
+    /* La version ligera es barata y se monta sin mas. El tope solo hace
+       falta cuando hay modelos de verdad, que son 53 MB cada uno. */
+    if (detectQuality().level === 'high') reconciliarEscenas();
+    /* Margen moderado: .om-sanctuary lleva content-visibility:auto y con
+       margen 0 el observador no llegaba a alcanzar sus lienzos, que se
+       quedaban en blanco. Con 140px se pintan a tiempo sin adelantarse
+       media pagina como hacia el valor anterior de 180px. */
+  }, { rootMargin: '140px 0px', threshold: [0, 0.25, 0.6, 1] });
   stages.forEach(stage => observer.observe(stage));
 }
 
+/* Cuanto se ve cada lienzo ahora mismo. */
+const visibilidad = new Map();
+
+/* Un modelo de 53 MB y casi dos millones de triangulos no admite
+   companeros: en alta se monta uno. Si algun dia los modelos se
+   comprimen, el tope sube solo. */
+function topeEscenas(quality) {
+  if (quality.level !== 'high') return 6;
+  return 1;
+}
+
+/* Fraccion del lienzo que cae dentro de la ventana, de 0 a 1. */
+function visiblePorGeometria(stage) {
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) return 0;
+  const alto = Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+  const ancho = Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0));
+  return (alto * ancho) / (r.height * r.width);
+}
+
+function reconciliarEscenas() {
+  const quality = detectQuality();
+  if (!quality.enabled) return;
+  const tope = topeEscenas(quality);
+  /* Orden por cuanto se ve. La visibilidad se mide sobre el DOM y no
+     solo con lo que dejo el observador, porque tras un refresco aun no
+     ha vuelto a disparar y todas quedarian empatadas. */
+  const candidatas = Array.from(document.querySelectorAll('[data-oraculo-3d-asset]'))
+    .map(stage => [stage, visiblePorGeometria(stage)])
+    .filter(([stage, ratio]) => ratio > 0 && stage.isConnected)
+    .sort((a, b) => b[1] - a[1]);
+
+  const quieroMontar = candidatas.slice(0, tope).map(([stage]) => stage);
+  const sobran = [...activeStages].filter(stage => !quieroMontar.includes(stage));
+  sobran.forEach(unmountStage);
+
+  quieroMontar.forEach(stage => {
+    if (!mountedStages.has(stage)) mountStage(stage);
+  });
+
+  /* Las que no entran en el tope muestran la version ligera, que no
+     es un hueco: es el mismo lenguaje visual con aro y simbolo. */
+  candidatas.slice(tope).forEach(([stage]) => {
+    if (!mountedStages.has(stage) && !stage.querySelector('.om-3d-fallback')) {
+      makeFallback(stage, stage.getAttribute('data-oraculo-3d-asset') || 'orb', 'fuera-de-seccion');
+    }
+  });
+}
+
 function refreshAllStages() {
-  document.querySelectorAll('[data-oraculo-3d-asset]').forEach(stage => {
+  /* Antes montaba TODAS de golpe, saltandose el tope por seccion: en
+     alta eso eran seis modelos de 53 MB a la vez. Ahora desmonta,
+     limpia y deja que la reconciliacion decida cual toca. */
+  const etapas = Array.from(document.querySelectorAll('[data-oraculo-3d-asset]'));
+  etapas.forEach(stage => {
     unmountStage(stage);
     stage.textContent = '';
-    mountStage(stage);
+    stage.classList.remove('om-3d-fallback-active');
   });
+  if (detectQuality().level === 'high') { reconciliarEscenas(); return; }
+  etapas.forEach(stage => { if (visiblePorGeometria(stage) > 0) mountStage(stage); });
+}
+
+let temporizadorScroll = null;
+function reconciliarAlDesplazar() {
+  if (detectQuality().level !== 'high') return;
+  clearTimeout(temporizadorScroll);
+  temporizadorScroll = setTimeout(reconciliarEscenas, 220);
 }
 
 function init() {
   document.documentElement.dataset.oraculo3d = detectQuality().level;
   observeStages();
+  window.addEventListener('scroll', reconciliarAlDesplazar, { passive: true });
+  window.addEventListener('resize', reconciliarAlDesplazar, { passive: true });
+  /* El observador dispara antes de que el diseno tenga medidas y la
+     reconciliacion no encontraba ningun lienzo visible: la portada se
+     quedaba en blanco. Se vuelve a mirar cuando ya hay geometria. */
+  requestAnimationFrame(() => requestAnimationFrame(reconciliarEscenas));
+  window.addEventListener('load', reconciliarEscenas, { once: true });
   const mo = new MutationObserver(records => {
     records.forEach(record => {
       record.addedNodes.forEach(node => {

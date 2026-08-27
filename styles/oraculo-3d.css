@@ -87,9 +87,26 @@
   cursor: pointer;
 }
 
+/* El orbe de portada esta hecho en CSS (v2.css:109-158: cuerpo con tres
+   degradados, nucleo que respira, remolino conico, brillo y aro) y se
+   anulaba siempre que existia el lienzo 3D. Pero el modo automatico
+   nunca llega a 'high', asi que en la practica la portada mostraba un
+   simbolo en un circulo en lugar del orbe.
+   Ahora solo se aparta cuando hay un modelo 3D de verdad montado. */
 .om-cover .om-3d-hero + #omOrb {
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
+}
+
+.om-cover .om-3d-hero:not(.om-3d-fallback-active) + #omOrb {
+  opacity: 0;
+}
+
+/* Con el orbe a la vista, el circulo del fallback sobraria: el lienzo
+   se queda solo como zona de pulsacion, que es lo que lleva el nombre
+   accesible y la navegacion al Santuario. */
+.om-cover .om-3d-hero.om-3d-fallback-active .om-3d-fallback {
+  opacity: 0;
 }
 
 .om-3d-strip {
