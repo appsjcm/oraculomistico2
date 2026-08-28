@@ -293,6 +293,120 @@ function cleanPdfText(value = '') {
     .replace(/[–—]/g, '-')
     .trim();
 }
+const ASTRO_PDF_SIGNS = ['ARI','TAU','GEM','CAN','LEO','VIR','LIB','ESC','SAG','CAP','ACU','PIS'];
+const ASTRO_PDF_PLANETS = { sun:'SOL', moon:'LUN', mercury:'MER', venus:'VEN', mars:'MAR', jupiter:'JUP', saturn:'SAT', uranus:'URA', neptune:'NEP', pluto:'PLU', node:'NOD', chiron:'QUI', lilith:'LIL' };
+function getAstroPdfChart(reading = lastReading) {
+  const meta = reading?.meta || {};
+  return meta.solarReturn?.chart || meta.astroToday || meta.astro || null;
+}
+function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rueda astral') {
+  if (!chart?.planets?.length || !chart?.houses?.length) return y;
+  const gold = palette.gold || [218, 184, 72];
+  const goldInk = palette.goldInk || [146, 104, 37];
+  const violet = palette.violet || [38, 28, 72];
+  const ink = palette.ink || [38, 36, 48];
+  const line = palette.line || [196, 170, 83];
+  const cx = x + size / 2;
+  const cy = y + size / 2 + 5;
+  const outer = size * .47;
+  const signR = size * .41;
+  const houseR = size * .36;
+  const planetRadii = [size * .28, size * .235, size * .195];
+  const toPoint = (degree, radius) => {
+    const angle = degToRad(astroWheelAngle(chart, degree) - 90);
+    return { x:cx + Math.cos(angle) * radius, y:cy + Math.sin(angle) * radius };
+  };
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...violet);
+  doc.text(pdfAscii(heading), x, y - 1);
+  doc.setFillColor(252, 249, 242);
+  doc.setDrawColor(...line);
+  doc.roundedRect(x - 4, y + 2, size + 8, size + 18, 5, 5, 'FD');
+  doc.setFillColor(255, 255, 255);
+  doc.circle(cx, cy, outer, 'FD');
+  doc.setDrawColor(218, 206, 164);
+  doc.circle(cx, cy, size * .36, 'S');
+  doc.circle(cx, cy, size * .17, 'S');
+  doc.setDrawColor(226, 214, 178);
+  for (let i = 0; i < 72; i++) {
+    const deg = i * 5;
+    const p1 = toPoint(deg, i % 6 === 0 ? outer - 5 : outer - 2.7);
+    const p2 = toPoint(deg, outer);
+    doc.setLineWidth(i % 6 === 0 ? .28 : .12);
+    doc.line(p1.x, p1.y, p2.x, p2.y);
+  }
+  doc.setDrawColor(176, 153, 84);
+  doc.setLineWidth(.35);
+  chart.houses.forEach(house => {
+    const p1 = toPoint(house.cusp, size * .16);
+    const p2 = toPoint(house.cusp, outer);
+    doc.line(p1.x, p1.y, p2.x, p2.y);
+    const hp = toPoint(house.cusp + 15, houseR);
+    doc.setFontSize(6.2);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(82, 75, 92);
+    doc.text(String(house.number), hp.x, hp.y + 2, { align:'center' });
+  });
+  ASTRO_PDF_SIGNS.forEach((label, index) => {
+    const p = toPoint(index * 30 + 15, signR);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.2);
+    doc.setTextColor(...goldInk);
+    doc.text(label, p.x, p.y + 2, { align:'center' });
+  });
+  if (chart.aspects?.length) {
+    const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
+    chart.aspects.forEach(aspect => {
+      const a = byName[aspect.a];
+      const b = byName[aspect.b];
+      if (!a || !b) return;
+      const p1 = toPoint(a.degree, size * .145);
+      const p2 = toPoint(b.degree, size * .145);
+      if (aspect.name === 'Cuadratura' || aspect.name === 'Oposición') doc.setDrawColor(190, 57, 103);
+      else if (aspect.name === 'Sextil') doc.setDrawColor(59, 151, 132);
+      else doc.setDrawColor(74, 113, 184);
+      doc.setLineWidth(.22);
+      doc.line(p1.x, p1.y, p2.x, p2.y);
+    });
+  }
+  doc.setDrawColor(190, 57, 103);
+  doc.setLineWidth(.55);
+  doc.line(cx - outer - 6, cy, cx + outer + 6, cy);
+  const mcA = chart.mc?.absolute ?? 0;
+  const mc1 = toPoint(mcA, size * .12);
+  const mc2 = toPoint(mcA, outer + 6);
+  doc.setDrawColor(...gold);
+  doc.line(mc1.x, mc1.y, mc2.x, mc2.y);
+  const axisLabels = [
+    ['AC', cx - outer - 10, cy + 2],
+    ['DC', cx + outer + 10, cy + 2],
+    ['MC', mc2.x, mc2.y],
+    ['IC', toPoint(mcA + 180, outer + 6).x, toPoint(mcA + 180, outer + 6).y]
+  ];
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(190, 57, 103);
+  axisLabels.forEach(([label, lx, ly]) => doc.text(label, lx, ly, { align:'center' }));
+  chart.planets.forEach((planet, index) => {
+    const radius = planetRadii[index % planetRadii.length];
+    const p = toPoint(planet.degree, radius);
+    const code = ASTRO_PDF_PLANETS[planet.id] || pdfAscii(planet.name).slice(0, 3).toUpperCase();
+    doc.setFillColor(246, 240, 220);
+    doc.setDrawColor(145, 167, 218);
+    doc.circle(p.x, p.y, 4.3, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(4.7);
+    doc.setTextColor(...violet);
+    doc.text(code, p.x, p.y + 1.5, { align:'center' });
+  });
+  const signLegend = 'ARI Aries · TAU Tauro · GEM Geminis · CAN Cancer · LEO Leo · VIR Virgo · LIB Libra · ESC Escorpio · SAG Sagitario · CAP Capricornio · ACU Acuario · PIS Piscis';
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.4);
+  doc.setTextColor(...ink);
+  doc.text(doc.splitTextToSize(pdfAscii(signLegend), size - 4).slice(0, 2), cx, y + size + 11, { align:'center' });
+  return y + size + 24;
+}
 function canvasDataUrlFromImage(src) {
   return new Promise((resolve) => {
     if (!src) return resolve('');
@@ -348,6 +462,14 @@ function getPdfReadingHighlight(reading = lastReading) {
   }
   if (reading?.type === 'Astros' && meta.astro) {
     const astro = meta.astro;
+    if (meta.solarReturn?.chart) {
+      const solar = meta.solarReturn;
+      return {
+        label:'Revolucion solar',
+        value:`${solar.year} · ${solar.chart.sun?.name || astro.sun?.name || ''} · ASC ${solar.chart.asc?.name || ''}`,
+        detail:`${getReadingSubjectName(reading) || reading.title || 'Lectura astral'} · retorno aproximado: ${solar.localLabel || ''}`.trim()
+      };
+    }
     return {
       label:'Triada astral',
       value:`${astro.sun?.symbol || '☉'} ${astro.sun?.name || ''} · ${astro.moon?.signSymbol || '☽'} ${astro.moon?.sign || ''} · ${astro.asc?.symbol || 'ASC'} ${astro.asc?.name || ''}`,
@@ -383,7 +505,8 @@ async function exportPDF(title, text, reading = lastReading) {
     const soft = style === 'light' || style === 'summary' ? [255, 255, 255] : [239, 234, 255];
     const ink = style === 'light' || style === 'summary' ? [35, 24, 16] : [38, 36, 48];
     const line = [196, 170, 83];
-    const assets = resolveReadingAssets(reading);
+    const astroPdfChart = getAstroPdfChart(reading);
+    const assets = astroPdfChart ? [] : resolveReadingAssets(reading);
     let { compact, long } = splitReadingText(text);
     if (style === 'summary') { long = ''; compact = compact.slice(0, 9); }
     const userName = getReadingSubjectName(reading);
@@ -446,6 +569,13 @@ async function exportPDF(title, text, reading = lastReading) {
       doc.setFontSize(8.5);
       doc.text(detailLines, margin + 7, y + 21);
       y += highlightH + 6;
+    }
+    if (astroPdfChart) {
+      if (y > H - 128) { addFooter(); doc.addPage(); y = addHeader(title); }
+      const wheelSize = Math.min(132, W - margin * 2 - 8);
+      const wheelX = margin + (W - margin * 2 - wheelSize) / 2;
+      const wheelTitle = reading?.meta?.solarReturn?.chart ? 'Rueda de revolucion solar' : reading?.meta?.astroToday ? 'Rueda astral del dia' : 'Rueda de carta astral';
+      y = drawAstroPdfWheel(doc, astroPdfChart, wheelX, y + 2, wheelSize, { gold, goldInk, violet, ink, line }, wheelTitle);
     }
     if (assets.length) {
       const maxAssets = Math.min(10, assets.length);
@@ -2777,6 +2907,34 @@ function zodiacFromDegree(degree) {
   const index = Math.floor(normalized / 30) % 12;
   return { ...ASTRO_SIGNS[index], degree:Math.round(normalized % 30), index, absolute:normalized };
 }
+function astroDaysFromMs(ms) {
+  return (Number(ms) - Date.UTC(2000, 0, 1, 12, 0)) / 86400000;
+}
+function sunLongitudeFromDays(days = 0) {
+  const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
+  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
+  return normalizeDegree(sunMean + 1.914602 * sinDeg(sunAnomaly) + 0.019993 * sinDeg(2 * sunAnomaly));
+}
+function moonLongitudeFromDays(days = 0) {
+  const moonMean = normalizeDegree(218.316 + 13.176396 * days);
+  const moonAnomaly = normalizeDegree(134.963 + 13.064993 * days);
+  const moonElongation = normalizeDegree(297.85 + 12.190749 * days);
+  const moonArgument = normalizeDegree(93.272 + 13.22935 * days);
+  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
+  return normalizeDegree(
+    moonMean +
+    6.289 * sinDeg(moonAnomaly) +
+    1.274 * sinDeg(2 * moonElongation - moonAnomaly) +
+    0.658 * sinDeg(2 * moonElongation) +
+    0.214 * sinDeg(2 * moonAnomaly) -
+    0.186 * sinDeg(sunAnomaly) -
+    0.114 * sinDeg(2 * moonArgument)
+  );
+}
+function angularDistance(a = 0, b = 0) {
+  const diff = Math.abs(normalizeDegree(a) - normalizeDegree(b));
+  return Math.min(diff, 360 - diff);
+}
 function sunSignFromDate(date = '') {
   const parts = dateParts(date);
   if (!parts) return null;
@@ -2794,22 +2952,8 @@ function planetPositions(date = '', time = '12:00', place = null) {
   const dateInfo = astroDayCount(date, time, place);
   if (!dateInfo) return [];
   const { days } = dateInfo;
-  const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
-  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
-  const sunLongitude = normalizeDegree(sunMean + 1.914602 * sinDeg(sunAnomaly) + 0.019993 * sinDeg(2 * sunAnomaly));
-  const moonMean = normalizeDegree(218.316 + 13.176396 * days);
-  const moonAnomaly = normalizeDegree(134.963 + 13.064993 * days);
-  const moonElongation = normalizeDegree(297.85 + 12.190749 * days);
-  const moonArgument = normalizeDegree(93.272 + 13.22935 * days);
-  const moonLongitude = normalizeDegree(
-    moonMean +
-    6.289 * sinDeg(moonAnomaly) +
-    1.274 * sinDeg(2 * moonElongation - moonAnomaly) +
-    0.658 * sinDeg(2 * moonElongation) +
-    0.214 * sinDeg(2 * moonAnomaly) -
-    0.186 * sinDeg(sunAnomaly) -
-    0.114 * sinDeg(2 * moonArgument)
-  );
+  const sunLongitude = sunLongitudeFromDays(days);
+  const moonLongitude = moonLongitudeFromDays(days);
   return ASTRO_PLANETS.map(planet => {
     let degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
     if (planet.id === 'sun') degree = sunLongitude;
@@ -2874,6 +3018,56 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
   const timeZoneOffset = timeZoneOffsetMinutes(place?.timezone || '', new Date(astroDateUTC(date, time, place?.timezone || '') || Date.now()));
   const quality = place?.timezone && Number.isFinite(Number(place?.lat)) && Number.isFinite(Number(place?.lon)) ? 'Lugar y zona horaria seleccionados' : 'Lugar manual: ascendente y casas menos afinados';
   return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 8), houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset };
+}
+function formatAstroLocalFromMs(ms, timeZone = '') {
+  const date = new Date(ms);
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone:timeZone || undefined,
+      hour12:false,
+      hourCycle:'h23',
+      year:'numeric',
+      month:'2-digit',
+      day:'2-digit',
+      hour:'2-digit',
+      minute:'2-digit'
+    }).formatToParts(date).reduce((acc, part) => ({ ...acc, [part.type]:part.value }), {});
+    const day = `${parts.year}-${parts.month}-${parts.day}`;
+    const time = `${parts.hour}:${parts.minute}`;
+    return {
+      date:day,
+      time,
+      label:new Intl.DateTimeFormat('es-ES', { timeZone:timeZone || undefined, dateStyle:'medium', timeStyle:'short' }).format(date)
+    };
+  } catch {
+    return { date:date.toISOString().slice(0, 10), time:date.toISOString().slice(11, 16), label:date.toLocaleString('es-ES') };
+  }
+}
+function solarReturnForYear(natalChart, year = new Date().getFullYear()) {
+  const parts = dateParts(natalChart?.date || '');
+  const natalSun = natalChart?.planets?.find(p => p.id === 'sun')?.degree;
+  if (!parts || !Number.isFinite(natalSun)) return null;
+  const safeYear = Math.max(1900, Math.min(2100, Number(year) || new Date().getFullYear()));
+  const birthTime = natalChart.time || '12:00';
+  const birthday = `${safeYear}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  const center = astroDateUTC(birthday, birthTime, natalChart.place?.timezone || '') || Date.UTC(safeYear, parts.month - 1, parts.day, 12, 0);
+  const score = ms => angularDistance(sunLongitudeFromDays(astroDaysFromMs(ms)), natalSun);
+  let bestMs = center;
+  let bestScore = Infinity;
+  for (let ms = center - 3 * 86400000; ms <= center + 3 * 86400000; ms += 60 * 60000) {
+    const delta = score(ms);
+    if (delta < bestScore) { bestScore = delta; bestMs = ms; }
+  }
+  [10 * 60000, 60 * 1000].forEach(step => {
+    const span = step * 18;
+    for (let ms = bestMs - span; ms <= bestMs + span; ms += step) {
+      const delta = score(ms);
+      if (delta < bestScore) { bestScore = delta; bestMs = ms; }
+    }
+  });
+  const local = formatAstroLocalFromMs(bestMs, natalChart.place?.timezone || '');
+  const chart = calculateAstroProfile(natalChart.name, local.date, local.time, natalChart.place, { houseSystem:natalChart.houseSystem });
+  return chart ? { year:safeYear, exactMs:bestMs, localDate:local.date, localTime:local.time, localLabel:local.label, sunDelta:bestScore, chart } : null;
 }
 function astroAdviceForElement(element = '') {
   const map = {
@@ -2966,6 +3160,56 @@ Nota: lectura simbólica local con motor abierto propio. El lugar se usa para zo
 function astroReadingItems(chart) {
   return chart.planets.map(p => ({ kind:'astro', name:`${p.name} en ${p.sign}`, subtitle:p.role, image:'', symbol:p.symbol, position:p.element }));
 }
+function solarReturnText(natalChart, solarReturn, intention = '') {
+  const chart = solarReturn.chart;
+  const dominant = chart.planets.reduce((acc, p) => ({ ...acc, [p.element]:(acc[p.element] || 0) + 1 }), {});
+  const element = Object.entries(dominant).sort((a,b) => b[1] - a[1])[0]?.[0] || chart.sun.element;
+  const aspects = chart.aspects.map(item => `${item.name} entre ${item.a} y ${item.b}: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta revolucion solar simbolica.';
+  return `REVOLUCIÓN SOLAR SIMBÓLICA ${solarReturn.year} · ${chart.name}
+Nacimiento: ${natalChart.date} · Hora natal: ${natalChart.time}
+Lugar usado: ${chart.place?.label || 'No indicado'}
+Retorno solar aproximado: ${solarReturn.localLabel}
+Intención: ${intention || 'Claridad'}
+Motor: ${chart.engine}
+Sistema de casas: ${astroHouseSystemLabel(chart.houseSystem)}
+
+Base natal:
+Sol natal en ${natalChart.sun.name}. Luna natal en ${natalChart.moon.sign}. Ascendente natal simbólico en ${natalChart.asc.name}. Medio Cielo natal simbólico en ${natalChart.mc.name}.
+
+Carta de revolución solar:
+Sol de retorno en ${chart.sun.name}; la identidad del año pide volver al centro desde ${chart.sun.keywords.join(', ')}.
+Luna de retorno en ${chart.moon.sign}; el clima emocional del ciclo se expresa desde ${chart.moon.keywords.join(', ')}.
+Ascendente de revolución en ${chart.asc.name}; la puerta del año habla de ${chart.asc.keywords.join(', ')}.
+Medio Cielo de revolución en ${chart.mc.name}; la zona visible del año se tiñe de ${chart.mc.keywords.join(', ')}.
+
+Elemento dominante del año: ${element}. Consejo: ${astroAdviceForElement(element)}.
+
+Posiciones de la revolución:
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.signDegree}° ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
+
+Aspectos principales:
+${aspects}
+
+Casas de revolución:
+${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degree}° ${h.symbol} ${h.sign}`).join('\n')}
+
+Nota: esta revolución solar usa el motor abierto simbólico del Oráculo y aproxima el momento en que el Sol vuelve al grado natal. No sustituye una carta profesional con efemérides astronómicas completas.`;
+}
+function renderSolarReturnReading(natalChart, solarReturn, text, title) {
+  const chart = solarReturn.chart;
+  openModal({ icon:'☉', title, subtitle:`${chart.name} · ${solarReturn.year} · ${solarReturn.localLabel}`, body:`
+    <div class="astro-grid">
+      ${astroWheelHTML(chart)}
+      <div class="result-card astro-summary-card"><h3>Revolución solar</h3><p><strong>Retorno:</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Medio Cielo:</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p>${astroEngineNoticeHTML(chart)}</div>
+    </div>
+    <h3 class="section-title">Posiciones del año</h3>
+    ${astroPositionsHTML(chart)}
+    <h3 class="section-title">Aspectos</h3>
+    ${astroAspectsHTML(chart)}
+    <h3 class="section-title">Casas</h3>
+    ${astroHousesHTML(chart)}
+    <div class="result-card mt"><h3>Síntesis</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
+}
 function showAstros() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
   const profile = getProfile();
@@ -2989,8 +3233,9 @@ function showAstros() {
       <div class="field astro-place-field"><label>${escapeHTML(t('asPlace'))}</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="${escapeHTML(t('asPlacePh'))}" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">${escapeHTML(t('asPlaceHelp'))}</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
       <div class="field"><label>${escapeHTML(t('asHouses'))}</label><select id="astroHouseSystem" class="input"><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>${escapeHTML(t('asHousesEqual'))}</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>${escapeHTML(t('asHousesWhole'))}</option></select></div>
       <div class="field"><label>${escapeHTML(t('asIntent'))}</label>${inputWithMic('astroIntention', `placeholder="${escapeHTML(t('asIntentPh'))}"`)}</div>
+      <div class="field"><label>${escapeHTML(t('asSolarYear'))}</label><input id="astroSolarYear" class="input" type="number" min="1900" max="2100" step="1" value="${new Date().getFullYear()}"></div>
     </div>
-    <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">${escapeHTML(t('asChart'))}</button><button class="btn" data-act="astro-daily" type="button">${escapeHTML(t('asDaily'))}</button></div>
+    <div class="actions mt"><button class="btn primary" data-act="astro-chart" type="button">${escapeHTML(t('asChart'))}</button><button class="btn" data-act="astro-daily" type="button">${escapeHTML(t('asDaily'))}</button><button class="btn" data-act="astro-solar-return" type="button">${escapeHTML(t('asSolarReturn'))}</button></div>
     <p class="notice mt">${escapeHTML(t('asNotice'))}</p>` });
 }
 function getAstroFormData() {
@@ -3005,6 +3250,7 @@ function getAstroFormData() {
     time:$('#astroTime')?.value || getBirthTime() || profile.birthTime || '',
     place,
     houseSystem:$('#astroHouseSystem')?.value || getAstroHouseSystem(),
+    solarYear:Math.max(1900, Math.min(2100, Number($('#astroSolarYear')?.value) || new Date().getFullYear())),
     intention:($('#astroIntention')?.value || localStorage.getItem(LS.intention) || profile.intention || 'Claridad').trim()
   };
 }
@@ -3039,6 +3285,34 @@ function calcAstroChart() {
   const text = astroReadingText(chart);
   setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, houseSystem:data.houseSystem, astro:chart } });
   renderAstroReading(chart, text, `Carta astral · ${data.name}`);
+}
+function solarReturnReading() {
+  const data = getAstroFormData();
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  const natalChart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
+  if (!natalChart) return toast('Revisa la fecha y la hora.');
+  const solarReturn = solarReturnForYear(natalChart, data.solarYear);
+  if (!solarReturn) return toast('No he podido calcular la revolución solar con esos datos.');
+  persistAstroData(data);
+  const title = `Revolución solar ${solarReturn.year} · ${data.name}`;
+  const text = solarReturnText(natalChart, solarReturn, data.intention);
+  setLastReading({
+    type:'Astros',
+    title,
+    text,
+    items:astroReadingItems(solarReturn.chart),
+    meta:{
+      name:data.name,
+      birthDate:data.date,
+      birthTime:data.time,
+      birthPlace:data.place,
+      intention:data.intention,
+      houseSystem:data.houseSystem,
+      astro:natalChart,
+      solarReturn
+    }
+  });
+  renderSolarReturnReading(natalChart, solarReturn, text, title);
 }
 function dailyAstroCards(chart, todayChart, intention = '') {
   const seed = astroHash(`${chart.name}|${chart.date}|${chart.time}|${todayKey()}|${intention}`);
@@ -3920,6 +4194,7 @@ function handleAction(action) {
     'dream-reading': dreamReading,
     'astro-chart': calcAstroChart,
     'astro-daily': dailyAstroReading,
+    'astro-solar-return': solarReturnReading,
     'calc-num': calcNumerologia,
     'calc-synastry': calculateSynastry,
     'biblioteca': () => showBiblioteca('all'),
