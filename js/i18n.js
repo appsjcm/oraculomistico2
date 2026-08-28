@@ -40,7 +40,7 @@ const STRINGS = {
     dailyText:'Revela la carta, la runa y la fase lunar del día. Puedes escuchar, guardar o exportar la lectura.',
     reveal:'Revelar', disclaimer:'Experiencia simbólica y de entretenimiento. No sustituye asesoramiento profesional.',
     privacy:'Privacidad', manual:'Manual', stopVoice:'Parar voz',
-    appLanguage:'Idioma de la aplicación', languageHelp:'La interfaz, el dictado y la voz automática seguirán este idioma.',
+    appLanguage:'Idioma de la aplicación', languageHelp:'La interfaz, el dictado, la voz automática y la IA seguirán este idioma.',
     saveSettings:'Guardar ajustes', settingsSaved:'Ajustes guardados.',
     closed:'Cerrar', nuBirthTime:'Hora de nacimiento', nuBirthTimePh:'Hora local aproximada', reversalRate:'Probabilidad invertida de esta tirada: {rate}%.',
     internationalNote:'Interfaz disponible en seis idiomas. Los significados tradicionales conservan su fuente original en español mientras se completa su revisión editorial.'
@@ -64,7 +64,7 @@ const STRINGS = {
     dailyMessage:'Missatge del dia', dailyText:'Revela la carta, la runa i la fase lunar del dia. Pots escoltar, desar o exportar la lectura.',
     reveal:'Revelar', disclaimer:"Experiència simbòlica i d'entreteniment. No substitueix l'assessorament professional.",
     privacy:'Privacitat', manual:'Manual', stopVoice:'Aturar veu',
-    appLanguage:"Idioma de l'aplicació", languageHelp:'La interfície, el dictat i la veu automàtica seguiran aquest idioma.',
+    appLanguage:"Idioma de l'aplicació", languageHelp:'La interfície, el dictat, la veu automàtica i la IA seguiran aquest idioma.',
     saveSettings:'Desar configuració', settingsSaved:'Configuració desada.',
     closed:'Tancar', nuBirthTime:'Hora de naixement', nuBirthTimePh:'Hora local aproximada', reversalRate:"Probabilitat invertida d'aquesta tirada: {rate}%.",
     internationalNote:'Interfície disponible en sis idiomes. Els significats tradicionals conserven la font original en castellà mentre es completa la revisió editorial.'
@@ -88,7 +88,7 @@ const STRINGS = {
     dailyMessage:'Message of the day', dailyText:"Reveal today's card, rune and moon phase. Listen, save or export the reading.",
     reveal:'Reveal', disclaimer:'A symbolic entertainment experience. It is not a substitute for professional advice.',
     privacy:'Privacy', manual:'Manual', stopVoice:'Stop voice',
-    appLanguage:'App language', languageHelp:'The interface, dictation and automatic voice will use this language.',
+    appLanguage:'App language', languageHelp:'The interface, dictation, automatic voice and AI will use this language.',
     saveSettings:'Save settings', settingsSaved:'Settings saved.',
     closed:'Close', nuBirthTime:'Birth time', nuBirthTimePh:'Approximate local time', reversalRate:'Reversed probability for this reading: {rate}%.',
     internationalNote:'The interface is available in six languages. Traditional meanings retain their original Spanish source while editorial translation is completed.'
@@ -112,7 +112,7 @@ const STRINGS = {
     dailyMessage:'Message du jour', dailyText:'Révélez la carte, la rune et la phase lunaire du jour. Écoutez, enregistrez ou exportez la lecture.',
     reveal:'Révéler', disclaimer:'Expérience symbolique et de divertissement. Ne remplace pas un avis professionnel.',
     privacy:'Confidentialité', manual:'Manuel', stopVoice:'Arrêter la voix',
-    appLanguage:"Langue de l'application", languageHelp:"L'interface, la dictée et la voix automatique utiliseront cette langue.",
+    appLanguage:"Langue de l'application", languageHelp:"L'interface, la dictée, la voix automatique et l'IA utiliseront cette langue.",
     saveSettings:'Enregistrer les réglages', settingsSaved:'Réglages enregistrés.',
     closed:'Fermer', nuBirthTime:'Heure de naissance', nuBirthTimePh:'Heure locale approximative', reversalRate:'Probabilité inversée de ce tirage : {rate} %.',
     internationalNote:"Interface disponible en six langues. Les significations traditionnelles conservent leur source espagnole pendant la révision éditoriale."
@@ -136,7 +136,7 @@ const STRINGS = {
     dailyMessage:'Botschaft des Tages', dailyText:'Entdecke die Karte, Rune und Mondphase des Tages. Anhören, speichern oder exportieren.',
     reveal:'Aufdecken', disclaimer:'Symbolische Unterhaltung. Kein Ersatz für professionelle Beratung.',
     privacy:'Datenschutz', manual:'Handbuch', stopVoice:'Stimme stoppen',
-    appLanguage:'App-Sprache', languageHelp:'Oberfläche, Diktat und automatische Stimme verwenden diese Sprache.',
+    appLanguage:'App-Sprache', languageHelp:'Oberfläche, Diktat, automatische Stimme und KI verwenden diese Sprache.',
     saveSettings:'Einstellungen speichern', settingsSaved:'Einstellungen gespeichert.',
     closed:'Schließen', nuBirthTime:'Geburtszeit', nuBirthTimePh:'Ungefähre Ortszeit', reversalRate:'Umkehrwahrscheinlichkeit dieser Legung: {rate} %.',
     internationalNote:'Die Oberfläche ist in sechs Sprachen verfügbar. Traditionelle Bedeutungen behalten vorerst ihre spanische Originalquelle.'
@@ -160,7 +160,7 @@ const STRINGS = {
     dailyMessage:'今日讯息', dailyText:'揭示今日塔罗牌、符文与月相。可以收听、保存或导出。',
     reveal:'揭示', disclaimer:'本应用仅供象征性娱乐，不能替代专业建议。',
     privacy:'隐私', manual:'手册', stopVoice:'停止语音',
-    appLanguage:'应用语言', languageHelp:'界面、听写和自动语音将使用此语言。',
+    appLanguage:'应用语言', languageHelp:'界面、听写、自动语音和 AI 将使用此语言。',
     saveSettings:'保存设置', settingsSaved:'设置已保存。',
     closed:'关闭', nuBirthTime:'出生时间', nuBirthTimePh:'大致本地时间', reversalRate:'本次解读的逆位概率：{rate}%。',
     internationalNote:'界面支持六种语言。传统牌义在编辑翻译完成前暂时保留西班牙语原文。'
