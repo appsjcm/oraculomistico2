@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-seis-idiomas-82';
+const CACHE_NAME = 'oraculo-v1-0-public-seis-idiomas-astro-83';
 const APP_SHELL = [
   './',
   './index.html',

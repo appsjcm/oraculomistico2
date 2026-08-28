@@ -404,9 +404,69 @@
   margin-bottom: 10px;
 }
 
+.astro-return-bridge {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.astro-return-bridge article {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(145, 194, 255, .18);
+  background: rgba(8, 10, 22, .38);
+}
+
+.astro-return-bridge small,
+.astro-return-bridge span {
+  display: block;
+  color: rgba(255, 250, 239, .58);
+}
+
+.astro-return-bridge strong {
+  display: block;
+  margin: 5px 0;
+  color: rgb(246, 222, 154);
+  line-height: 1.15;
+}
+
 .astro-aspects {
   display: grid;
   gap: 8px;
+}
+
+.astro-aspect-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.astro-aspect-overview > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(244, 207, 117, .18);
+  background: rgba(255, 255, 255, .055);
+}
+
+.astro-aspect-overview strong,
+.astro-aspect-overview small {
+  display: block;
+}
+
+.astro-aspect-overview strong {
+  color: rgb(246, 222, 154);
+  font-size: .96rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.astro-aspect-overview small {
+  margin-top: 4px;
+  color: rgba(255, 250, 239, .60);
+  font-size: .72rem;
 }
 
 .astro-aspect {
@@ -469,6 +529,14 @@
 
   .astro-aspect-legend {
     max-width: 310px;
+  }
+
+  .astro-aspect-overview {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .astro-return-bridge {
+    grid-template-columns: 1fr;
   }
 
   .astro-aspect-key {
