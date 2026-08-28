@@ -215,6 +215,20 @@ function getReadingSubjectName(reading = lastReading) {
 function isNumerologyReading(reading = lastReading) {
   return /Numerolog[ií]a/i.test(reading?.type || '');
 }
+function aiLanguageName(language = getAppLanguage()) {
+  const languageNames = {
+    es:'español',
+    ca:'catalán',
+    en:'inglés',
+    fr:'francés',
+    de:'alemán',
+    zh:'chino simplificado'
+  };
+  return languageNames[language] || languageNames.es;
+}
+function aiLanguageInstruction() {
+  return `Responde siempre en ${aiLanguageName()}. Si el texto base está en otro idioma, traduce la interpretación final al idioma elegido en la aplicación. `;
+}
 function getAIStyle() { return localStorage.getItem(LS.aiStyle) || 'mistica'; }
 function aiStyleInstruction(style = getAIStyle()) {
   const styles = {
@@ -808,9 +822,7 @@ async function askAI(prompt, options = {}) {
   }
   try {
     if (!window.puter?.ai?.chat) throw new Error('Puter AI no disponible');
-    const languageNames = { es:'español', ca:'catalán', en:'inglés', fr:'francés', de:'alemán', zh:'chino simplificado' };
-    const responseLanguage = languageNames[getAppLanguage()] || 'español';
-    const personalizedPrompt = `${options.prefix || personalPrefix()}Responde en ${responseLanguage}. No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
+    const personalizedPrompt = `${options.prefix || personalPrefix()}${aiLanguageInstruction()}No incluyas iconos, emojis ni símbolos decorativos en la respuesta textual. ${prompt}`;
     const result = await window.puter.ai.chat(personalizedPrompt);
     if (typeof result === 'string') return cleanInterpretation(result);
     return cleanInterpretation(result?.message?.content || result?.text || String(result || ''));
@@ -3476,15 +3488,15 @@ function externalSourceLinks(text = '') {
 async function searchExternalGrabovoi(query = '') {
   if (!window.puter?.ai?.chat || localStorage.getItem(LS.puter) !== 'true') return null;
   try {
-    const result = await window.puter.ai.chat(`Busca en la web una secuencia atribuida a Grabovoi relacionada con esta consulta: "${query}".
+    const result = await window.puter.ai.chat(`${aiLanguageInstruction()}Busca en la web una secuencia atribuida a Grabovoi relacionada con esta consulta: "${query}".
 
 El manual local de la aplicación NO contiene una coincidencia. No inventes ninguna secuencia.
 Solo responde ENCONTRADO si una o más páginas públicas muestran explícitamente el mismo número asociado al tema.
-Usa exactamente este formato:
+Usa exactamente este formato y conserva las etiquetas ESTADO, TEMA, CÓDIGO, DESCRIPCIÓN y FUENTES para que la aplicación pueda leerlo:
 ESTADO: ENCONTRADO o NO_ENCONTRADO
-TEMA: texto breve
+TEMA: texto breve en ${aiLanguageName()}
 CÓDIGO: secuencia o vacío
-DESCRIPCIÓN: qué afirman las fuentes, sin presentarlo como hecho médico ni promesa
+DESCRIPCIÓN: qué afirman las fuentes, en ${aiLanguageName()}, sin presentarlo como hecho médico ni promesa
 FUENTES:
 - URL completa
 - URL completa
@@ -4194,7 +4206,7 @@ async function processChatMessage(text) {
     mostrarPensando();
     const memory = getChatMemoryContext(14);
     const userName = getUserName();
-    const answer = await askAI(`Responde como Oráculo Místico en español. Sé cálido, útil y simbólico. No des consejos médicos, legales ni financieros. ${!followsLastReading && userName ? `La persona se llama ${userName}; úsalo de forma natural, sin repetirlo demasiado.` : ''} ${followsLastReading ? 'Si respondes sobre la última lectura activa, respeta el destinatario indicado en esa lectura y no uses el nombre del perfil si es distinto.' : ''} Recuerda el hilo reciente de la conversación y responde con continuidad. Ten en cuenta el perfil personal si existe: intención ${getProfile().intention || 'no indicada'}, signo/energía ${getProfile().sign || 'no indicado'}. Si conviene, recomienda o realiza una tirada de tarot, runa, luna, sueños, astrología simbólica, numerología o Grabovoi.
+    const answer = await askAI(`Responde como Oráculo Místico. Sé cálido, útil y simbólico. No des consejos médicos, legales ni financieros. ${!followsLastReading && userName ? `La persona se llama ${userName}; úsalo de forma natural, sin repetirlo demasiado.` : ''} ${followsLastReading ? 'Si respondes sobre la última lectura activa, respeta el destinatario indicado en esa lectura y no uses el nombre del perfil si es distinto.' : ''} Recuerda el hilo reciente de la conversación y responde con continuidad. Ten en cuenta el perfil personal si existe: intención ${getProfile().intention || 'no indicada'}, signo/energía ${getProfile().sign || 'no indicado'}. Si conviene, recomienda o realiza una tirada de tarot, runa, luna, sueños, astrología simbólica, numerología o Grabovoi.
 
 Historial reciente:
 ${memory}
