@@ -295,6 +295,13 @@ function cleanPdfText(value = '') {
 }
 const ASTRO_PDF_SIGNS = ['ARI','TAU','GEM','CAN','LEO','VIR','LIB','ESC','SAG','CAP','ACU','PIS'];
 const ASTRO_PDF_PLANETS = { sun:'SOL', moon:'LUN', mercury:'MER', venus:'VEN', mars:'MAR', jupiter:'JUP', saturn:'SAT', uranus:'URA', neptune:'NEP', pluto:'PLU', node:'NOD', chiron:'QUI', lilith:'LIL' };
+const ASTRO_PDF_ASPECTS = {
+  'Conjunción': { code:'CONJ', color:[74, 113, 184] },
+  'Sextil': { code:'SEXT', color:[59, 151, 132] },
+  'Cuadratura': { code:'CUAD', color:[190, 57, 103] },
+  'Trígono': { code:'TRIG', color:[74, 113, 184] },
+  'Oposición': { code:'OPOS', color:[190, 57, 103] }
+};
 function getAstroPdfChart(reading = lastReading) {
   const meta = reading?.meta || {};
   return meta.solarReturn?.chart || meta.astroToday || meta.astro || null;
@@ -357,17 +364,19 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   });
   if (chart.aspects?.length) {
     const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
-    chart.aspects.forEach(aspect => {
+    chart.aspects.slice(0, 12).forEach(aspect => {
       const a = byName[aspect.a];
       const b = byName[aspect.b];
       if (!a || !b) return;
       const p1 = toPoint(a.degree, size * .145);
       const p2 = toPoint(b.degree, size * .145);
-      if (aspect.name === 'Cuadratura' || aspect.name === 'Oposición') doc.setDrawColor(190, 57, 103);
-      else if (aspect.name === 'Sextil') doc.setDrawColor(59, 151, 132);
-      else doc.setDrawColor(74, 113, 184);
+      const aspectMeta = ASTRO_PDF_ASPECTS[aspect.name] || ASTRO_PDF_ASPECTS['Conjunción'];
+      doc.setDrawColor(...aspectMeta.color);
       doc.setLineWidth(.22);
       doc.line(p1.x, p1.y, p2.x, p2.y);
+      if (aspect.name === 'Conjunción') {
+        doc.circle((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 1.2, 'S');
+      }
     });
   }
   doc.setDrawColor(190, 57, 103);
@@ -401,11 +410,37 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
     doc.text(code, p.x, p.y + 1.5, { align:'center' });
   });
   const signLegend = 'ARI Aries · TAU Tauro · GEM Geminis · CAN Cancer · LEO Leo · VIR Virgo · LIB Libra · ESC Escorpio · SAG Sagitario · CAP Capricornio · ACU Acuario · PIS Piscis';
+  const aspectLegend = 'CONJ 0 conjuncion · SEXT 60 sextil · CUAD 90 cuadratura · TRIG 120 trigono · OPOS 180 oposicion';
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.4);
   doc.setTextColor(...ink);
   doc.text(doc.splitTextToSize(pdfAscii(signLegend), size - 4).slice(0, 2), cx, y + size + 11, { align:'center' });
-  return y + size + 24;
+  doc.text(doc.splitTextToSize(pdfAscii(aspectLegend), size - 4).slice(0, 2), cx, y + size + 18, { align:'center' });
+  let aspectY = y + size + 28;
+  if (chart.aspects?.length) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...violet);
+    doc.text('Aspectos principales', x, aspectY);
+    aspectY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.2);
+    chart.aspects.slice(0, 8).forEach((aspect, index) => {
+      const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:pdfAscii(aspect.name).slice(0, 4).toUpperCase(), color:ink };
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const tx = x + col * (size / 2 + 4);
+      const ty = aspectY + row * 6;
+      doc.setTextColor(...meta.color);
+      doc.setFont('helvetica', 'bold');
+      doc.text(meta.code, tx, ty);
+      doc.setTextColor(...ink);
+      doc.setFont('helvetica', 'normal');
+      doc.text(pdfAscii(`${aspect.a}/${aspect.b} orb ${aspect.orb}°`), tx + 15, ty);
+    });
+    aspectY += Math.ceil(Math.min(chart.aspects.length, 8) / 2) * 6;
+  }
+  return aspectY + 4;
 }
 function canvasDataUrlFromImage(src) {
   return new Promise((resolve) => {
@@ -676,6 +711,7 @@ async function exportPDF(title, text, reading = lastReading) {
     const summaryText = compact.join('\n') || cleanPdfText(text).slice(0, 500);
     const summaryLines = doc.splitTextToSize(cleanPdfText(summaryText), W - margin * 2 - 16);
     const summaryH = Math.min(44, 12 + summaryLines.slice(0, 7).length * 5);
+    if (y + summaryH > H - 18) { addFooter(); doc.addPage(); y = addHeader(title); }
     doc.setFillColor(228, 224, 235);
     doc.setDrawColor(...line);
     doc.roundedRect(margin, y, W - margin * 2, summaryH, 5, 5, 'FD');
@@ -2858,11 +2894,11 @@ const ASTRO_PLANETS = [
   { id:'lilith', name:'Lilith', symbol:'⚸', role:'instinto, límite y voz propia', cycle:3232.61, offset:83.353, type:'point' }
 ];
 const ASTRO_ASPECTS = [
-  { name:'Conjunción', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
-  { name:'Sextil', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
-  { name:'Cuadratura', angle:90, orb:6, text:'la tensión muestra dónde conviene ajustar el rumbo' },
-  { name:'Trígono', angle:120, orb:6, text:'hay fluidez natural para integrar esas energías' },
-  { name:'Oposición', angle:180, orb:7, text:'dos polos se miran y piden equilibrio consciente' }
+  { name:'Conjunción', symbol:'☌', code:'CONJ', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
+  { name:'Sextil', symbol:'⚹', code:'SEXT', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
+  { name:'Cuadratura', symbol:'□', code:'CUAD', angle:90, orb:6, text:'la tensión muestra dónde conviene ajustar el rumbo' },
+  { name:'Trígono', symbol:'△', code:'TRIG', angle:120, orb:6, text:'hay fluidez natural para integrar esas energías' },
+  { name:'Oposición', symbol:'☍', code:'OPOS', angle:180, orb:7, text:'dos polos se miran y piden equilibrio consciente' }
 ];
 const ASTRO_HOUSES = ['Yo','Recursos','Palabra','Hogar','Creatividad','Rutina','Vínculos','Transformación','Visión','Propósito','Comunidad','Alma'];
 
@@ -3013,11 +3049,12 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
     const diff = Math.abs(a.degree - b.degree);
     const angle = Math.min(diff, 360 - diff);
     const aspect = ASTRO_ASPECTS.map(item => ({ ...item, delta:Math.abs(angle - item.angle) })).sort((x,y) => x.delta - y.delta)[0];
-    if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, orb:aspect.delta.toFixed(1), text:aspect.text });
+    if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, symbol:aspect.symbol, code:aspect.code, angle:aspect.angle, orb:aspect.delta.toFixed(1), text:aspect.text });
   }));
   const timeZoneOffset = timeZoneOffsetMinutes(place?.timezone || '', new Date(astroDateUTC(date, time, place?.timezone || '') || Date.now()));
   const quality = place?.timezone && Number.isFinite(Number(place?.lat)) && Number.isFinite(Number(place?.lon)) ? 'Lugar y zona horaria seleccionados' : 'Lugar manual: ascendente y casas menos afinados';
-  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 8), houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset };
+  aspects.sort((a, b) => Number(a.orb) - Number(b.orb));
+  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 12), houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset };
 }
 function formatAstroLocalFromMs(ms, timeZone = '') {
   const date = new Date(ms);
@@ -3089,6 +3126,12 @@ function astroAspectClass(name = '') {
   const map = { Conjunción:'conjunction', Sextil:'sextile', Cuadratura:'square', Trígono:'trine', Oposición:'opposition' };
   return map[name] || 'minor';
 }
+function astroAspectMeta(name = '') {
+  return ASTRO_ASPECTS.find(aspect => aspect.name === name) || { name, symbol:'·', code:'ASP', angle:0, orb:0, text:'' };
+}
+function astroAspectLegendHTML() {
+  return `<div class="astro-aspect-legend" aria-label="Leyenda de aspectos">${ASTRO_ASPECTS.map(aspect => `<span class="astro-aspect-key astro-aspect-key-${astroAspectClass(aspect.name)}"><b aria-hidden="true">${aspect.symbol}</b><small>${escapeHTML(aspect.name)} · ${aspect.angle}°</small></span>`).join('')}</div>`;
+}
 function astroAspectWebHTML(chart) {
   if (!chart?.aspects?.length) return '';
   const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
@@ -3114,7 +3157,7 @@ function astroWheelHTML(chart) {
     const radius = [-.27, -.325, -.38][index % 3];
     return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}</span>`;
   }).join('');
-  return `<div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div>`;
+  return `<div class="astro-wheel-wrap"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
@@ -3124,13 +3167,13 @@ function astroHousesHTML(chart) {
 }
 function astroAspectsHTML(chart) {
   return chart.aspects.length
-    ? `<div class="astro-aspects">${chart.aspects.map(item => `<article class="astro-aspect"><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><p>${escapeHTML(item.text)}.</p></article>`).join('')}</div>`
+    ? `<div class="astro-aspects">${chart.aspects.map(item => { const meta = astroAspectMeta(item.name); return `<article class="astro-aspect astro-aspect-card-${astroAspectClass(item.name)}"><span class="astro-aspect-glyph" aria-hidden="true">${meta.symbol}</span><div><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><small>${meta.angle}° · orbe ${escapeHTML(item.orb)}°</small><p>${escapeHTML(item.text)}.</p></div></article>`; }).join('')}</div>`
     : '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
 }
 function astroReadingText(chart) {
   const dominant = chart.planets.reduce((acc, p) => ({ ...acc, [p.element]:(acc[p.element] || 0) + 1 }), {});
   const element = Object.entries(dominant).sort((a,b) => b[1] - a[1])[0]?.[0] || chart.sun.element;
-  const aspects = chart.aspects.map(item => `${item.name} entre ${item.a} y ${item.b}: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta lectura simbólica.';
+  const aspects = chart.aspects.map(item => `${item.symbol || astroAspectMeta(item.name).symbol} ${item.name} (${item.angle}°) entre ${item.a} y ${item.b}, orbe ${item.orb}°: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta lectura simbólica.';
   return `CARTA ASTRAL SIMBÓLICA · ${chart.name}
 Fecha: ${chart.date} · Hora de nacimiento: ${chart.time}
 Lugar: ${chart.place?.label || 'No indicado'}${chart.place?.timezone ? ` · Zona horaria: ${chart.place.timezone}` : ''}
@@ -3164,7 +3207,7 @@ function solarReturnText(natalChart, solarReturn, intention = '') {
   const chart = solarReturn.chart;
   const dominant = chart.planets.reduce((acc, p) => ({ ...acc, [p.element]:(acc[p.element] || 0) + 1 }), {});
   const element = Object.entries(dominant).sort((a,b) => b[1] - a[1])[0]?.[0] || chart.sun.element;
-  const aspects = chart.aspects.map(item => `${item.name} entre ${item.a} y ${item.b}: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta revolucion solar simbolica.';
+  const aspects = chart.aspects.map(item => `${item.symbol || astroAspectMeta(item.name).symbol} ${item.name} (${item.angle}°) entre ${item.a} y ${item.b}, orbe ${item.orb}°: ${item.text}.`).join('\n') || 'Sin aspectos mayores exactos en esta revolucion solar simbolica.';
   return `REVOLUCIÓN SOLAR SIMBÓLICA ${solarReturn.year} · ${chart.name}
 Nacimiento: ${natalChart.date} · Hora natal: ${natalChart.time}
 Lugar usado: ${chart.place?.label || 'No indicado'}

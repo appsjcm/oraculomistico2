@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-frances-76';
+const CACHE_NAME = 'oraculo-v1-0-public-frances-77-aspects';
 const APP_SHELL = [
   './',
   './index.html',
@@ -79,7 +79,6 @@ self.addEventListener('install', event => {
       .then(() => self.skipWaiting())
   );
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
