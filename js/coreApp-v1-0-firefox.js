@@ -593,6 +593,48 @@ async function exportPDF(title, text, reading = lastReading) {
       doc.text(String(page), W - margin, H - 9, { align: 'right' });
     };
     let y = addHeader(title);
+    const ensurePdfRoom = (needed = 30) => {
+      if (y + needed <= H - 18) return;
+      addFooter();
+      doc.addPage();
+      y = addHeader(title);
+    };
+    function addPdfRows(heading, rows, options = {}) {
+      const cleanRows = rows.map(row => cleanPdfText(row)).filter(Boolean);
+      if (!cleanRows.length) return;
+      const columns = options.columns || 1;
+      const gap = 6;
+      const rowH = options.rowH || 6;
+      const colW = (W - margin * 2 - gap * (columns - 1)) / columns;
+      let index = 0;
+      while (index < cleanRows.length) {
+        const rowsPerColumn = Math.max(3, Math.floor((H - y - 42) / rowH));
+        const take = Math.min(cleanRows.length - index, rowsPerColumn * columns);
+        const chunk = cleanRows.slice(index, index + take);
+        const usedRows = Math.ceil(chunk.length / columns);
+        const boxH = 12 + usedRows * rowH;
+        ensurePdfRoom(boxH + 6);
+        doc.setFillColor(...(options.accent ? soft : [249, 246, 238]));
+        doc.setDrawColor(...(options.accent ? [114, 139, 214] : line));
+        doc.roundedRect(margin, y, W - margin * 2, boxH, 5, 5, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...violet);
+        doc.text(pdfAscii(heading), margin + 6, y + 7);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(options.fontSize || 7.7);
+        doc.setTextColor(...ink);
+        chunk.forEach((row, offset) => {
+          const col = Math.floor(offset / usedRows);
+          const line = offset % usedRows;
+          const tx = margin + 6 + col * (colW + gap);
+          const ty = y + 14 + line * rowH;
+          doc.text(doc.splitTextToSize(row, colW - 5).slice(0, 1), tx, ty);
+        });
+        y += boxH + 6;
+        index += take;
+      }
+    }
     const highlight = getPdfReadingHighlight(reading);
     if (highlight) {
       const detailLines = doc.splitTextToSize(cleanPdfText(highlight.detail), W - margin * 2 - 16).slice(0, 3);
@@ -625,6 +667,25 @@ async function exportPDF(title, text, reading = lastReading) {
       const wheelX = margin + (W - margin * 2 - wheelSize) / 2;
       const wheelTitle = reading?.meta?.solarReturn?.chart ? 'Rueda de revolucion solar' : reading?.meta?.astroToday ? 'Rueda astral del dia' : 'Rueda de carta astral';
       y = drawAstroPdfWheel(doc, astroPdfChart, wheelX, y + 2, wheelSize, { gold, goldInk, violet, ink, line }, wheelTitle);
+      const stats = astroAspectStats(astroPdfChart);
+      const tight = stats.tightest;
+      const solar = reading?.meta?.solarReturn;
+      addPdfRows('Claves astrologicas', [
+        `Sol: ${astroPdfChart.sun?.name || ''}`,
+        `Luna: ${astroPdfChart.moon?.sign || ''}`,
+        `Ascendente: ${astroPdfChart.asc?.name || ''}`,
+        `Medio Cielo: ${astroPdfChart.mc?.name || ''}`,
+        `Casas: ${astroHouseSystemLabel(astroPdfChart.houseSystem)}`,
+        solar?.localLabel ? `Retorno: ${solar.localLabel}` : '',
+        tight ? `Aspecto mas exacto: ${tight.name} ${tight.a}/${tight.b}, orbe ${tight.orb} grados` : '',
+        `Aspectos: ${astroPdfChart.aspects?.length || 0} mayores, ${stats.counts.flow} fluidos, ${stats.counts.tension} de ajuste`
+      ], { columns:2, accent:true, rowH:6.2 });
+      addPdfRows('Posiciones planetarias', astroPdfChart.planets.map(planet => `${ASTRO_PDF_PLANETS[planet.id] || planet.name}: ${planet.signDegree} grados ${planet.sign}${planet.retrograde ? ' Rx' : ''} - ${planet.role}`), { columns:2, rowH:6.2, fontSize:7.2 });
+      addPdfRows('Aspectos principales', (astroPdfChart.aspects || []).slice(0, 12).map(aspect => {
+        const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:pdfAscii(aspect.name).slice(0, 4).toUpperCase() };
+        return `${meta.code}: ${aspect.a} / ${aspect.b} - ${aspect.angle} grados, orbe ${aspect.orb} (${astroAspectOrbLabel(aspect.orb)})`;
+      }), { columns:1, accent:true, rowH:6.1, fontSize:7.4 });
+      addPdfRows('Casas', astroPdfChart.houses.map(house => `Casa ${house.number} - ${house.label}: ${house.degree} grados ${house.sign}`), { columns:2, rowH:6, fontSize:7.4 });
     }
     if (assets.length) {
       const maxAssets = Math.min(10, assets.length);
@@ -3141,6 +3202,27 @@ function astroAspectClass(name = '') {
 function astroAspectMeta(name = '') {
   return ASTRO_ASPECTS.find(aspect => aspect.name === name) || { name, symbol:'·', code:'ASP', angle:0, orb:0, text:'' };
 }
+function astroAspectTone(name = '') {
+  if (name === 'Cuadratura' || name === 'Oposición') return { key:'tension', label:'Tensión creativa' };
+  if (name === 'Sextil' || name === 'Trígono') return { key:'flow', label:'Fluidez' };
+  return { key:'focus', label:'Foco' };
+}
+function astroAspectOrbLabel(orb = 0) {
+  const value = Number(orb);
+  if (value <= 1) return 'muy exacto';
+  if (value <= 3) return 'cercano';
+  return 'amplio';
+}
+function astroAspectStats(chart) {
+  const aspects = Array.isArray(chart?.aspects) ? chart.aspects : [];
+  const counts = aspects.reduce((acc, aspect) => {
+    const tone = astroAspectTone(aspect.name).key;
+    acc[tone] = (acc[tone] || 0) + 1;
+    return acc;
+  }, { flow:0, tension:0, focus:0 });
+  const tightest = aspects.slice().sort((a, b) => Number(a.orb) - Number(b.orb))[0] || null;
+  return { counts, tightest };
+}
 function astroAspectLegendHTML() {
   return `<div class="astro-aspect-legend" aria-label="Leyenda de aspectos">${ASTRO_ASPECTS.map(aspect => `<span class="astro-aspect-key astro-aspect-key-${astroAspectClass(aspect.name)}"><b aria-hidden="true">${aspect.symbol}</b><small>${escapeHTML(aspect.name)} · ${aspect.angle}°</small></span>`).join('')}</div>`;
 }
@@ -3178,8 +3260,17 @@ function astroHousesHTML(chart) {
   return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${house.degree}°</small></span></article>`).join('')}</div>`;
 }
 function astroAspectsHTML(chart) {
+  if (!chart.aspects.length) return '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
+  const stats = astroAspectStats(chart);
+  const tight = stats.tightest;
+  const overview = `<div class="astro-aspect-overview" aria-label="Resumen de aspectos">
+    <div><strong>${chart.aspects.length}</strong><small>Aspectos mayores</small></div>
+    <div><strong>${stats.counts.flow}</strong><small>Fluidos</small></div>
+    <div><strong>${stats.counts.tension}</strong><small>De ajuste</small></div>
+    <div><strong>${tight ? `${escapeHTML(tight.name)} ${escapeHTML(tight.orb)}°` : '—'}</strong><small>Más exacto</small></div>
+  </div>`;
   return chart.aspects.length
-    ? `<div class="astro-aspects">${chart.aspects.map(item => { const meta = astroAspectMeta(item.name); return `<article class="astro-aspect astro-aspect-card-${astroAspectClass(item.name)}"><span class="astro-aspect-glyph" aria-hidden="true">${meta.symbol}</span><div><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><small>${meta.angle}° · orbe ${escapeHTML(item.orb)}°</small><p>${escapeHTML(item.text)}.</p></div></article>`; }).join('')}</div>`
+    ? `${overview}<div class="astro-aspects">${chart.aspects.map(item => { const meta = astroAspectMeta(item.name); const tone = astroAspectTone(item.name); return `<article class="astro-aspect astro-aspect-card-${astroAspectClass(item.name)}"><span class="astro-aspect-glyph" aria-hidden="true">${meta.symbol}</span><div><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><small>${meta.angle}° · orbe ${escapeHTML(item.orb)}° · ${escapeHTML(astroAspectOrbLabel(item.orb))} · ${escapeHTML(tone.label)}</small><p>${escapeHTML(item.text)}.</p></div></article>`; }).join('')}</div>`
     : '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
 }
 function astroReadingText(chart) {
@@ -3250,6 +3341,18 @@ ${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degree}° ${h.symbo
 
 Nota: esta revolución solar usa el motor abierto simbólico del Oráculo y aproxima el momento en que el Sol vuelve al grado natal. No sustituye una carta profesional con efemérides astronómicas completas.`;
 }
+function solarReturnBridgeHTML(natalChart, solarReturn) {
+  const chart = solarReturn.chart;
+  const items = [
+    ['Sol natal', `${natalChart.sun.symbol} ${natalChart.sun.name}`, 'Punto de partida'],
+    ['Asc natal', `${natalChart.asc.symbol} ${natalChart.asc.name}`, 'Puerta habitual'],
+    ['Asc anual', `${chart.asc.symbol} ${chart.asc.name}`, 'Puerta del año'],
+    ['Luna anual', `${chart.moon.signSymbol} ${chart.moon.sign}`, 'Clima emocional'],
+    ['MC anual', `${chart.mc.symbol} ${chart.mc.name}`, 'Zona visible'],
+    ['Retorno', solarReturn.localLabel, `Diferencia solar ${solarReturn.sunDelta.toFixed(3)}°`]
+  ];
+  return `<div class="astro-return-bridge">${items.map(([label, value, detail]) => `<article><small>${escapeHTML(label)}</small><strong>${escapeHTML(value)}</strong><span>${escapeHTML(detail)}</span></article>`).join('')}</div>`;
+}
 function renderSolarReturnReading(natalChart, solarReturn, text, title) {
   const chart = solarReturn.chart;
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${solarReturn.year} · ${solarReturn.localLabel}`, body:`
@@ -3257,6 +3360,8 @@ function renderSolarReturnReading(natalChart, solarReturn, text, title) {
       ${astroWheelHTML(chart)}
       <div class="result-card astro-summary-card"><h3>Revolución solar</h3><p><strong>Retorno:</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Medio Cielo:</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
+    <h3 class="section-title">Natal y año</h3>
+    ${solarReturnBridgeHTML(natalChart, solarReturn)}
     <h3 class="section-title">Posiciones del año</h3>
     ${astroPositionsHTML(chart)}
     <h3 class="section-title">Aspectos</h3>
