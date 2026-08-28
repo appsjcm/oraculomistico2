@@ -81,7 +81,12 @@ async function loadThree() {
 function updateReport(assetId, patch) {
   let report = {};
   try { report = JSON.parse(sessionStorage.getItem(REPORT_KEY) || '{}'); } catch {}
-  report[assetId] = { ...(report[assetId] || {}), ...patch, checkedAt: new Date().toISOString() };
+  const next = { ...(report[assetId] || {}), ...patch, checkedAt: new Date().toISOString() };
+  if (patch.status === 'loaded') {
+    delete next.reason;
+    delete next.error;
+  }
+  report[assetId] = next;
   try { sessionStorage.setItem(REPORT_KEY, JSON.stringify(report)); } catch {}
 }
 
@@ -262,6 +267,7 @@ class OracleScene {
     this.frame = 0;
     this.baseModelY = 0;
     this.lastRender = 0;
+    this.destroyed = false;
     this.targetFrameMs = quality.level === 'high' ? 16 : quality.level === 'medium' ? 33 : 80;
     this.onResize = this.resize.bind(this);
     this.onPointerMove = this.pointerMove.bind(this);
@@ -286,6 +292,7 @@ class OracleScene {
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
 
     const ambient = new THREE.HemisphereLight(0xf8edcf, 0x14101f, this.options.lights === 1 ? 1.8 : 1.3);
+    if (this.destroyed) return;
     this.scene.add(ambient);
     const key = new THREE.DirectionalLight(0xf5cc74, this.options.lights === 3 ? 2.2 : 1.45);
     key.position.set(3, 4, 5);
@@ -298,6 +305,7 @@ class OracleScene {
     }
 
     const gltf = await loadModel(this.assetId, this.quality);
+    if (this.destroyed || !this.scene) return;
     this.model = cloneScene(gltf.scene);
     this.model.rotation.set(...this.asset.rotation);
     this.model.scale.setScalar(this.asset.scale);
@@ -372,6 +380,7 @@ class OracleScene {
   }
 
   destroy() {
+    this.destroyed = true;
     this.running = false;
     cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
@@ -418,9 +427,11 @@ function mountStage(stage) {
       mountedStages.set(stage, scene);
       activeStages.add(stage);
       return scene.mount().then(() => scene).catch(error => {
+        const wasDestroyed = scene.destroyed;
         scene.destroy();
         mountedStages.delete(stage);
         activeStages.delete(stage);
+        if (wasDestroyed) return null;
         makeFallback(stage, assetId, error?.message || 'mount-failed');
         return null;
       });
@@ -466,14 +477,15 @@ function observeStages(root = document) {
      triangulos cada uno. Ahora se monta por seccion, la mas visible
      primero, y con tope de escenas vivas. */
   const observer = new IntersectionObserver(entries => {
+    const quality = detectQuality();
     entries.forEach(entry => {
       visibilidad.set(entry.target, entry.isIntersecting ? entry.intersectionRatio : 0);
-      if (entry.isIntersecting) mountStage(entry.target);
-      else unmountStage(entry.target);
+      if (!entry.isIntersecting) unmountStage(entry.target);
+      else if (quality.level !== 'high') mountStage(entry.target);
     });
-    /* La version ligera es barata y se monta sin mas. El tope solo hace
-       falta cuando hay modelos de verdad, que son 53 MB cada uno. */
-    if (detectQuality().level === 'high') reconciliarEscenas();
+    /* En alta no montamos desde cada entrada del observador: primero se
+       ordena por visibilidad y asi solo descarga la escena prioritaria. */
+    if (quality.level === 'high') reconciliarEscenas();
     /* Margen moderado: .om-sanctuary lleva content-visibility:auto y con
        margen 0 el observador no llegaba a alcanzar sus lienzos, que se
        quedaban en blanco. Con 140px se pintan a tiempo sin adelantarse
@@ -485,9 +497,8 @@ function observeStages(root = document) {
 /* Cuanto se ve cada lienzo ahora mismo. */
 const visibilidad = new Map();
 
-/* Un modelo de 53 MB y casi dos millones de triangulos no admite
-   companeros: en alta se monta uno. Si algun dia los modelos se
-   comprimen, el tope sube solo. */
+/* Aunque los modelos ya son ligeros, en alta seguimos priorizando una
+   escena viva: se ve 3D real sin disparar memoria ni contextos WebGL. */
 function topeEscenas(quality) {
   if (quality.level !== 'high') return 6;
   return 1;
