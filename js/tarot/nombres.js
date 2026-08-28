@@ -11,7 +11,7 @@
 
 export const PALOS = {
   es: { B: 'Bastos',  C: 'Copas',  E: 'Espadas', O: 'Oros' },
-  ca: { B: 'Bastos',  C: 'Copes',  E: 'Espases', O: 'Ors' },
+  ca: { B: 'Bastons', C: 'Copes',  E: 'Espases', O: 'Ors' },
   en: { B: 'Wands',   C: 'Cups',   E: 'Swords',  O: 'Pentacles' },
   fr: { B: 'Bâtons',  C: 'Coupes', E: 'Épées',   O: 'Deniers' },
   de: { B: 'Stäbe',   C: 'Kelche', E: 'Schwerter', O: 'Münzen' },
