@@ -101,6 +101,12 @@
   align-items: center;
 }
 
+.astro-wheel-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
 .astro-wheel {
   --wheel-size: min(74vw, 360px);
   position: relative;
@@ -138,12 +144,57 @@
 
 .astro-aspect-sextile {
   stroke: rgba(74, 201, 171, .82);
+  stroke-dasharray: 2 1.6;
 }
 
 .astro-aspect-square,
 .astro-aspect-opposition {
   stroke: rgba(198, 54, 110, .9);
   stroke-width: .8;
+}
+
+.astro-aspect-opposition {
+  stroke-dasharray: 4 1.4;
+}
+
+.astro-aspect-legend {
+  width: min(100%, var(--wheel-size, 360px));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.astro-aspect-key {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.055);
+  padding: 4px 8px;
+  color: rgba(255, 250, 239, .78);
+}
+
+.astro-aspect-key b {
+  color: rgb(246, 222, 154);
+  font-size: .98rem;
+  line-height: 1;
+}
+
+.astro-aspect-key small {
+  font-size: .68rem;
+  line-height: 1;
+}
+
+.astro-aspect-key-sextile b {
+  color: rgb(96, 221, 189);
+}
+
+.astro-aspect-key-square b,
+.astro-aspect-key-opposition b {
+  color: rgb(237, 93, 143);
 }
 
 .astro-wheel::before,
@@ -359,10 +410,47 @@
 }
 
 .astro-aspect {
-  padding: 9px 11px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 11px;
   border-radius: 8px;
   background: rgba(145, 194, 255, .08);
   border: 1px solid rgba(145, 194, 255, .15);
+}
+
+.astro-aspect-card-sextile {
+  background: rgba(74, 201, 171, .075);
+  border-color: rgba(74, 201, 171, .20);
+}
+
+.astro-aspect-card-square,
+.astro-aspect-card-opposition {
+  background: rgba(198, 54, 110, .08);
+  border-color: rgba(198, 54, 110, .22);
+}
+
+.astro-aspect-glyph {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(8, 10, 22, .52);
+  color: rgb(246, 222, 154);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.astro-aspect small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255, 250, 239, .58);
+}
+
+.astro-aspect p {
+  margin: 6px 0 0;
 }
 
 @media (max-width: 760px) {
@@ -377,6 +465,14 @@
 
   .astro-wheel {
     --wheel-size: min(86vw, 310px);
+  }
+
+  .astro-aspect-legend {
+    max-width: 310px;
+  }
+
+  .astro-aspect-key {
+    padding-inline: 7px;
   }
 
   .astro-positions-list {
