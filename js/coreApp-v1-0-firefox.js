@@ -3670,6 +3670,20 @@ let grabConsulta = '';
 /* El catalogo completo, 1.200 entradas. Las sanitarias se muestran
    marcadas y con aviso reforzado, pero no se ocultan: ya eran
    visibles en el navegador general del modulo. */
+/* Etiqueta visible de una categoria Grabovoi. El valor original de la
+   base de datos se conserva como clave interna: por el se filtra y
+   viaja dentro de las lecturas ya guardadas. */
+function grabCatLabel(cat) {
+  if (!cat) return '';
+  const clave = 'gbc' + String(cat)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/ /g, '');
+  const v = t(clave);
+  return v && v !== clave ? v : cat;
+}
+
 function grabDisponibles() {
   return grabovoiEntries;
 }
@@ -3704,7 +3718,7 @@ function renderGrabChips() {
   const cats = grabCategorias();
   const chip = (valor, etiqueta) =>
     `<button class="tab${grabCategoria === valor ? ' active' : ''}" data-grab-cat="${escapeHTML(valor)}" type="button">${escapeHTML(etiqueta)}</button>`;
-  return `<div class="tabs mt grabovoi-cats">${chip('', t('gbAllCats'))}${cats.map(c => chip(c, c)).join('')}</div>`;
+  return `<div class="tabs mt grabovoi-cats">${chip('', t('gbAllCats'))}${cats.map(c => chip(c, grabCatLabel(c))).join('')}</div>`;
 }
 
 function renderGrabList(list) {
@@ -3720,7 +3734,7 @@ function renderGrabList(list) {
       </label>
       <button class="choice grabovoi-ficha${salud ? ' es-salud' : ''}" data-grab-index="${idx}" type="button">
         <strong>${escapeHTML(e.codigo)} · ${escapeHTML(e.nombre)}</strong>
-        <small>${escapeHTML(e.categoria || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small>
+        <small>${escapeHTML(grabCatLabel(e.categoria) || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small>
       </button>
     </div>`;
   }).join('');
@@ -3771,7 +3785,7 @@ function buildGrabovoiSheetText(entries = []) {
     const guia = buildGrabovoiInterpretation(entry);
     return `${i + 1}. ${entry.nombre}
 ${t('gbCode')}: ${guia.code}
-${t('gbCat')}: ${entry.categoria || '—'}
+${t('gbCat')}: ${grabCatLabel(entry.categoria) || '—'}
 ${t('gbPurpose')}: ${entry.uso || t('gbSeq')}
 ${t('gbMethod')}: ${guia.method.name}
 ${guia.method.description}
@@ -3815,24 +3829,24 @@ function buildGrabovoiInterpretation(entry) {
   const digitAnalysis = Object.keys(counts).sort().map(digit => ({
     digit,
     count:counts[digit],
-    meaning:grabovoiGuide.digitMeanings[digit] || 'Elemento numérico de la secuencia.'
+    meaning:grabovoiGuide.digitMeanings[digit] || t('gbDigitFallback')
   }));
   const category = String(entry.categoria || '').toLowerCase();
   const isHealth = /salud|cardio|músculo|musculo|autoinmune|oncol|metab|psicol|enfermedad|físic|fisic/.test(category);
   const method = /tiempo|pasado|futuro/.test(category)
-    ? { name:'Columna de luz', description:'Visualiza la secuencia dentro de una columna luminosa y sitúa al final una escena concreta, realista y ordenada.' }
+    ? { name:t('gbMethodLight'), description:t('gbMethodLightD') }
     : /amor|pareja|relaci/.test(`${category} ${entry.nombre}`)
-      ? { name:'Esfera de armonía', description:'Imagina la secuencia dentro de una esfera clara junto a una representación respetuosa y no controladora de la situación deseada.' }
-      : { name:'Esfera numérica', description:'Imagina una esfera blanca o plateada, coloca la secuencia en su interior y mantenla estable mientras respiras con calma.' };
-  const groupText = groups.length > 1 ? groups.join(' · ') : 'Secuencia continua';
+      ? { name:t('gbMethodHarmony'), description:t('gbMethodHarmonyD') }
+      : { name:t('gbMethodSphere'), description:t('gbMethodSphereD') };
+  const groupText = groups.length > 1 ? groups.join(' · ') : t('gbContinuous');
   const digitText = digitAnalysis.map(item => `${item.digit} (${item.count}): ${item.meaning}`).join('\n');
   const steps = [
-    `Define el foco: ${entry.nombre}.`,
-    `Lee la secuencia por bloques: ${groupText}.`,
-    `Escríbela o mírala sin alterar el orden: ${code}.`,
-    `${method.description}`,
-    'Mantén la concentración entre 3 y 5 minutos, sin forzar la respiración.',
-    'Cierra la práctica y anota observaciones concretas; evita interpretar coincidencias como garantías.'
+    t('gbStep1', { focus: entry.nombre }),
+    t('gbStep2', { blocks: groupText }),
+    t('gbStep3', { code }),
+    method.description,
+    t('gbStep5'),
+    t('gbStep6')
   ];
   const text = `${entry.nombre}
 
@@ -3903,7 +3917,7 @@ function renderGrabovoiPdfList(list = []) {
     const salud = isHealthGrabovoiEntry(entry);
     return `<label class="choice grabovoi-pdf-choice${salud ? ' es-salud' : ''}">
       <input type="checkbox" data-grab-pdf-index="${index}">
-      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(entry.categoria || entry.uso || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small></span>
+      <span><strong>${escapeHTML(entry.codigo)} · ${escapeHTML(entry.nombre)}</strong><small>${escapeHTML(grabCatLabel(entry.categoria) || entry.uso || t('gbSeq'))}${salud ? ` · <em class="grabovoi-salud">${escapeHTML(t('gbHealthTag'))}</em>` : ''}</small></span>
     </label>`;
   }).join('\n') || `<p class="subtle">${escapeHTML(t('gbPdfNone'))}</p>`;
 }
@@ -3984,17 +3998,17 @@ function showGrabDetail(e) {
   openModal({ icon:'📜', title:e.nombre, subtitle:e.categoria || 'Código simbólico', body:`
     <div class="result-card center grabovoi-code-card">
       <div class="grabovoi-code">${escapeHTML(e.codigo)}</div>
-      <p><strong>Finalidad:</strong> ${escapeHTML(e.uso)}</p>
+      <p><strong>${escapeHTML(t('gbPurpose'))}:</strong> ${escapeHTML(e.uso || t('gbUseDefault'))}</p>
     </div>
     <div class="panel-grid mt">
-      <div class="result-card"><h3>Estructura del código</h3><p>${guide.groups.length} bloque${guide.groups.length === 1 ? '' : 's'}: <strong>${escapeHTML(guide.groups.join(' · '))}</strong></p><p>${guide.code.match(/\d/g)?.length || 0} dígitos numéricos.</p></div>
+      <div class="result-card"><h3>${escapeHTML(t('gbStructure'))}</h3><p>${escapeHTML(guide.groups.length === 1 ? t('gbBlock1') : t('gbBlocks', { n: guide.groups.length }))}: <strong>${escapeHTML(guide.groups.join(' · '))}</strong></p><p>${guide.code.match(/\d/g)?.length || 0} dígitos numéricos.</p></div>
       <div class="result-card"><h3>${escapeHTML(guide.method.name)}</h3><p>${escapeHTML(guide.method.description)}</p></div>
     </div>
-    <div class="result-card mt"><h3>Significado numérico simbólico</h3>
+    <div class="result-card mt"><h3>${escapeHTML(t('gbDigitMeaning'))}</h3>
       <div class="grabovoi-digit-grid">${guide.digitAnalysis.map(item => `<div><strong>${item.digit}${item.count > 1 ? ` ×${item.count}` : ''}</strong><span>${escapeHTML(item.meaning)}</span></div>`).join('') || '<p>Conserva las letras y símbolos exactamente como aparecen.</p>'}</div>
     </div>
-    <div class="result-card mt"><h3>Cómo aplicarlo</h3><ol class="grabovoi-steps">${guide.steps.map(step => `<li>${escapeHTML(step)}</li>`).join('')}</ol></div>
-    <p class="notice mt">${guide.isHealth ? 'Este código se presenta únicamente como práctica simbólica de concentración. No diagnostica, trata ni cura y no sustituye atención médica.' : 'Práctica simbólica de concentración: no es una predicción ni garantiza resultados.'}</p>
+    <div class="result-card mt"><h3>${escapeHTML(t('gbHowTo'))}</h3><ol class="grabovoi-steps">${guide.steps.map(step => `<li>${escapeHTML(step)}</li>`).join('')}</ol></div>
+    <p class="notice mt">${escapeHTML(guide.isHealth ? t('gbNoticeHealth') : t('gbNoticePlain'))}</p>
     ${grabovoiActions()}` });
   setTimeout(refreshDeviceVoiceSelect, 100);
 }
