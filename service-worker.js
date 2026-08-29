@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-i18n-motor-90';
+const CACHE_NAME = 'oraculo-v1-0-public-planet-engine-91';
 const APP_SHELL = [
   './',
   './index.html',
