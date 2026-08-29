@@ -1830,7 +1830,7 @@ function stopSpeech() {
 }
 
 function micButton(targetId, label = 'Dictar con micrófono') {
-  return `<button class="mic-btn" data-mic-target="${escapeHTML(targetId)}" type="button" aria-label="${escapeHTML(label)}" aria-pressed="false">🎙️</button>`;
+  return `<button class="mic-btn" data-mic-target="${escapeHTML(targetId)}" type="button" aria-label="${escapeHTML(label)}" title="${escapeHTML(label)}" aria-pressed="false">🎙️</button>`;
 }
 function speechRecognitionSupport() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -1846,15 +1846,23 @@ function isIosLikeDevice() {
 function supportedAudioMimeType() {
   if (!window.MediaRecorder?.isTypeSupported) return '';
   return [
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4;codecs=aac',
     'audio/mp4',
+    'audio/aac',
+    'audio/mpeg',
     'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/aac'
+    'audio/webm'
   ].find(type => MediaRecorder.isTypeSupported(type)) || '';
 }
 
+function cssAttrEscape(value = '') {
+  if (window.CSS?.escape) return CSS.escape(value);
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 function setMicButtonState(targetId, active) {
-  document.querySelectorAll(`[data-mic-target="${CSS.escape(targetId)}"]`).forEach(btn => {
+  document.querySelectorAll(`[data-mic-target="${cssAttrEscape(targetId)}"]`).forEach(btn => {
     btn.classList.toggle('recording', !!active);
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     btn.title = active ? t('tsMicTapStop') : 'Dictar con micrófono';
@@ -1868,7 +1876,43 @@ function appendDictationText(target, original, transcript) {
   target.value = `${original}${original && text ? ' ' : ''}${text}`.trim();
   target.dispatchEvent(new Event('input', { bubbles: true }));
   target.focus();
+  clearMicInlineHint(target);
   return true;
+}
+
+function micNativeDictationHintText() {
+  const lang = (getAppLanguage() || 'es').slice(0, 2);
+  const texts = {
+    es: 'En iPhone también puedes tocar el campo y usar el micrófono del teclado. Para dictar desde este botón, conecta IA.',
+    ca: 'A iPhone també pots tocar el camp i fer servir el micròfon del teclat. Per dictar des d’aquest botó, connecta la IA.',
+    en: 'On iPhone you can also tap the field and use the keyboard microphone. To dictate from this button, connect AI.',
+    fr: 'Sur iPhone, tu peux aussi toucher le champ et utiliser le micro du clavier. Pour dicter depuis ce bouton, connecte l’IA.',
+    de: 'Auf dem iPhone kannst du auch ins Feld tippen und das Mikrofon der Tastatur nutzen. Für diesen Button verbinde die KI.',
+    zh: '在 iPhone 上也可以点按输入框，使用键盘上的麦克风。若要用此按钮听写，请连接 AI。'
+  };
+  return texts[lang] || texts.es;
+}
+
+function clearMicInlineHint(target) {
+  const wrap = target?.closest?.('.input-mic-wrap');
+  wrap?.parentElement?.querySelector?.(`[data-mic-help-for="${cssAttrEscape(target.id)}"]`)?.remove();
+}
+
+function showMicInlineHint(target, message = '') {
+  if (!target) return toast(message || t('tsMicNoBrowser'));
+  const text = message || (isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicNoBrowser'));
+  toast(text);
+  target.focus();
+  const wrap = target.closest?.('.input-mic-wrap');
+  const parent = wrap?.parentElement;
+  if (!wrap || !parent) return;
+  clearMicInlineHint(target);
+  const hint = document.createElement('small');
+  hint.className = 'subtle mic-inline-help';
+  hint.dataset.micHelpFor = target.id;
+  hint.setAttribute('role', 'status');
+  hint.textContent = text;
+  parent.insertBefore(hint, wrap.nextSibling);
 }
 
 function extractTranscript(result) {
@@ -1895,11 +1939,12 @@ function stopActiveDictation() {
 
 async function transcribeRecordedDictation(target, original, blob) {
   if (!blob?.size) return toast(t('tsMicNoAudio'));
-  if (!window.puter?.ai?.speech2txt) return toast(t('tsMicConnectAi'));
+  if (!window.puter?.ai?.speech2txt) return showMicInlineHint(target, isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicConnectAi'));
   toast(t('tsMicTranscribing'));
   try {
     const language = (getAppLanguage() || 'es').slice(0, 2);
-    const result = await window.puter.ai.speech2txt(blob, {
+    const audio = dictationAudioPayload(blob);
+    const result = await window.puter.ai.speech2txt(audio, {
       language,
       response_format: 'json',
       model: 'gpt-4o-mini-transcribe'
@@ -1912,8 +1957,23 @@ async function transcribeRecordedDictation(target, original, blob) {
   }
 }
 
+function dictationAudioPayload(blob) {
+  if (typeof File === 'undefined') return blob;
+  const type = blob.type || 'audio/mp4';
+  const ext = /webm/i.test(type) ? 'webm' : /mpeg|mp3/i.test(type) ? 'mp3' : /aac/i.test(type) ? 'aac' : 'm4a';
+  try {
+    return new File([blob], `dictado-oraculo.${ext}`, { type });
+  } catch {
+    return blob;
+  }
+}
+
 async function startRecordedDictation(target) {
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return false;
+  if (isIosLikeDevice() && !window.puter?.ai?.speech2txt) {
+    showMicInlineHint(target, micNativeDictationHintText());
+    return true;
+  }
   const targetId = target.id;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -1957,7 +2017,8 @@ async function startRecordedDictation(target) {
   } catch (error) {
     pushErrorLog('mic-recorder', error?.message || 'No se pudo iniciar la grabación', 'microphone');
     setMicButtonState(targetId, false);
-    toast(error?.name === 'NotAllowedError' ? t('tsMicPermission') : t('tsMicNoStart'));
+    const message = error?.name === 'NotAllowedError' ? t('tsMicPermission') : isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicNoStart');
+    showMicInlineHint(target, message);
     return true;
   }
 }
@@ -1981,7 +2042,7 @@ function startBrowserSpeechDictation(target) {
     };
     recognition.onerror = event => {
       pushErrorLog('mic-browser-speech', event?.error || 'Speech recognition failed', 'speech recognition');
-      toast(t('tsMicFail'));
+      showMicInlineHint(target, event?.error === 'not-allowed' ? t('tsMicPermission') : isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicFail'));
     };
     recognition.onend = () => {
       if (activeDictation?.recognition === recognition) activeDictation = null;
@@ -1993,7 +2054,7 @@ function startBrowserSpeechDictation(target) {
   } catch (error) {
     pushErrorLog('mic-browser-start', error?.message || 'Speech recognition could not start', 'speech recognition');
     setMicButtonState(targetId, false);
-    toast(t('tsMicNoStart'));
+    showMicInlineHint(target, isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicNoStart'));
     return true;
   }
 }
@@ -2005,8 +2066,10 @@ async function startDictation(targetId) {
   if (activeDictation) stopActiveDictation();
 
   if (isIosLikeDevice()) {
+    if (startBrowserSpeechDictation(target)) return;
     if (await startRecordedDictation(target)) return;
-    return toast(t('tsMicNoBrowser'));
+    showMicInlineHint(target, micNativeDictationHintText());
+    return;
   }
 
   if (startBrowserSpeechDictation(target)) return;
