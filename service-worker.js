@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-foco-94';
+const CACHE_NAME = 'oraculo-v1-0-public-fraunces-95';
 const APP_SHELL = [
   './',
   './index.html',
@@ -15,6 +15,10 @@ const APP_SHELL = [
      del propio dominio, asi que sin conexion el PDF caia a un .txt.
      Alojado aqui, funciona offline y no depende de terceros. */
   './assets/vendor/jspdf/jspdf.umd.min.js',
+  /* La tipografia de titulos: alojada aqui para que sin conexion los
+     titulos no cambien de aspecto al caer al respaldo. */
+  './assets/vendor/fonts/fraunces-latin.woff2',
+  './assets/vendor/fonts/fraunces-latin-ext.woff2',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
