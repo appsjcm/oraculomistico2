@@ -3088,6 +3088,15 @@ const CHIRON_SIGN_PERIODS = [
   ['2044-02-10',4], ['2044-07-01',5], ['2045-10-24',6]
 ].map(([date, sign]) => ({ ms:Date.parse(`${date}T12:00:00Z`), sign }));
 let chironAnchorsCache = null;
+const ASTRO_ORBITAL_ELEMENTS = {
+  mercury: d => ({ N:48.3313 + 3.24587e-5 * d, i:7.0047 + 5e-8 * d, w:29.1241 + 1.01444e-5 * d, a:0.387098, e:0.205635 + 5.59e-10 * d, M:168.6562 + 4.0923344368 * d }),
+  venus: d => ({ N:76.6799 + 2.4659e-5 * d, i:3.3946 + 2.75e-8 * d, w:54.891 + 1.38374e-5 * d, a:0.72333, e:0.006773 - 1.302e-9 * d, M:48.0052 + 1.6021302244 * d }),
+  mars: d => ({ N:49.5574 + 2.11081e-5 * d, i:1.8497 - 1.78e-8 * d, w:286.5016 + 2.92961e-5 * d, a:1.523688, e:0.093405 + 2.516e-9 * d, M:18.6021 + 0.5240207766 * d }),
+  jupiter: d => ({ N:100.4542 + 2.76854e-5 * d, i:1.303 - 1.557e-7 * d, w:273.8777 + 1.64505e-5 * d, a:5.20256, e:0.048498 + 4.469e-9 * d, M:19.895 + 0.0830853001 * d }),
+  saturn: d => ({ N:113.6634 + 2.3898e-5 * d, i:2.4886 - 1.081e-7 * d, w:339.3939 + 2.97661e-5 * d, a:9.55475, e:0.055546 - 9.499e-9 * d, M:316.967 + 0.0334442282 * d }),
+  uranus: d => ({ N:74.0005 + 1.3978e-5 * d, i:0.7733 + 1.9e-8 * d, w:96.6612 + 3.0565e-5 * d, a:19.18171 - 1.55e-8 * d, e:0.047318 + 7.45e-9 * d, M:142.5905 + 0.011725806 * d }),
+  neptune: d => ({ N:131.7806 + 3.0173e-5 * d, i:1.77 - 2.55e-7 * d, w:272.8461 - 6.027e-6 * d, a:30.05826 + 3.313e-8 * d, e:0.008606 + 2.15e-9 * d, M:260.2471 + 0.005995147 * d })
+};
 const ASTRO_ASPECTS = [
   { name:'Conjunción', symbol:'☌', code:'CONJ', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
   { name:'Sextil', symbol:'⚹', code:'SEXT', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
@@ -3209,6 +3218,86 @@ function meanBlackMoonLilithLongitude(days = 0) {
   const moonAnomaly = 134.9633964 + 477198.8675055 * t + 0.0087414 * t * t + t * t * t / 69699 - Math.pow(t, 4) / 14712000;
   return normalizeDegree(moonMean - moonAnomaly + 180);
 }
+function daysSinceOrbitalEpoch(ms) {
+  return (Number(ms) - Date.UTC(1999, 11, 31, 0, 0)) / 86400000;
+}
+function solveEccentricAnomaly(meanAnomaly = 0, eccentricity = 0) {
+  const m = normalizeDegree(meanAnomaly);
+  let e = m + radToDeg(eccentricity * sinDeg(m) * (1 + eccentricity * cosDeg(m)));
+  for (let step = 0; step < 5; step += 1) {
+    const eRad = degToRad(e);
+    const delta = (e - radToDeg(eccentricity * Math.sin(eRad)) - m) / (1 - eccentricity * Math.cos(eRad));
+    e -= delta;
+    if (Math.abs(delta) < 1e-6) break;
+  }
+  return e;
+}
+function heliocentricPosition(elements) {
+  const eccentricAnomaly = solveEccentricAnomaly(elements.M, elements.e);
+  const xv = elements.a * (cosDeg(eccentricAnomaly) - elements.e);
+  const yv = elements.a * Math.sqrt(1 - elements.e * elements.e) * sinDeg(eccentricAnomaly);
+  const trueAnomaly = radToDeg(Math.atan2(yv, xv));
+  const radius = Math.sqrt(xv * xv + yv * yv);
+  const vw = trueAnomaly + elements.w;
+  return {
+    x:radius * (cosDeg(elements.N) * cosDeg(vw) - sinDeg(elements.N) * sinDeg(vw) * cosDeg(elements.i)),
+    y:radius * (sinDeg(elements.N) * cosDeg(vw) + cosDeg(elements.N) * sinDeg(vw) * cosDeg(elements.i)),
+    z:radius * sinDeg(vw) * sinDeg(elements.i)
+  };
+}
+function plutoHeliocentricPosition(d = 0) {
+  const s = 50.03 + 0.033459652 * d;
+  const p = 238.95 + 0.003968789 * d;
+  const longitude = 238.9508 + 0.00400703 * d
+    - 19.799 * sinDeg(p) + 19.848 * cosDeg(p)
+    + 0.897 * sinDeg(2 * p) - 4.956 * cosDeg(2 * p)
+    + 0.610 * sinDeg(3 * p) + 1.211 * cosDeg(3 * p)
+    - 0.341 * sinDeg(4 * p) - 0.190 * cosDeg(4 * p)
+    + 0.128 * sinDeg(5 * p) - 0.034 * cosDeg(5 * p)
+    - 0.038 * sinDeg(6 * p) + 0.031 * cosDeg(6 * p)
+    + 0.020 * sinDeg(s - p) - 0.010 * cosDeg(s - p);
+  const latitude = -3.9082
+    - 5.453 * sinDeg(p) - 14.975 * cosDeg(p)
+    + 3.527 * sinDeg(2 * p) + 1.673 * cosDeg(2 * p)
+    - 1.051 * sinDeg(3 * p) + 0.328 * cosDeg(3 * p)
+    + 0.179 * sinDeg(4 * p) - 0.292 * cosDeg(4 * p)
+    + 0.019 * sinDeg(5 * p) + 0.100 * cosDeg(5 * p)
+    - 0.031 * sinDeg(6 * p) - 0.026 * cosDeg(6 * p)
+    + 0.011 * cosDeg(s - p);
+  const radius = 40.72
+    + 6.68 * sinDeg(p) + 6.90 * cosDeg(p)
+    - 1.18 * sinDeg(2 * p) - 0.03 * cosDeg(2 * p)
+    + 0.15 * sinDeg(3 * p) - 0.14 * cosDeg(3 * p);
+  return {
+    x:radius * cosDeg(longitude) * cosDeg(latitude),
+    y:radius * sinDeg(longitude) * cosDeg(latitude),
+    z:radius * sinDeg(latitude)
+  };
+}
+function sunGeocentricPosition(d = 0) {
+  const w = 282.9404 + 4.70935e-5 * d;
+  const e = 0.016709 - 1.151e-9 * d;
+  const M = 356.047 + 0.9856002585 * d;
+  const eccentricAnomaly = solveEccentricAnomaly(M, e);
+  const xv = cosDeg(eccentricAnomaly) - e;
+  const yv = Math.sqrt(1 - e * e) * sinDeg(eccentricAnomaly);
+  const trueAnomaly = radToDeg(Math.atan2(yv, xv));
+  const radius = Math.sqrt(xv * xv + yv * yv);
+  return { x:radius * cosDeg(trueAnomaly + w), y:radius * sinDeg(trueAnomaly + w), z:0 };
+}
+function geocentricPlanetLongitude(id = '', dateInfo = null) {
+  const model = ASTRO_ORBITAL_ELEMENTS[id];
+  if ((!model && id !== 'pluto') || !Number.isFinite(dateInfo?.ms)) return null;
+  const d = daysSinceOrbitalEpoch(dateInfo.ms);
+  const sun = sunGeocentricPosition(d);
+  const planet = id === 'pluto' ? plutoHeliocentricPosition(d) : heliocentricPosition(model(d));
+  const degree = normalizeDegree(radToDeg(Math.atan2(planet.y + sun.y, planet.x + sun.x)));
+  const tomorrowD = daysSinceOrbitalEpoch(dateInfo.ms + 86400000);
+  const tomorrowSun = sunGeocentricPosition(tomorrowD);
+  const tomorrowPlanet = id === 'pluto' ? plutoHeliocentricPosition(tomorrowD) : heliocentricPosition(model(tomorrowD));
+  const tomorrowDegree = normalizeDegree(radToDeg(Math.atan2(tomorrowPlanet.y + tomorrowSun.y, tomorrowPlanet.x + tomorrowSun.x)));
+  return { degree, retrograde:signedDegreeDelta(degree, tomorrowDegree) < 0 };
+}
 function sunLongitudeFromDays(days = 0) {
   const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
   const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
@@ -3258,6 +3347,8 @@ function planetPositions(date = '', time = '12:00', place = null) {
     if (planet.id === 'sun') degree = sunLongitude;
     if (planet.id === 'moon') degree = moonLongitude;
     let pointOverride = null;
+    const orbitalPosition = geocentricPlanetLongitude(planet.id, dateInfo);
+    if (orbitalPosition) pointOverride = orbitalPosition;
     if (planet.id === 'chiron') pointOverride = chironLongitudeFromDateInfo(dateInfo, degree);
     if (planet.id === 'lilith') pointOverride = { degree:meanBlackMoonLilithLongitude(days), retrograde:false };
     if (pointOverride) degree = pointOverride.degree;
