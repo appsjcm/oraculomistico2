@@ -3017,8 +3017,19 @@ function getBirthDate() { try { return localStorage.getItem(LS.birthDate) || '';
 function setBirthDate(v) { try { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) localStorage.setItem(LS.birthDate, v); } catch {} }
 function getBirthTime() { try { return localStorage.getItem(LS.birthTime) || ''; } catch { return ''; } }
 function setBirthTime(v) { try { if (/^\d{2}:\d{2}$/.test(v)) localStorage.setItem(LS.birthTime, v); } catch {} }
-function getAstroHouseSystem() { try { return localStorage.getItem(LS.astroHouseSystem) || 'quadrant'; } catch { return 'quadrant'; } }
-function setAstroHouseSystem(v) { try { localStorage.setItem(LS.astroHouseSystem, ['quadrant','whole','equal'].includes(v) ? v : 'quadrant'); } catch {} }
+function getAstroHouseSystem() {
+  try {
+    const system = localStorage.getItem(LS.astroHouseSystem);
+    const migratedKey = 'oraculo.astroHouseSystem.placidusMigrated.v1';
+    if (system === 'quadrant' && localStorage.getItem(migratedKey) !== '1') {
+      localStorage.setItem(LS.astroHouseSystem, 'placidus');
+      localStorage.setItem(migratedKey, '1');
+      return 'placidus';
+    }
+    return ['placidus','quadrant','whole','equal'].includes(system) ? system : 'placidus';
+  } catch { return 'placidus'; }
+}
+function setAstroHouseSystem(v) { try { localStorage.setItem(LS.astroHouseSystem, ['placidus','quadrant','whole','equal'].includes(v) ? v : 'placidus'); } catch {} }
 function getBirthPlace() {
   try {
     const raw = localStorage.getItem(LS.birthPlace);
@@ -3333,7 +3344,8 @@ function astronomyEngine() {
   return typeof window !== 'undefined' && window.Astronomy ? window.Astronomy : null;
 }
 function astroHouseSystemLabel(system = 'whole') {
-  if (system === 'quadrant') return 'Casas por cuadrantes locales';
+  if (system === 'placidus') return 'Placidus';
+  if (system === 'quadrant') return 'Cuadrantes locales aproximados';
   return system === 'equal' ? 'Casas iguales desde el ascendente' : 'Casa entera por signo ascendente';
 }
 function hasAstroCoordinates(place = null) {
@@ -3391,14 +3403,14 @@ function trueObliquityDegree(t = 0) {
   return meanObliquityDegree(t) + (9.20 * cosDeg(omega) + 0.57 * cosDeg(2 * sunMean) + 0.10 * cosDeg(2 * moonMean) - 0.09 * cosDeg(2 * omega)) / 3600;
 }
 function zodiacFromDegree(degree) {
-  const normalized = normalizeDegree(degree);
+  const normalized = normalizeDegree(Math.round(normalizeDegree(degree) * 3600) / 3600);
   const index = Math.floor(normalized / 30) % 12;
   const decimal = normalized % 30;
-  let signDegree = Math.floor(decimal);
-  let minute = Math.round((decimal - signDegree) * 60);
-  if (minute >= 60) { signDegree += 1; minute = 0; }
-  if (signDegree >= 30) { signDegree = 29; minute = 59; }
-  return { ...ASTRO_SIGNS[index], degree:signDegree, minute, degreeLabel:`${signDegree}°${String(minute).padStart(2, '0')}'`, decimalDegree:Number(decimal.toFixed(2)), index, absolute:normalized };
+  const totalSeconds = Math.round(decimal * 3600);
+  const signDegree = Math.floor(totalSeconds / 3600);
+  const minute = Math.floor((totalSeconds % 3600) / 60);
+  const second = totalSeconds % 60;
+  return { ...ASTRO_SIGNS[index], degree:signDegree, minute, second, degreeLabel:`${signDegree}°${String(minute).padStart(2, '0')}'${String(second).padStart(2, '0')}"`, decimalDegree:Number(decimal.toFixed(4)), index, absolute:normalized };
 }
 function astroDaysFromMs(ms) {
   return (Number(ms) - Date.UTC(2000, 0, 1, 12, 0)) / 86400000;
@@ -3713,11 +3725,14 @@ function astronomicalAscendant(date = '', time = '12:00', place = null) {
   const raw = 180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps)));
   return Number.isFinite(raw) ? zodiacFromDegree(normalizeDegree(raw)) : null;
 }
+function eclipticLongitudeFromRightAscension(rightAscension = 0, obliquity = 23.439) {
+  return normalizeDegree(radToDeg(Math.atan2(sinDeg(rightAscension) / cosDeg(obliquity), cosDeg(rightAscension))));
+}
 function astronomicalMc(date = '', time = '12:00', place = null) {
   if (!hasAstroCoordinates(place)) return null;
   const lst = localSiderealDegree(date, time, place);
   const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
-  return zodiacFromDegree(normalizeDegree(radToDeg(Math.atan2(sinDeg(lst) * cosDeg(eps), cosDeg(lst)))));
+  return zodiacFromDegree(eclipticLongitudeFromRightAscension(lst, eps));
 }
 function directedArc(start = 0, end = 0) {
   return normalizeDegree(Number(end) - Number(start));
@@ -3725,8 +3740,61 @@ function directedArc(start = 0, end = 0) {
 function quadrantCusp(start = 0, end = 0, step = 0) {
   return normalizeDegree(Number(start) + directedArc(start, end) * step / 3);
 }
-function calculateAstroHouses(asc, mc, houseSystem = 'quadrant') {
+function solvePlacidusRightAscension(ramc = 0, latitude = 0, obliquity = 23.439, house = 11) {
+  const config = {
+    11:{ start:30, factor:3, upper:true },
+    12:{ start:60, factor:1.5, upper:true },
+    2:{ start:120, factor:1.5, upper:false },
+    3:{ start:150, factor:3, upper:false }
+  }[house];
+  if (!config) return null;
+  let ra = normalizeDegree(ramc + config.start);
+  for (let step = 0; step < 30; step += 1) {
+    const argument = (config.upper ? -1 : 1) * sinDeg(ra) * tanDeg(obliquity) * tanDeg(latitude);
+    const arc = radToDeg(Math.acos(Math.max(-1, Math.min(1, argument))));
+    const next = normalizeDegree(config.upper ? ramc + arc / config.factor : ramc + 180 - arc / config.factor);
+    if (Math.abs(signedDegreeDelta(ra, next)) < 0.000001) return next;
+    ra = next;
+  }
+  return ra;
+}
+function calculatePlacidusHouses(asc, mc, date = '', time = '12:00', place = null) {
+  if (!asc || !mc || !hasAstroCoordinates(place)) return null;
+  const dateInfo = astroDayCount(date, time, place);
+  if (!dateInfo) return null;
+  const lat = Math.max(-66, Math.min(66, Number(place.lat)));
+  const eps = trueObliquityDegree(dateInfo.t);
+  const ramc = localSiderealDegree(date, time, place);
+  const cusp = house => {
+    const ra = solvePlacidusRightAscension(ramc, lat, eps, house);
+    return Number.isFinite(ra) ? eclipticLongitudeFromRightAscension(ra, eps) : null;
+  };
+  const h2 = cusp(2);
+  const h3 = cusp(3);
+  const h11 = cusp(11);
+  const h12 = cusp(12);
+  if (![h2, h3, h11, h12].every(Number.isFinite)) return null;
+  return [
+    asc.absolute,
+    h2,
+    h3,
+    normalizeDegree(mc.absolute + 180),
+    normalizeDegree(h11 + 180),
+    normalizeDegree(h12 + 180),
+    normalizeDegree(asc.absolute + 180),
+    normalizeDegree(h2 + 180),
+    normalizeDegree(h3 + 180),
+    mc.absolute,
+    h11,
+    h12
+  ].map(normalizeDegree);
+}
+function calculateAstroHouses(asc, mc, houseSystem = 'placidus', date = '', time = '12:00', place = null) {
   if (!asc) return [];
+  if (houseSystem === 'placidus') {
+    const placidus = calculatePlacidusHouses(asc, mc, date, time, place);
+    if (placidus) return placidus;
+  }
   if (houseSystem === 'whole') {
     return ASTRO_HOUSES.map((label, index) => normalizeDegree(asc.index * 30 + index * 30));
   }
@@ -3763,7 +3831,7 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
   const moon = planets.find(p => p.id === 'moon');
   const mc = astronomicalMc(date, time, place) || zodiacFromDegree(normalizeDegree(asc.absolute + 90));
   const houseSystem = options.houseSystem || getAstroHouseSystem();
-  const houseCusps = calculateAstroHouses(asc, mc, houseSystem);
+  const houseCusps = calculateAstroHouses(asc, mc, houseSystem, date, time, place);
   const houses = ASTRO_HOUSES.map((label, index) => {
     const cusp = houseCusps[index] ?? normalizeDegree(asc.absolute + index * 30);
     const sign = zodiacFromDegree(cusp);
@@ -3777,7 +3845,9 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
     if (aspect && aspect.delta <= aspect.orb) aspects.push({ a:a.name, b:b.name, name:aspect.name, symbol:aspect.symbol, code:aspect.code, angle:aspect.angle, orb:aspect.delta.toFixed(1), text:aspect.text });
   }));
   const timeZoneOffset = timeZoneOffsetMinutes(place?.timezone || '', new Date(astroDateUTC(date, time, place?.timezone || '') || Date.now()));
-  const quality = preciseAngles ? 'Lugar, zona horaria, ascendente y casas calculados con coordenadas locales' : 'Lugar manual: ascendente y casas aproximados; selecciona una ciudad de la lista para afinar';
+  const quality = preciseAngles
+    ? `Lugar, zona horaria, planetas, ascendente, Medio Cielo y casas ${astroHouseSystemLabel(houseSystem)} calculados con coordenadas locales`
+    : 'Lugar manual: ascendente y casas aproximados; selecciona una ciudad de la lista para afinar';
   aspects.sort((a, b) => Number(a.orb) - Number(b.orb));
   return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 12), houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset, preciseAngles };
 }
@@ -3901,13 +3971,14 @@ function astroWheelHTML(chart) {
   const houses = chart.houses.map(house => `<span class="astro-house-line" style="--angle:${astroWheelAngle(chart, house.cusp)}deg" aria-hidden="true"></span><span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
   const planets = chart.planets.map((planet, index) => {
     const radius = [-.305, -.255, -.215][index % 3];
-    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}" aria-label="${escapeHTML(`${planet.name} en ${planet.sign}${planet.retrograde ? ' retrógrado simbólico' : ''}`)}">${planet.symbol}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
+    const planetLabel = `${planet.name} en ${planet.sign} ${planet.degreeLabel || ''}${planet.retrograde ? ' retrógrado' : ''}`.trim();
+    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${planet.symbol}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
   }).join('');
   const caption = `${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`;
   return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
-  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}</small></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;
 }
 function astroHousesHTML(chart) {
   return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${escapeHTML(house.degreeLabel || `${house.degree}°`)}</small></span></article>`).join('')}</div>`;
@@ -3954,7 +4025,7 @@ ${aspects}
 Casas:
 ${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degreeLabel || `${h.degree}°`} ${h.symbol} ${h.sign}`).join('\n')}
 
-Nota: lectura simbólica local con motor abierto propio. Con ciudad seleccionada usa zona horaria, coordenadas, ascendente, Medio Cielo y casas por cuadrantes; no sustituye un cálculo astrológico profesional con efemérides completas.`;
+Nota: lectura simbólica local con motor abierto propio. Con ciudad seleccionada usa zona horaria histórica del navegador, coordenadas, ascendente, Medio Cielo y el sistema de casas elegido; no sustituye un cálculo astrológico profesional con efemérides completas.`;
 }
 function astroReadingItems(chart) {
   return chart.planets.map(p => ({ kind:'astro', name:`${p.name} en ${p.sign}`, subtitle:p.role, image:'', symbol:p.symbol, position:p.element }));
@@ -3997,11 +4068,11 @@ Nota: esta revolución solar usa el motor abierto del Oráculo, coordenadas loca
 function solarReturnBridgeHTML(natalChart, solarReturn) {
   const chart = solarReturn.chart;
   const items = [
-    ['Sol natal', `${natalChart.sun.symbol} ${natalChart.sun.name}`, 'Punto de partida'],
-    ['Asc natal', `${natalChart.asc.symbol} ${natalChart.asc.name}`, 'Puerta habitual'],
-    ['Asc anual', `${chart.asc.symbol} ${chart.asc.name}`, 'Puerta del año'],
-    ['Luna anual', `${chart.moon.signSymbol} ${chart.moon.sign}`, 'Clima emocional'],
-    ['MC anual', `${chart.mc.symbol} ${chart.mc.name}`, 'Zona visible'],
+    ['Sol natal', `${natalChart.sun.symbol} ${natalChart.sun.name} ${natalChart.sun.degreeLabel || ''}`, 'Punto de partida'],
+    ['Asc natal', `${natalChart.asc.symbol} ${natalChart.asc.name} ${natalChart.asc.degreeLabel || ''}`, 'Puerta habitual'],
+    ['Asc anual', `${chart.asc.symbol} ${chart.asc.name} ${chart.asc.degreeLabel || ''}`, 'Puerta del año'],
+    ['Luna anual', `${chart.moon.signSymbol} ${chart.moon.sign} ${chart.moon.degreeLabel || ''}`, 'Clima emocional'],
+    ['MC anual', `${chart.mc.symbol} ${chart.mc.name} ${chart.mc.degreeLabel || ''}`, 'Zona visible'],
     ['Retorno', solarReturn.localLabel, `Diferencia solar ${solarReturn.sunDelta.toFixed(3)}°`]
   ];
   return `<div class="astro-return-bridge">${items.map(([label, value, detail]) => `<article><small>${escapeHTML(label)}</small><strong>${escapeHTML(value)}</strong><span>${escapeHTML(detail)}</span></article>`).join('')}</div>`;
@@ -4011,7 +4082,7 @@ function renderSolarReturnReading(natalChart, solarReturn, text, title) {
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${solarReturn.year} · ${solarReturn.localLabel}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stRevolucionSolar'))}</h3><p><strong>${escapeHTML(t('stRetorno'))}</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p>${astroEngineNoticeHTML(chart)}</div>
+      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stRevolucionSolar'))}</h3><p><strong>${escapeHTML(t('stRetorno'))}</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)} ${escapeHTML(chart.sun.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)} ${escapeHTML(chart.moon.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)} ${escapeHTML(chart.asc.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)} ${escapeHTML(chart.mc.degreeLabel || '')}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
     <h3 class="section-title">${escapeHTML(t('stNatalYAno'))}</h3>
     ${solarReturnBridgeHTML(natalChart, solarReturn)}
@@ -4044,7 +4115,7 @@ function showAstros() {
       <div class="field"><label>${escapeHTML(t('nuBirth'))}</label><input id="astroDate" class="input" type="date" value="${d}"></div>
       <div class="field"><label>${escapeHTML(t('nuBirthTime'))}</label><input id="astroTime" class="input" type="time" value="${tm}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
       <div class="field astro-place-field"><label>${escapeHTML(t('asPlace'))}</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="${escapeHTML(t('asPlacePh'))}" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">${escapeHTML(t('asPlaceHelp'))}</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
-      <div class="field"><label>${escapeHTML(t('asHouses'))}</label><select id="astroHouseSystem" class="input"><option value="quadrant" ${houseSystem === 'quadrant' ? 'selected' : ''}>${escapeHTML(t('asHousesQuadrant'))}</option><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>${escapeHTML(t('asHousesEqual'))}</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>${escapeHTML(t('asHousesWhole'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('asHouses'))}</label><select id="astroHouseSystem" class="input"><option value="placidus" ${houseSystem === 'placidus' ? 'selected' : ''}>${escapeHTML(t('asHousesPlacidus'))}</option><option value="quadrant" ${houseSystem === 'quadrant' ? 'selected' : ''}>${escapeHTML(t('asHousesQuadrant'))}</option><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>${escapeHTML(t('asHousesEqual'))}</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>${escapeHTML(t('asHousesWhole'))}</option></select></div>
       <div class="field"><label>${escapeHTML(t('asIntent'))}</label>${inputWithMic('astroIntention', `placeholder="${escapeHTML(t('asIntentPh'))}"`)}</div>
       <div class="field"><label>${escapeHTML(t('asSolarYear'))}</label><input id="astroSolarYear" class="input" type="number" min="1900" max="2100" step="1" value="${new Date().getFullYear()}"></div>
     </div>
@@ -4079,7 +4150,7 @@ function renderAstroReading(chart, text, title) {
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stTriadaNatal'))}</h3><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p><p><strong>${escapeHTML(t('stLugar'))}</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p>${astroEngineNoticeHTML(chart)}</div>
+      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stTriadaNatal'))}</h3><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)} ${escapeHTML(chart.sun.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)} ${escapeHTML(chart.moon.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)} ${escapeHTML(chart.asc.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)} ${escapeHTML(chart.mc.degreeLabel || '')}</p><p><strong>${escapeHTML(t('stLugar'))}</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
     <h3 class="section-title">${escapeHTML(t('stPosiciones'))}</h3>
     ${astroPositionsHTML(chart)}
