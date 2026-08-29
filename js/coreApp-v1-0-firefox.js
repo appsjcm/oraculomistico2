@@ -177,17 +177,17 @@ function setAIReadingPanel(html, tone = '') {
   panel.innerHTML = html;
 }
 function saveReading(reading = lastReading) {
-  if (!reading) return toast('No hay lectura para guardar.');
-  if (isPrivateMode()) return toast('Modo privado activo: no se ha guardado la lectura.');
+  if (!reading) return toast(t('tsNoReading'));
+  if (isPrivateMode()) return toast(t('tsPrivateSkip'));
   const diary = storeGet(LS.diary, []);
   diary.unshift({ ...reading, id: crypto.randomUUID?.() || String(Date.now()), date: reading.date || new Date().toISOString(), favorite: !!reading.favorite, note: reading.note || '' });
   storeSet(LS.diary, diary.slice(0, 300));
   unlockAchievement('first_save');
-  toast('Guardado en Biblioteca Mística.');
+  toast(t('tsSavedLibrary'));
 }
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); toast('Copiado.'); }
-  catch { toast('No se pudo copiar.'); }
+  try { await navigator.clipboard.writeText(text); toast(t('tsCopied')); }
+  catch { toast(t('tsCopyFail')); }
 }
 async function shareText(text, title = 'Oráculo Místico') {
   if (navigator.share) {
@@ -551,7 +551,7 @@ async function exportPDF(title, text, reading = lastReading) {
   try {
     const jsPDF = window.jspdf?.jsPDF;
     if (!jsPDF) throw new Error('jsPDF no cargado');
-    toast('Preparando PDF profesional...');
+    toast(t('tsMakingPdf'));
     const style = getPdfStyle();
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
@@ -851,7 +851,7 @@ async function exportPDF(title, text, reading = lastReading) {
     downloadTextFile(`${filename}.txt`, `${title}
 
 ${text}`);
-    toast('PDF no disponible. Exporté TXT.');
+    toast(t('tsPdfToTxt'));
   }
 }
 
@@ -864,9 +864,9 @@ async function connectPuter() {
       title: isIOSApp ? 'IA en iPhone' : 'IA en Android',
       subtitle: `Google no permite iniciar sesión dentro del visor interno de la app ${isIOSApp ? 'iPhone' : 'Android'}.`,
       body: `<div class="result-card">
-        <h3>Conexión segura</h3>
-        <p>Abre la versión web en el navegador del teléfono para conectar Puter IA. La app seguirá funcionando con lecturas simbólicas, voz TTS del sistema, avatar, PDFs y biblioteca local.</p>
-        <p class="notice">La sesión web y los datos locales de la app permanecen separados.</p>
+        <h3>${escapeHTML(t('stConexionSegura'))}</h3>
+        <p>${escapeHTML(t('stAbreLaVersionWebEnEl'))}</p>
+        <p class="notice">${escapeHTML(t('stLaSesionWebYLosDatos'))}</p>
       </div>`,
       actions: `<button class="btn primary" data-act="open-web-ai" type="button">Abrir versión web</button>
         <button class="btn" data-close-modal type="button">Ahora no</button>`
@@ -874,22 +874,22 @@ async function connectPuter() {
     return false;
   }
   try {
-    if (!window.puter?.auth) { toast('Puter todavía no está cargado.'); return false; }
+    if (!window.puter?.auth) { toast(t('tsPuterLoading')); return false; }
     await window.puter.auth.signIn();
     localStorage.setItem(LS.puter, 'true');
     updateHome();
-    toast('IA conectada.');
+    toast(t('tsAiOn'));
     return true;
   } catch {
     localStorage.setItem(LS.puter, 'false');
     updateHome();
-    toast('No se pudo conectar Puter. Puedes usar el modo simbólico.');
+    toast(t('tsPuterFail'));
     return false;
   }
 }
 async function askAI(prompt, options = {}) {
   if (localStorage.getItem(LS.puter) !== 'true') {
-    toast('Conecta Puter IA para profundizar esta lectura.');
+    toast(t('tsConnectAi'));
     return '';
   }
   try {
@@ -899,7 +899,7 @@ async function askAI(prompt, options = {}) {
     if (typeof result === 'string') return cleanInterpretation(result);
     return cleanInterpretation(result?.message?.content || result?.text || String(result || ''));
   } catch (err) {
-    toast('La IA falló. Se mantiene la lectura simbólica.');
+    toast(t('tsAiFailed'));
     return '';
   }
 }
@@ -1042,7 +1042,7 @@ function getVoiceLanguageOptionsHTML(selected = 'auto', filter = getVoicePrefs()
     return a.localeCompare(b, 'es');
   });
   return [`<option value="auto" ${!selected || selected === 'auto' ? 'selected' : ''}>Automático · ${escapeHTML(automaticLocale)} (país del dispositivo)</option>`,
-    `<option value="all" ${selected === 'all' ? 'selected' : ''}>Todos los idiomas visibles</option>`]
+    `<option value="all" ${selected === 'all' ? 'selected' : ''}>${escapeHTML(t('stTodosLosIdiomasVisibles'))}</option>`]
     .concat(locales.map(locale => `<option value="${escapeHTML(locale)}" ${normalizeVoiceLocale(selected) === locale ? 'selected' : ''}>${escapeHTML(locale)}</option>`))
     .join('');
 }
@@ -1126,12 +1126,12 @@ function showVoiceLibrary(statusMessage = '') {
   const platform = getVoicePlatform();
   const inventory = voiceInventory();
   const iosSteps = `
-    <div class="result-card"><h3>iPhone o iPad</h3>
+    <div class="result-card"><h3>${escapeHTML(t('stIphoneOIpad'))}</h3>
       <p>1. Abre Ajustes → Accesibilidad → Leer y hablar.<br>
       2. Entra en Voces → Español.<br>
       3. Elige el dialecto y descarga una voz mejorada o premium si aparece.<br>
       4. Vuelve a Oráculo Místico y pulsa “Volver a detectar”.</p>
-      <p class="subtle">iOS puede mantener el mismo nombre aunque use la versión mejorada descargada. Safari decide qué voces expone a las páginas web.</p>
+      <p class="subtle">${escapeHTML(t('stIosPuedeMantenerElMismoNombre'))}</p>
       <p><a href="https://support.apple.com/guide/iphone/hear-whats-on-the-screen-or-typed-iph96b214f0/ios" target="_blank" rel="noopener">Guía oficial de Apple</a></p>
     </div>`;
   const androidSteps = `
@@ -1145,10 +1145,10 @@ function showVoiceLibrary(statusMessage = '') {
     </div>`;
   openModal({ icon:'🎙️', title:'Mejorar voces', subtitle:`${inventory.spanish.length} voces españolas detectadas.`, body:`
     <div class="status-grid">
-      <div class="status-card"><strong>Voces totales</strong><span>${inventory.all.length}</span></div>
-      <div class="status-card"><strong>Españolas</strong><span>${inventory.spanish.length}</span></div>
-      <div class="status-card"><strong>Locales visibles</strong><span>${inventory.local.length}</span></div>
-      <div class="status-card"><strong>Dispositivo</strong><span>${platform==='ios'?'iPhone/iPad':platform==='android'?'Android':'Otro'}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stVocesTotales'))}</strong><span>${inventory.all.length}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stEspanolas'))}</strong><span>${inventory.spanish.length}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stLocalesVisibles'))}</strong><span>${inventory.local.length}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stDispositivo'))}</strong><span>${platform==='ios'?'iPhone/iPad':platform==='android'?'Android':'Otro'}</span></div>
     </div>
     <p class="notice mt">${statusMessage ? `${escapeHTML(statusMessage)}<br>` : ''}${window.AndroidTTS ? 'Versión Android nativa: el catálogo procede directamente del motor TTS del teléfono.' : 'La app muestra todo el catálogo que este navegador permite consultar. Firefox, Chrome y Safari pueden mostrar listas diferentes aunque estén instaladas las mismas voces.'}</p>
     ${platform === 'ios' ? iosSteps : platform === 'android' ? androidSteps : iosSteps + androidSteps}
@@ -1303,7 +1303,7 @@ function buildOracleReadingVisualsHTML(visuals = []) {
     const visual = visuals[0];
     return `<div class="oracle-reading-special oracle-dream-special">
       <span class="oracle-special-symbol">${escapeHTML(visual.symbol)}</span>
-      <div><small>Predomina</small><strong>${escapeHTML(visual.name)}</strong><p>${escapeHTML(clampText(visual.subtitle, 105))}</p></div>
+      <div><small>${escapeHTML(t('stPredomina'))}</small><strong>${escapeHTML(visual.name)}</strong><p>${escapeHTML(clampText(visual.subtitle, 105))}</p></div>
     </div>`;
   }
   if (visuals[0].kind === 'number') {
@@ -1560,7 +1560,7 @@ function resumeInterruptedSpeech() {
   if (!remaining) return resetActiveSpeech();
   activeSpeech.interrupted = false;
   speakWithDevice(remaining, { resume: true, fullText: activeSpeech.text, offset: start });
-  toast('Lectura reanudada al volver a la app.');
+  toast(t('tsResumed'));
 }
 function handleSpeechVisibility() {
   if (document.hidden) {
@@ -1663,20 +1663,20 @@ window.onNativeTTSError = message => {
 };
 async function speakText(text) {
   const clean = cleanSpeechText(text);
-  if (!clean) return toast('No hay interpretación IA para leer.');
+  if (!clean) return toast(t('tsNoAiText'));
   stopSpeech();
   const prefs = getVoicePrefs();
   const usePuter = prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true');
   if (usePuter) {
     const remoteOk = await speakWithPuter(clean);
     if (remoteOk) return;
-    toast('La voz IA no está disponible. Uso la voz del dispositivo.');
+    toast(t('tsAiVoiceOff'));
   }
   const ok = speakWithDevice(clean);
-  if (!ok) return toast('La voz no está disponible en este navegador.');
+  if (!ok) return toast(t('tsVoiceOff'));
   const inventory = voiceInventory();
-  if (!hasSpanishDeviceVoice() && inventory.all.length) toast('No detecto una voz española visible. Revisa el idioma TTS del dispositivo.');
-  else if (getVoicePlatform() === 'android' && !inventory.all.length) toast('Usando Google TTS automático de Android.');
+  if (!hasSpanishDeviceVoice() && inventory.all.length) toast(t('tsNoEsVoice'));
+  else if (getVoicePlatform() === 'android' && !inventory.all.length) toast(t('tsGoogleTts'));
 }
 function generatedSpeechKey(clean, prefs = getVoicePrefs()) {
   return `${prefs.remoteVoice || 'coral'}|${clean}`;
@@ -1743,10 +1743,10 @@ async function speakWithPuter(clean) {
 }
 async function downloadReadingMP3() {
   const clean = cleanSpeechText(getReadingText());
-  if (!clean) return toast('Primero crea una lectura.');
+  if (!clean) return toast(t('tsNeedReading'));
   if (localStorage.getItem(LS.puter) !== 'true' && !(await connectPuter())) return;
   try {
-    toast('Generando el audio MP3...');
+    toast(t('tsMakingMp3'));
     const audio = await generatePuterSpeech(clean);
     if (!audio?.src) throw new Error('El servicio no devolvió un archivo descargable');
     const response = await fetch(audio.src);
@@ -1758,10 +1758,10 @@ async function downloadReadingMP3() {
     a.download = `${safeFileName(lastReading?.title || 'lectura-oraculo')}.mp3`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('MP3 preparado.');
+    toast(t('tsMp3Ready'));
   } catch (error) {
     pushErrorLog('download-tts-mp3', error?.message || error, lastReading?.title || '');
-    toast('No se pudo descargar el MP3. Puedes escucharlo desde la app.');
+    toast(t('tsMp3Fail'));
   }
 }
 function stopSpeech() {
@@ -1786,26 +1786,26 @@ function speechRecognitionSupport() {
 }
 function startDictation(targetId) {
   const target = document.getElementById(targetId);
-  if (!target) return toast('No encuentro el campo de texto.');
+  if (!target) return toast(t('tsNoField'));
   const Recognition = speechRecognitionSupport();
-  if (!Recognition) return toast('El micrófono no está disponible en este navegador. Prueba Chrome o revisa permisos.');
+  if (!Recognition) return toast(t('tsMicNoBrowser'));
   try {
     const recognition = new Recognition();
     recognition.lang = getAppLocale();
     recognition.interimResults = true;
     recognition.continuous = false;
     const original = target.value || '';
-    toast('Escuchando… habla ahora.');
+    toast(t('tsListening'));
     recognition.onresult = event => {
       const transcript = Array.from(event.results).map(r => r[0]?.transcript || '').join('\n\n').trim();
       target.value = `${original}${original && transcript ? ' ' : ''}${transcript}`.trim();
       target.dispatchEvent(new Event('input', { bubbles: true }));
     };
-    recognition.onerror = () => toast('No se pudo usar el micrófono. Revisa permisos.');
+    recognition.onerror = () => toast(t('tsMicFail'));
     recognition.onend = () => target.focus();
     recognition.start();
   } catch {
-    toast('El micrófono no se pudo iniciar en este dispositivo.');
+    toast(t('tsMicNoStart'));
   }
 }
 function inputWithMic(id, attrs = '') {
@@ -1828,7 +1828,7 @@ function updateHome() {
     const clave = conectada ? 'aiConnected' : 'aiSymbolic';
     chipIA.innerHTML = `🤖 <span data-i18n="${clave}">${escapeHTML(t(clave))}</span>`;
   }
-  const intention = localStorage.getItem(LS.intention) || getProfile().intention || 'libre';
+  const intention = intencionVisible(localStorage.getItem(LS.intention) || getProfile().intention || 'libre');
   /* La intencion la escribe la persona: se muestra tal cual. Lo que
      se traduce es la etiqueta y el aviso de modo privado. */
   $('#intentionChip').textContent = `🧭 ${t('pmIntentionSet', { v: intention })}${isPrivateMode() ? ' · ' + t('pmPrivateTag') : ''}`;
@@ -1865,11 +1865,11 @@ function showGuide(force = false) {
 function showFirstReading() {
   openModal({ icon: '✨', title: 'Primeras tiradas', subtitle: 'Elige una entrada sencilla.', body: `
     <div class="panel-grid">
-      <button class="choice" data-act="tarot-one"><strong>🃏 Carta rápida</strong><small>Una carta para orientar tu pregunta.</small></button>
-      <button class="choice" data-act="rune-one"><strong>ᚱ Runa rápida</strong><small>Un símbolo breve para empezar.</small></button>
-      <button class="choice" data-act="tarot-three"><strong>🃏 Tirada 3 cartas</strong><small>Pasado, presente y consejo.</small></button>
-      <button class="choice" data-module="astros"><strong>☉ Astros</strong><small>Carta astral y tirada astral del día.</small></button>
-      <button class="choice" data-module="numerologia"><strong>🔢 Numerología</strong><small>Perfil completo y sinastría entre dos personas.</small></button>
+      <button class="choice" data-act="tarot-one"><strong>${escapeHTML(t('stCartaRapida2'))}</strong><small>${escapeHTML(t('stUnaCartaParaOrientarTuPregunta'))}</small></button>
+      <button class="choice" data-act="rune-one"><strong>${escapeHTML(t('stRunaRapida'))}</strong><small>${escapeHTML(t('stUnSimboloBreveParaEmpezar'))}</small></button>
+      <button class="choice" data-act="tarot-three"><strong>${escapeHTML(t('stTirada3Cartas'))}</strong><small>${escapeHTML(t('stPasadoPresenteYConsejo'))}</small></button>
+      <button class="choice" data-module="astros"><strong>${escapeHTML(t('stAstros'))}</strong><small>${escapeHTML(t('stCartaAstralYTiradaAstralDel'))}</small></button>
+      <button class="choice" data-module="numerologia"><strong>${escapeHTML(t('stNumerologia'))}</strong><small>${escapeHTML(t('stPerfilCompletoYSinastriaEntreDos'))}</small></button>
     </div>` });
 }
 
@@ -1878,7 +1878,7 @@ function showMap() {
     ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
-  openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Todos los apartados en un solo lugar.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>Abrir este apartado.</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Todos los apartados en un solo lugar.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
 }
 
 const TAROT_SPREADS = {
@@ -2019,13 +2019,13 @@ function showBackupPreview(data) {
 }
 function openDiaryItem(id) {
   const item = storeGet(LS.diary, []).find(entry => entry.id === id);
-  if (!item) return toast('No se encontró la lectura.');
+  if (!item) return toast(t('tsReadingLost'));
   lastReading = { ...item };
   openModal({ icon:'📚', title:item.title || 'Lectura guardada', subtitle:item.type || 'Biblioteca', body:`<div class="result-card"><p>${escapeHTML(item.text || '').replace(/\n/g,'<br>')}</p>${readingActions(item.text || '', item.type || 'Lectura')}</div>` });
 }
 
 function showControlCenter() {
-  openModal({ icon:'🧭', title:'Centro de control', subtitle:getAppVersionLabel(), body:`<div class="status-grid"><div class="status-card"><strong>Lecturas</strong><span>${storeGet(LS.diary, []).length}</span></div><div class="status-card"><strong>Modo privado</strong><span>${isPrivateMode()?'Activo':'Inactivo'}</span></div><div class="status-card"><strong>IA</strong><span>${localStorage.getItem(LS.puter)==='true'?'Conectada':'Simbólica'}</span></div><div class="status-card"><strong>Instalación</strong><span>${'serviceWorker' in navigator?'Disponible':'Solo navegador'}</span></div></div><div class="panel-grid mt"><button class="choice" data-act="global-search"><strong>🔎 Buscar</strong></button><button class="choice" data-act="privacy-center"><strong>🔒 Privacidad</strong></button><button class="choice" data-act="backup-data"><strong>🧳 Backup</strong></button><button class="choice" data-act="install-help"><strong>📲 Instalar</strong></button></div>` });
+  openModal({ icon:'🧭', title:'Centro de control', subtitle:getAppVersionLabel(), body:`<div class="status-grid"><div class="status-card"><strong>${escapeHTML(t('stLecturas'))}</strong><span>${storeGet(LS.diary, []).length}</span></div><div class="status-card"><strong>${escapeHTML(t('stModoPrivado'))}</strong><span>${isPrivateMode()?'Activo':'Inactivo'}</span></div><div class="status-card"><strong>IA</strong><span>${localStorage.getItem(LS.puter)==='true'?'Conectada':'Simbólica'}</span></div><div class="status-card"><strong>${escapeHTML(t('stInstalacion'))}</strong><span>${'serviceWorker' in navigator?'Disponible':'Solo navegador'}</span></div></div><div class="panel-grid mt"><button class="choice" data-act="global-search"><strong>${escapeHTML(t('stBuscar'))}</strong></button><button class="choice" data-act="privacy-center"><strong>${escapeHTML(t('stPrivacidad'))}</strong></button><button class="choice" data-act="backup-data"><strong>${escapeHTML(t('stBackup'))}</strong></button><button class="choice" data-act="install-help"><strong>${escapeHTML(t('stInstalar'))}</strong></button></div>` });
 }
 function appSummary() {
   return {
@@ -2049,17 +2049,17 @@ async function repairCacheAndReload() {
 }
 function showErrorLog() {
   const errors = storeGet(LS.errorLog, []);
-  openModal({ icon:'🧾', title:'Registro de errores', subtitle:`${errors.length} entradas locales.`, body:`<div class="diary-list">${errors.map(error=>`<article class="diary-item"><strong>${escapeHTML(error.source)}</strong><small>${escapeHTML(error.date || '')}</small><p>${escapeHTML(error.message)}</p></article>`).join('') || '<p class="subtle">No hay errores registrados.</p>'}</div><div class="actions mt"><button class="btn" data-act="download-error-log">Descargar</button><button class="btn danger" data-act="clear-error-log">Vaciar</button></div>` });
+  openModal({ icon:'🧾', title:'Registro de errores', subtitle:`${errors.length} entradas locales.`, body:`<div class="diary-list">${errors.map(error=>`<article class="diary-item"><strong>${escapeHTML(error.source)}</strong><small>${escapeHTML(error.date || '')}</small><p>${escapeHTML(error.message)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stNoHayErroresRegistrados'))}</p>`}</div><div class="actions mt"><button class="btn" data-act="download-error-log">Descargar</button><button class="btn danger" data-act="clear-error-log">Vaciar</button></div>` });
 }
 function clearErrorLog() { storeSet(LS.errorLog, []); showErrorLog(); }
 function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stringify(storeGet(LS.errorLog, []), null, 2)); }
 
 function showPdfOptions() {
-  if (!lastReading) return toast('Primero crea una lectura.');
+  if (!lastReading) return toast(t('tsNeedReading'));
   const combined = isNumerologyReading()
-    ? '<button class="choice" data-act="numerology-grabovoi-pdf"><strong>Numerología + Grabovoi</strong><small>Elegir varias secuencias y crear un PDF conjunto.</small></button>'
+    ? `<button class="choice" data-act="numerology-grabovoi-pdf"><strong>${escapeHTML(t('stNumerologiaGrabovoi'))}</strong><small>${escapeHTML(t('stElegirVariasSecuenciasYCrearUn'))}</small></button>`
     : '';
-  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Premium místico</strong></button><button class="choice" data-act="pdf-style-light"><strong>Claro elegante</strong></button><button class="choice" data-act="pdf-style-summary"><strong>Resumen</strong></button>${combined}</div>` });
+  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>${escapeHTML(t('stPremiumMistico'))}</strong></button><button class="choice" data-act="pdf-style-light"><strong>${escapeHTML(t('stClaroElegante'))}</strong></button><button class="choice" data-act="pdf-style-summary"><strong>${escapeHTML(t('stResumen'))}</strong></button>${combined}</div>` });
 }
 function exportDiaryPDF() {
   const diary = storeGet(LS.diary, []);
@@ -2067,10 +2067,10 @@ function exportDiaryPDF() {
   exportPDF('Biblioteca Mística', text || 'Sin lecturas guardadas.', null);
 }
 function showPublicLaunch() {
-  openModal({ icon:'📣', title:'Publicación', subtitle:'Recursos para presentar la app.', body:`<div class="result-card"><h3>Texto breve</h3><p>Oráculo Místico reúne tarot, runas, luna, sueños, numerología y diario en una PWA simbólica.</p></div><div class="actions mt"><button class="btn" data-act="copy-short-public-text">Copiar texto breve</button><button class="btn" data-act="share-app">Compartir app</button><button class="btn" data-act="public-package">Paquete público</button></div>` });
+  openModal({ icon:'📣', title:'Publicación', subtitle:'Recursos para presentar la app.', body:`<div class="result-card"><h3>${escapeHTML(t('stTextoBreve'))}</h3><p>${escapeHTML(t('stOraculoMisticoReuneTarotRunasLuna'))}</p></div><div class="actions mt"><button class="btn" data-act="copy-short-public-text">Copiar texto breve</button><button class="btn" data-act="share-app">Compartir app</button><button class="btn" data-act="public-package">Paquete público</button></div>` });
 }
 function showPublicPackage() {
-  openModal({ icon:'📦', title:'Paquete público', subtitle:'Elementos mínimos para publicar.', body:`<div class="result-card"><p>Incluye la app completa, manual, política de privacidad y notas de versión. Completa los datos legales antes de difundirla.</p></div><div class="actions"><button class="btn" data-act="download-readme">Descargar README</button><button class="btn" data-act="copy-public-text">Copiar presentación</button></div>` });
+  openModal({ icon:'📦', title:'Paquete público', subtitle:'Elementos mínimos para publicar.', body:`<div class="result-card"><p>${escapeHTML(t('stIncluyeLaAppCompletaManualPolitica'))}</p></div><div class="actions"><button class="btn" data-act="download-readme">Descargar README</button><button class="btn" data-act="copy-public-text">Copiar presentación</button></div>` });
 }
 function publicText(short = false) {
   return short ? 'Descubre Oráculo Místico: tarot, runas, luna, sueños y diario en una PWA simbólica.'
@@ -2084,22 +2084,22 @@ function showShareVisual() { openModal({ icon:'🖼️', title:'Tarjeta para com
 function downloadShareCard() { downloadTextFile('tarjeta-oraculo.txt', getReadingText() || publicText(true)); }
 
 function showInstallHelp() {
-  openModal({ icon:'📲', title:'Instalar la app', subtitle:'Añádela a tu pantalla de inicio.', body:`<div class="result-card"><h3>Chrome y Edge</h3><p>Usa el botón Instalar de la barra de direcciones.</p><h3>Safari en iPhone o iPad</h3><p>Compartir → Añadir a pantalla de inicio.</p><h3>Firefox</h3><p>La instalación depende del sistema; también puedes guardar un acceso directo.</p></div><div class="actions"><button class="btn primary" data-act="try-install-pwa">Intentar instalar</button></div>` });
+  openModal({ icon:'📲', title:'Instalar la app', subtitle:'Añádela a tu pantalla de inicio.', body:`<div class="result-card"><h3>${escapeHTML(t('stChromeYEdge'))}</h3><p>${escapeHTML(t('stUsaElBotonInstalarDeLa'))}</p><h3>${escapeHTML(t('stSafariEnIphoneOIpad'))}</h3><p>${escapeHTML(t('stCompartirAnadirAPantallaDeInicio'))}</p><h3>${escapeHTML(t('stFirefox'))}</h3><p>${escapeHTML(t('stLaInstalacionDependeDelSistemaTambien'))}</p></div><div class="actions"><button class="btn primary" data-act="try-install-pwa">Intentar instalar</button></div>` });
 }
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; });
 async function tryInstallPWA() {
-  if (!deferredInstallPrompt) return toast('Usa la opción Instalar del navegador.');
+  if (!deferredInstallPrompt) return toast(t('tsUseInstall'));
   deferredInstallPrompt.prompt();
   try { await deferredInstallPrompt.userChoice; } catch {}
   deferredInstallPrompt = null;
 }
 function showAppTutorial() {
-  openModal({ icon:'🎓', title:'Tutorial', subtitle:'Empieza en menos de un minuto.', body:`<div class="panel-grid"><div class="result-card"><h3>1. Elige un módulo</h3><p>Prueba Tarot, Runas o el mensaje diario.</p></div><div class="result-card"><h3>2. Guarda</h3><p>Conserva tus lecturas en la Biblioteca local.</p></div><div class="result-card"><h3>3. Personaliza</h3><p>Ajusta voz, tema y privacidad.</p></div><div class="result-card"><h3>4. IA opcional</h3><p>Conecta Puter solo si quieres ampliar una lectura.</p></div></div>` });
+  openModal({ icon:'🎓', title:'Tutorial', subtitle:'Empieza en menos de un minuto.', body:`<div class="panel-grid"><div class="result-card"><h3>${escapeHTML(t('st1EligeUnModulo'))}</h3><p>${escapeHTML(t('stPruebaTarotRunasOElMensaje'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st2Guarda'))}</h3><p>${escapeHTML(t('stConservaTusLecturasEnLaBiblioteca'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st3Personaliza'))}</h3><p>${escapeHTML(t('stAjustaVozTemaYPrivacidad'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st4IaOpcional'))}</h3><p>${escapeHTML(t('stConectaPuterSoloSiQuieresAmpliar'))}</p></div></div>` });
 }
 function showSuggestedQuestions() { openModal({ icon:'💡', title:'Preguntas sugeridas', body:`<div class="diary-list">${['¿Qué necesito observar hoy?','¿Qué bloquea mi siguiente paso?','¿Qué energía acompaña mi relación?','¿Qué puedo aprender de este sueño?'].map(q=>`<button class="choice" data-copy-question="${escapeHTML(q)}">${escapeHTML(q)}</button>`).join('')}</div>` }); }
 function showHelpCenter() { showAppTutorial(); }
-function showWhatsNew() { openModal({ icon:'✨', title:'Novedades', subtitle:getAppVersionLabel(), body:'<div class="result-card"><p>Correcciones de Firefox, arranque, migración, estabilidad y centros internos restaurados.</p></div>' }); }
+function showWhatsNew() { openModal({ icon:'✨', title:'Novedades', subtitle:getAppVersionLabel(), body:`<div class="result-card"><p>${escapeHTML(t('stCorreccionesDeFirefoxArranqueMigracionEstabilidad'))}</p></div>` }); }
 function showReportTemplate() { openModal({ icon:'🐞', title:'Informar de un problema', body:`<div class="result-card"><p>Navegador y versión:<br>Dispositivo:<br>Acción realizada:<br>Resultado esperado:<br>Error visible:</p></div><button class="btn" data-act="copy-bug-template">Copiar plantilla</button>` }); }
 function copyBugTemplate() { copyText('Navegador y versión:\\nDispositivo:\\nAcción realizada:\\nResultado esperado:\\nError visible:'); }
 function diagnosticsText() { return JSON.stringify({ ...appSummary(), url:location.href, userAgent:navigator.userAgent, errors:storeGet(LS.errorLog, []) }, null, 2); }
@@ -2114,14 +2114,14 @@ const SEARCH_ITEMS = [
 function renderGlobalSearchResults(query = '') {
   const q = query.toLowerCase().trim();
   const items = SEARCH_ITEMS.filter(([label]) => !q || label.toLowerCase().includes(q));
-  return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>Abrir módulo</small></button>`).join('') || `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
+  return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(t('stAbrirModulo'))}</small></button>`).join('') || `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
 }
-function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>Buscar módulo</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
+function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>${escapeHTML(t('stBuscarModulo'))}</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
 function showPrivacyCenter() {
-  openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>Las lecturas, el perfil y el chat permanecen en este navegador. Al usar Puter IA, el texto enviado se procesa mediante ese servicio.</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
+  openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>${escapeHTML(t('stLasLecturasElPerfilYEl'))}</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
-function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast('Chat borrado.'); } }
-function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast('Perfil borrado.'); } }
+function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast(t('tsChatCleared')); } }
+function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast(t('tsProfileCleared')); } }
 function factoryResetData() {
   if (!confirm('¿Restablecer todos los datos de Oráculo Místico en este navegador?')) return;
   Object.values(LS).forEach(key => localStorage.removeItem(key));
@@ -2138,18 +2138,18 @@ function showAchievements() {
   const unlocked = storeGet(LS.achievements, {});
   openModal({ icon:'🏆', title:'Logros', body:`<div class="diary-list">${Object.entries(ACHIEVEMENT_LABELS).map(([id,label])=>`<div class="result-card"><strong>${unlocked[id]?'🏆':'🔒'} ${label}</strong></div>`).join('')}</div>` });
 }
-function showGuidedReveal() { openModal({ icon:'🕯️', title:'Tirada guiada', subtitle:'Respira y revela tres cartas.', body:'<div class="result-card"><p>Formula tu pregunta y pulsa comenzar. Las cartas se mostrarán con la ceremonia configurada.</p></div><button class="btn primary" data-act="start-guided-three">Comenzar</button>' }); }
+function showGuidedReveal() { openModal({ icon:'🕯️', title:'Tirada guiada', subtitle:'Respira y revela tres cartas.', body:`<div class="result-card"><p>${escapeHTML(t('stFormulaTuPreguntaYPulsaComenzar'))}</p></div><button class="btn primary" data-act="start-guided-three">${escapeHTML(t('stComenzar'))}</button>` }); }
 function startGuidedThree() { drawTarotSpread('three'); }
 function guidedNext() { return; }
 function saveDailyReflection() {
   const entries = storeGet(LS.dailyJournal, []);
   entries.unshift({ date:new Date().toISOString(), mood:$('#dailyMood')?.value || '', intention:$('#dailyIntention')?.value || '', reflection:$('#dailyReflection')?.value || '' });
   storeSet(LS.dailyJournal, entries.slice(0, 365));
-  toast('Ritual diario guardado.');
+  toast(t('tsDailySaved'));
 }
 function showDailyHistory() {
   const entries = storeGet(LS.dailyJournal, []);
-  openModal({ icon:'📅', title:'Historial diario', subtitle:`${entries.length} entradas.`, body:`<div class="diary-list">${entries.map(entry=>`<article class="diary-item"><strong>${new Date(entry.date).toLocaleDateString()}</strong><p>${escapeHTML(entry.mood)} · ${escapeHTML(entry.intention)}</p><p>${escapeHTML(entry.reflection)}</p></article>`).join('') || '<p class="subtle">Todavía no hay reflexiones.</p>'}</div>` });
+  openModal({ icon:'📅', title:'Historial diario', subtitle:`${entries.length} entradas.`, body:`<div class="diary-list">${entries.map(entry=>`<article class="diary-item"><strong>${new Date(entry.date).toLocaleDateString()}</strong><p>${escapeHTML(entry.mood)} · ${escapeHTML(entry.intention)}</p><p>${escapeHTML(entry.reflection)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayReflexiones'))}</p>`}</div>` });
 }
 function toggleDiaryFavorite(id) {
   const diary = storeGet(LS.diary, []);
@@ -2180,21 +2180,21 @@ function showMiOraculo() {
   openModal({ icon:'🪬', title:'Mi Oráculo', subtitle:'Tu espacio personal dentro de la app.', body:`
     <div class="profile-hero">
       <div class="profile-orb">🪬</div>
-      <div><h3>${name}</h3><p>Intención: <strong>${escapeHTML(profile.intention || 'Claridad')}</strong> · Signo: <strong>${escapeHTML(profile.sign || 'No indicado')}</strong></p><p>Modo privado: <strong>${isPrivateMode()?'Activado':'Desactivado'}</strong></p></div>
+      <div><h3>${name}</h3><p>${escapeHTML(t('ixIntencionActiva'))}: <strong>${escapeHTML(intencionVisible(profile.intention || 'Claridad'))}</strong> · Signo: <strong>${escapeHTML(profile.sign || 'No indicado')}</strong></p><p>Modo privado: <strong>${isPrivateMode()?'Activado':'Desactivado'}</strong></p></div>
     </div>
     <div class="form-grid mt">
-      <div class="field"><label>Fecha de nacimiento</label><input class="input" id="profileBirth" type="date" value="${escapeHTML(profile.birth || '')}"></div>
-      <div class="field"><label>Hora de nacimiento</label><input class="input" id="profileBirthTime" type="time" value="${escapeHTML(profile.birthTime || '')}"></div>
-      <div class="field"><label>Lugar de nacimiento</label><input class="input" id="profileBirthPlace" value="${escapeHTML(profile.birthPlace?.label || '')}" placeholder="Ciudad, país"></div>
-      <div class="field"><label>Signo / energía</label><input class="input" id="profileSign" value="${escapeHTML(profile.sign || '')}" placeholder="Aries, Luna, Agua..."></div>
-      <div class="field"><label>Intención principal</label><input class="input" id="profileIntention" value="${escapeHTML(profile.intention || '')}" placeholder="Claridad, amor, calma..."></div>
-      <div class="field"><label>Tirada favorita</label><select id="profileSpread"><option value="one" ${profile.favoriteSpread==='one'?'selected':''}>Carta rápida</option><option value="three" ${(profile.favoriteSpread||'three')==='three'?'selected':''}>Pasado · Presente · Futuro</option><option value="love" ${profile.favoriteSpread==='love'?'selected':''}>Amor</option><option value="decision" ${profile.favoriteSpread==='decision'?'selected':''}>Decisión</option><option value="celtic" ${profile.favoriteSpread==='celtic'?'selected':''}>Cruz Celta</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stFechaDeNacimiento'))}</label><input class="input" id="profileBirth" type="date" value="${escapeHTML(profile.birth || '')}"></div>
+      <div class="field"><label>${escapeHTML(t('stHoraDeNacimiento'))}</label><input class="input" id="profileBirthTime" type="time" value="${escapeHTML(profile.birthTime || '')}"></div>
+      <div class="field"><label>${escapeHTML(t('stLugarDeNacimiento'))}</label><input class="input" id="profileBirthPlace" value="${escapeHTML(profile.birthPlace?.label || '')}" placeholder="Ciudad, país"></div>
+      <div class="field"><label>${escapeHTML(t('stSignoEnergia'))}</label><input class="input" id="profileSign" value="${escapeHTML(profile.sign || '')}" placeholder="Aries, Luna, Agua..."></div>
+      <div class="field"><label>${escapeHTML(t('stIntencionPrincipal'))}</label><input class="input" id="profileIntention" value="${escapeHTML(profile.intention || '')}" placeholder="Claridad, amor, calma..."></div>
+      <div class="field"><label>${escapeHTML(t('stTiradaFavorita'))}</label><select id="profileSpread"><option value="one" ${profile.favoriteSpread==='one'?'selected':''}>${escapeHTML(t('stCartaRapida'))}</option><option value="three" ${(profile.favoriteSpread||'three')==='three'?'selected':''}>${escapeHTML(t('stPasadoPresenteFuturo'))}</option><option value="love" ${profile.favoriteSpread==='love'?'selected':''}>${escapeHTML(t('stAmor'))}</option><option value="decision" ${profile.favoriteSpread==='decision'?'selected':''}>${escapeHTML(t('stDecision'))}</option><option value="celtic" ${profile.favoriteSpread==='celtic'?'selected':''}>${escapeHTML(t('stCruzCelta'))}</option></select></div>
     </div>
     <div class="actions mt"><button class="btn primary" data-act="save-profile">Guardar Mi Oráculo</button><button class="btn" data-act="profile-favorite-spread">Tirada favorita</button><button class="btn" data-act="toggle-private">Modo privado ${isPrivateMode()?'OFF':'ON'}</button></div>
-    <h3 class="section-title">Favoritas</h3>
-    <div class="mini-history">${favs.map(d=>`<article><strong>${escapeHTML(d.title)}</strong><small>${new Date(d.date || Date.now()).toLocaleDateString()}</small><p>${escapeHTML(clampText(d.text,120))}</p></article>`).join('') || '<p class="subtle">Marca lecturas como favoritas desde Biblioteca.</p>'}</div>
-    <h3 class="section-title">Últimas lecturas</h3>
-    <div class="mini-history">${last.map(d=>`<article><strong>${escapeHTML(d.title)}</strong><small>${new Date(d.date || Date.now()).toLocaleDateString()}</small><p>${escapeHTML(clampText(d.text,120))}</p></article>`).join('') || '<p class="subtle">Todavía no hay lecturas guardadas.</p>'}</div>` });
+    <h3 class="section-title">${escapeHTML(t('stFavoritas'))}</h3>
+    <div class="mini-history">${favs.map(d=>`<article><strong>${escapeHTML(d.title)}</strong><small>${new Date(d.date || Date.now()).toLocaleDateString()}</small><p>${escapeHTML(clampText(d.text,120))}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stMarcaLecturasComoFavoritasDesdeBiblioteca'))}</p>`}</div>
+    <h3 class="section-title">${escapeHTML(t('stUltimasLecturas'))}</h3>
+    <div class="mini-history">${last.map(d=>`<article><strong>${escapeHTML(d.title)}</strong><small>${new Date(d.date || Date.now()).toLocaleDateString()}</small><p>${escapeHTML(clampText(d.text,120))}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayLecturasGuardadas'))}</p>`}</div>` });
 }
 function importBackupFromFile(file) {
   if (!file) return;
@@ -2203,7 +2203,7 @@ function importBackupFromFile(file) {
     try {
       const data = JSON.parse(String(reader.result || '{}'));
       const preview = showBackupPreview(data);
-      if (!validateBackupData(data).valid) return toast('Backup no válido.');
+      if (!validateBackupData(data).valid) return toast(t('tsBackupBad'));
       if (!confirm(`${preview}\n\n¿Restaurar este backup? Se reemplazarán diario, ajustes compatibles, perfil y chat.`)) return;
       if (data.name !== undefined) localStorage.setItem(LS.name, data.name || '');
       if (data.prefs) storeSet(LS.prefs, data.prefs);
@@ -2221,11 +2221,11 @@ function importBackupFromFile(file) {
       migrateData();
       applyTheme();
       updateHome();
-      toast('Backup restaurado.');
+      toast(t('tsBackupOk'));
       showMiOraculo();
     } catch (err) {
       pushErrorLog('import-backup', err?.message || err, 'importBackupFromFile');
-      toast('Backup no válido.');
+      toast(t('tsBackupBad'));
     }
   };
   reader.readAsText(file);
@@ -2314,7 +2314,7 @@ function openCeremonyIntro(kind = 'tarot') {
     <div class="ceremony-intro">
       <div class="ceremony-orb">${isTarot?'🔮':'ᚱ'}</div>
       <h3>${isTarot?'El mazo está preparado':'El saquito está preparado'}</h3>
-      <p>Elige una pregunta clara, respira tres veces y deja que la lectura se revele con calma. Puedes activar sonidos y vibración desde Ajustes.</p>
+      <p>${escapeHTML(t('stEligeUnaPreguntaClaraRespiraTres'))}</p>
       <div class="actions mt"><button class="btn primary" data-module="${isTarot?'tarot':'runas'}">${isTarot?'Elegir tirada':'Elegir runas'}</button><button class="btn" data-act="settings">Ajustes</button></div>
     </div>` });
 }
@@ -2330,12 +2330,12 @@ function appHealthCheck() {
   const voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices().length : 0;
   openModal({ icon:'🧪', title:'Estado de la app', subtitle:getAppVersionLabel(), body:`
     <div class="status-grid">
-      <div class="status-card"><strong>Versión</strong><span>${getAppVersionLabel()}</span></div>
-      <div class="status-card"><strong>Voces detectadas</strong><span>${voices}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stVersion'))}</strong><span>${getAppVersionLabel()}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stVocesDetectadas'))}</strong><span>${voices}</span></div>
       <div class="status-card"><strong>IA</strong><span>${localStorage.getItem(LS.puter)==='true'?'Conectada':'Modo simbólico'}</span></div>
-      <div class="status-card"><strong>PWA</strong><span>${navigator.serviceWorker?'Compatible':'No disponible'}</span></div>
+      <div class="status-card"><strong>${escapeHTML(t('stPwa'))}</strong><span>${navigator.serviceWorker?'Compatible':'No disponible'}</span></div>
     </div>
-    <p class="notice mt">Si después de subir una versión ves algo raro, pulsa “Limpiar caché y recargar” en Ajustes.</p>` });
+    <p class="notice mt">${escapeHTML(t('stSiDespuesDeSubirUnaVersion'))}</p>` });
 }
 function backupData() {
   const data = {
@@ -2389,6 +2389,16 @@ function tarotReading(cards, title = 'Lectura de Tarot') {
 /* Etiqueta visible de una posicion de tirada. El texto castellano
    sigue siendo la clave interna: con el casan los CONTEXTOS y con el
    se guardaron las lecturas anteriores. */
+/* La intencion la escribe la persona y se muestra tal cual. Las dos
+   unicas excepciones son los valores por defecto del sistema, que nadie
+   ha tecleado: esos si se traducen. El valor guardado no cambia. */
+function intencionVisible(v) {
+  const s = String(v || '').trim();
+  if (/^claridad$/i.test(s)) return t('intDefClarity');
+  if (/^libre$/i.test(s)) return t('intDefFree');
+  return s;
+}
+
 function posLabel(posicion) {
   if (!posicion) return '';
   const clave = 'pos' + String(posicion)
@@ -2437,7 +2447,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
       <div class="om-3d-stage om-3d-ritual" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div>
       <div class="ritual-particles">${Array.from({length:12}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
       <div class="channeling card-glow ritual-banner"><span class="orb-pulse">🔮</span><div><h3>${escapeHTML(t('cerTitle'))}</h3><p>${escapeHTML(t('cerText'))}</p></div></div>
-      <div id="tarotShuffleBoard" class="shuffle-board tarot-board deluxe-board"><div class="altar-ring"></div><img src="img/tarot-shuffle-hero.svg" alt="Mezcla de cartas del oráculo" class="shuffle-hero tarot-hero">${cards.map((c, i) => `<div class="card-back shuffle-card deluxe-card" style="--i:${i}"><div class="card-back-inner"><span class="back-logo">🔮</span><strong>Oráculo</strong><small>${c.rev ? 'Invertida' : 'Directa'}</small></div></div>`).join('')}</div>
+      <div id="tarotShuffleBoard" class="shuffle-board tarot-board deluxe-board"><div class="altar-ring"></div><img src="img/tarot-shuffle-hero.svg" alt="Mezcla de cartas del oráculo" class="shuffle-hero tarot-hero">${cards.map((c, i) => `<div class="card-back shuffle-card deluxe-card" style="--i:${i}"><div class="card-back-inner"><span class="back-logo">🔮</span><strong>${escapeHTML(t('stOraculo'))}</strong><small>${c.rev ? 'Invertida' : 'Directa'}</small></div></div>`).join('')}</div>
       <div id="tarotRevealGrid" class="draw-reveal-grid tarot-reveal-grid tarot-count-${cards.length}">${cards.map((c, i) => `<div class="reveal-slot tarot-slot waiting cinematic-slot" id="tarot-slot-${i}"><div class="slot-aura"></div><div class="slot-label">${escapeHTML(posLabel(c.position) || t('lblCardN', { n: i + 1 }))}</div><div class="slot-wait">${escapeHTML(t('lblVeilOpening'))}</div></div>`).join('')}</div>
       <div id="tarotResultWrap" class="hidden"></div>
     </div>` });
@@ -2535,7 +2545,7 @@ function showTarot() {
     <div class="form-grid">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('tarotQ'))}</label>${inputWithMic('tarotPrompt', `placeholder="${escapeHTML(t('tarotQPh'))}"`)}</div></div>
     <div class="actions mt"><button class="btn primary" data-act="ceremony-tarot" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button><button class="btn" data-module="runas" type="button">ᚱ ${escapeHTML(t('runeSpreads'))}</button><button class="btn" data-act="tarot-library" type="button">📚 ${escapeHTML(t('deckLibrary'))}</button></div>
     <div class="spread-grid mt">${normalKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
-    <hr class="soft-line"><h3 class="section-title">✨ Tiradas Premium ✨</h3>
+    <hr class="soft-line"><h3 class="section-title">${escapeHTML(t('stTiradasPremium'))}</h3>
     <div class="spread-grid premium-spreads">${premiumKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
     <p class="notice mt">${escapeHTML(t('tarotNote'))}</p>` });
 }
@@ -2546,7 +2556,7 @@ function showTarotLibrary(filter = 'all') {
 }
 function showCardDetail(card) {
   setLastReading({ type: 'Tarot', title: card.name, text: `${card.up}\n\nInvertida: ${card.rv}`, items: [card.name] });
-  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div><div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>Al derecho</h3><p>${escapeHTML(card.up)}</p><h3>Invertida</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
+  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div><div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>${escapeHTML(t('stAlDerecho'))}</h3><p>${escapeHTML(card.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
 }
 
 function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
@@ -2560,8 +2570,8 @@ function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.
   openModal({ icon:'ᚱ', title, subtitle:'Ritual rúnico inmersivo con aparición una a una.', body:`
     <div class="draw-experience spectacular-stage rune-stage">
       <div class="ritual-particles rune-particles">${Array.from({length:10}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
-      <div class="channeling card-glow ritual-banner"><span class="orb-pulse">✨</span><div><h3>El saquito rúnico despierta...</h3><p>Las piedras sagradas se agitan y emergen con una presencia más intensa y ceremonial.</p></div></div>
-      <div class="rune-bag-stage deluxe-rune-stage"><div class="rune-vortex"></div><img src="img/rune-pouch.svg" id="runeBag" class="rune-bag-image deluxe-pouch" alt="Saquito místico de runas"><p class="notice">Concéntrate: cada runa aparecerá desde el saquito como si emergiera de un altar.</p></div>
+      <div class="channeling card-glow ritual-banner"><span class="orb-pulse">✨</span><div><h3>${escapeHTML(t('stElSaquitoRunicoDespierta'))}</h3><p>${escapeHTML(t('stLasPiedrasSagradasSeAgitanY'))}</p></div></div>
+      <div class="rune-bag-stage deluxe-rune-stage"><div class="rune-vortex"></div><img src="img/rune-pouch.svg" id="runeBag" class="rune-bag-image deluxe-pouch" alt="Saquito místico de runas"><p class="notice">${escapeHTML(t('stConcentrateCadaRunaApareceraDesdeEl'))}</p></div>
       <div id="runeRevealGrid" class="draw-reveal-grid rune-reveal-grid rune-count-${runes.length}">${runes.map((r, i) => `<div class="reveal-slot rune-slot waiting cinematic-slot" id="rune-slot-${i}"><div class="slot-aura"></div><div class="slot-label">Runa ${i + 1}</div><img src="img/rune-pouch.svg" alt="Saquito de runas" class="slot-pouch"><div class="slot-wait">La piedra está despertando...</div></div>`).join('')}</div>
       <div id="runeResultWrap" class="hidden"></div>
     </div>` });
@@ -2582,7 +2592,7 @@ function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.
     const wrap = $('#runeResultWrap');
     if (!wrap) return;
     wrap.className = 'result-appear';
-    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}${intention ? `<p><strong>Intención:</strong> ${escapeHTML(intention)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\n/g,'<br>')}</p>${reversalRateNotice(reversedRate)}${readingActions(lines,'Runas')}</div>`;
+    wrap.innerHTML = `<div class="result-card ritual-result"><h3>${escapeHTML(title)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}${intention ? `<p><strong>${escapeHTML(t('stIntencion'))}</strong> ${escapeHTML(intention)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\n/g,'<br>')}</p>${reversalRateNotice(reversedRate)}${readingActions(lines,'Runas')}</div>`;
   }, ceremonyDelay(1450 + runes.length * 1100));
 }
 function drawRunes(count = 1, title = 'Runa rápida') {
@@ -2598,7 +2608,7 @@ function showRunesLibrary() {
 }
 function showRuneDetail(r) {
   setLastReading({ type:'Runas', title:r.name, text:`${r.up}\n\nInvertida: ${r.rv || 'Sin posición invertida específica.'}`, items:[{ kind:'runa', name:r.name, subtitle:r.up || '', image:r.img || '', symbol:r.sym || 'ᚱ' }] });
-  openModal({ icon:'ᚱ', title:r.name, subtitle:'Runa del Futhark', body:`<div class="reading-layout"><div class="rune-big">${r.sym}</div><div class="result-card"><h3>Mensaje</h3><p>${escapeHTML(r.up)}</p><h3>Invertida</h3><p>${escapeHTML(r.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${r.name}\n${r.up}`,'Runas')}</div></div>` });
+  openModal({ icon:'ᚱ', title:r.name, subtitle:'Runa del Futhark', body:`<div class="reading-layout"><div class="rune-big">${r.sym}</div><div class="result-card"><h3>${escapeHTML(t('stMensaje'))}</h3><p>${escapeHTML(r.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(r.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${r.name}\n${r.up}`,'Runas')}</div></div>` });
 }
 
 /* La fase se calculaba como el día del mes entre ocho, así que casi nunca
@@ -2852,10 +2862,10 @@ async function updateAstroCitySuggestions(query = '') {
   const q = normalizeCityText(query);
   if (q.length < 2) {
     astroCityMatches = [];
-    box.innerHTML = '<p class="subtle">Escribe al menos dos letras para buscar ciudad.</p>';
+    box.innerHTML = `<p class="subtle">${escapeHTML(t('stEscribeAlMenosDosLetrasPara'))}</p>`;
     return;
   }
-  box.innerHTML = '<p class="subtle">Buscando ciudades...</p>';
+  box.innerHTML = `<p class="subtle">${escapeHTML(t('stBuscandoCiudades'))}</p>`;
   try {
     const cities = await loadAstroCities();
     const terms = q.split(' ').filter(Boolean);
@@ -2867,9 +2877,9 @@ async function updateAstroCitySuggestions(query = '') {
         return bStart - aStart || b.population - a.population;
       })
       .slice(0, 8);
-    box.innerHTML = astroCityMatches.map((city, index) => `<button class="astro-city-option" data-astro-city="${index}" type="button"><strong>${escapeHTML(city.label)}</strong><small>${escapeHTML(city.timezone)} · ${Number(city.population || 0).toLocaleString('es-ES')} hab.</small></button>`).join('') || '<p class="subtle">No encuentro esa ciudad. Puedes escribir el lugar manualmente.</p>';
+    box.innerHTML = astroCityMatches.map((city, index) => `<button class="astro-city-option" data-astro-city="${index}" type="button"><strong>${escapeHTML(city.label)}</strong><small>${escapeHTML(city.timezone)} · ${Number(city.population || 0).toLocaleString('es-ES')} hab.</small></button>`).join('') || `<p class="subtle">${escapeHTML(t('stNoEncuentroEsaCiudadPuedesEscribir'))}</p>`;
   } catch {
-    box.innerHTML = '<p class="subtle">No se pudo cargar la base de ciudades. Puedes escribir el lugar manualmente.</p>';
+    box.innerHTML = `<p class="subtle">${escapeHTML(t('stNoSePudoCargarLaBase'))}</p>`;
   }
 }
 function selectAstroCity(index) {
@@ -3489,18 +3499,18 @@ function astroHousesHTML(chart) {
   return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${house.degree}°</small></span></article>`).join('')}</div>`;
 }
 function astroAspectsHTML(chart) {
-  if (!chart.aspects.length) return '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
+  if (!chart.aspects.length) return `<p class="subtle">${escapeHTML(t('stLaRuedaNoMarcaAspectosMayores'))}</p>`;
   const stats = astroAspectStats(chart);
   const tight = stats.tightest;
   const overview = `<div class="astro-aspect-overview" aria-label="Resumen de aspectos">
-    <div><strong>${chart.aspects.length}</strong><small>Aspectos mayores</small></div>
-    <div><strong>${stats.counts.flow}</strong><small>Fluidos</small></div>
-    <div><strong>${stats.counts.tension}</strong><small>De ajuste</small></div>
-    <div><strong>${tight ? `${escapeHTML(tight.name)} ${escapeHTML(tight.orb)}°` : '—'}</strong><small>Más exacto</small></div>
+    <div><strong>${chart.aspects.length}</strong><small>${escapeHTML(t('stAspectosMayores'))}</small></div>
+    <div><strong>${stats.counts.flow}</strong><small>${escapeHTML(t('stFluidos'))}</small></div>
+    <div><strong>${stats.counts.tension}</strong><small>${escapeHTML(t('stDeAjuste'))}</small></div>
+    <div><strong>${tight ? `${escapeHTML(tight.name)} ${escapeHTML(tight.orb)}°` : '—'}</strong><small>${escapeHTML(t('stMasExacto'))}</small></div>
   </div>`;
   return chart.aspects.length
     ? `${overview}<div class="astro-aspects">${chart.aspects.map(item => { const meta = astroAspectMeta(item.name); const tone = astroAspectTone(item.name); return `<article class="astro-aspect astro-aspect-card-${astroAspectClass(item.name)}"><span class="astro-aspect-glyph" aria-hidden="true">${meta.symbol}</span><div><strong>${escapeHTML(item.name)} · ${escapeHTML(item.a)} / ${escapeHTML(item.b)}</strong><small>${meta.angle}° · orbe ${escapeHTML(item.orb)}° · ${escapeHTML(astroAspectOrbLabel(item.orb))} · ${escapeHTML(tone.label)}</small><p>${escapeHTML(item.text)}.</p></div></article>`; }).join('')}</div>`
-    : '<p class="subtle">La rueda no marca aspectos mayores exactos; la lectura se apoya en signos y casas.</p>';
+    : `<p class="subtle">${escapeHTML(t('stLaRuedaNoMarcaAspectosMayores'))}</p>`;
 }
 function astroReadingText(chart) {
   const dominant = chart.planets.reduce((acc, p) => ({ ...acc, [p.element]:(acc[p.element] || 0) + 1 }), {});
@@ -3587,17 +3597,17 @@ function renderSolarReturnReading(natalChart, solarReturn, text, title) {
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${solarReturn.year} · ${solarReturn.localLabel}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card astro-summary-card"><h3>Revolución solar</h3><p><strong>Retorno:</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Medio Cielo:</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p>${astroEngineNoticeHTML(chart)}</div>
+      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stRevolucionSolar'))}</h3><p><strong>${escapeHTML(t('stRetorno'))}</strong> ${escapeHTML(solarReturn.localLabel)}</p><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
-    <h3 class="section-title">Natal y año</h3>
+    <h3 class="section-title">${escapeHTML(t('stNatalYAno'))}</h3>
     ${solarReturnBridgeHTML(natalChart, solarReturn)}
-    <h3 class="section-title">Posiciones del año</h3>
+    <h3 class="section-title">${escapeHTML(t('stPosicionesDelAno'))}</h3>
     ${astroPositionsHTML(chart)}
-    <h3 class="section-title">Aspectos</h3>
+    <h3 class="section-title">${escapeHTML(t('stAspectos'))}</h3>
     ${astroAspectsHTML(chart)}
-    <h3 class="section-title">Casas</h3>
+    <h3 class="section-title">${escapeHTML(t('stCasas'))}</h3>
     ${astroHousesHTML(chart)}
-    <div class="result-card mt"><h3>Síntesis</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
+    <div class="result-card mt"><h3>${escapeHTML(t('stSintesis'))}</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
 }
 function showAstros() {
   const n = escapeHTML(localStorage.getItem(LS.name) || '');
@@ -3655,22 +3665,22 @@ function renderAstroReading(chart, text, title) {
   openModal({ icon:'☉', title, subtitle:`${chart.name} · ${chart.date} · ${chart.time}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, body:`
     <div class="astro-grid">
       ${astroWheelHTML(chart)}
-      <div class="result-card astro-summary-card"><h3>Triada natal</h3><p><strong>Sol:</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>Luna:</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>Ascendente:</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>Medio Cielo:</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p><p><strong>Lugar:</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p>${astroEngineNoticeHTML(chart)}</div>
+      <div class="result-card astro-summary-card"><h3>${escapeHTML(t('stTriadaNatal'))}</h3><p><strong>${escapeHTML(t('stSol'))}</strong> ${escapeHTML(chart.sun.symbol)} ${escapeHTML(chart.sun.name)}</p><p><strong>${escapeHTML(t('stLuna'))}</strong> ${escapeHTML(chart.moon.signSymbol)} ${escapeHTML(chart.moon.sign)}</p><p><strong>${escapeHTML(t('stAscendente'))}</strong> ${escapeHTML(chart.asc.symbol)} ${escapeHTML(chart.asc.name)}</p><p><strong>${escapeHTML(t('stMedioCielo'))}</strong> ${escapeHTML(chart.mc.symbol)} ${escapeHTML(chart.mc.name)}</p><p><strong>${escapeHTML(t('stLugar'))}</strong> ${escapeHTML(chart.place?.label || 'No indicado')}</p>${astroEngineNoticeHTML(chart)}</div>
     </div>
-    <h3 class="section-title">Posiciones</h3>
+    <h3 class="section-title">${escapeHTML(t('stPosiciones'))}</h3>
     ${astroPositionsHTML(chart)}
-    <h3 class="section-title">Aspectos</h3>
+    <h3 class="section-title">${escapeHTML(t('stAspectos'))}</h3>
     ${astroAspectsHTML(chart)}
-    <h3 class="section-title">Casas</h3>
+    <h3 class="section-title">${escapeHTML(t('stCasas'))}</h3>
     ${astroHousesHTML(chart)}
-    <div class="result-card mt"><h3>Síntesis</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
+    <div class="result-card mt"><h3>${escapeHTML(t('stSintesis'))}</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Astros')}</div>` });
 }
 async function calcAstroChart() {
   const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast(t('tsBirthMissing'));
   data.place = await resolveAstroPlace(data.place, data.place?.label);
   const chart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
-  if (!chart) return toast('Revisa la fecha y la hora.');
+  if (!chart) return toast(t('tsCheckDate'));
   persistAstroData(data);
   const text = astroReadingText(chart);
   setLastReading({ type:'Astros', title:`Carta astral · ${data.name}`, text, items:astroReadingItems(chart), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, houseSystem:data.houseSystem, astro:chart } });
@@ -3678,12 +3688,12 @@ async function calcAstroChart() {
 }
 async function solarReturnReading() {
   const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast(t('tsBirthMissing'));
   data.place = await resolveAstroPlace(data.place, data.place?.label);
   const natalChart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
-  if (!natalChart) return toast('Revisa la fecha y la hora.');
+  if (!natalChart) return toast(t('tsCheckDate'));
   const solarReturn = solarReturnForYear(natalChart, data.solarYear);
-  if (!solarReturn) return toast('No he podido calcular la revolución solar con esos datos.');
+  if (!solarReturn) return toast(t('tsNoSolar'));
   persistAstroData(data);
   const title = `Revolución solar ${solarReturn.year} · ${data.name}`;
   const text = solarReturnText(natalChart, solarReturn, data.intention);
@@ -3735,10 +3745,10 @@ Hoy conviene mirar la intención desde ${todayChart.moon.element.toLowerCase()} 
 }
 async function dailyAstroReading() {
   const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time || !data.place?.label) return toast('Completa nombre, fecha, hora y lugar de nacimiento.');
+  if (!data.name || !data.date || !data.time || !data.place?.label) return toast(t('tsBirthMissing'));
   data.place = await resolveAstroPlace(data.place, data.place?.label);
   const chart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
-  if (!chart) return toast('Revisa la fecha y la hora.');
+  if (!chart) return toast(t('tsCheckDate'));
   persistAstroData(data);
   const now = new Date();
   const today = todayKey();
@@ -3765,7 +3775,7 @@ ${text}`, { prefix:readingPersonalPrefix(lastReading) }));
       ${astroWheelHTML(todayChart)}
       <div><div class="astro-day-grid">${cards.map(card => `<article class="astro-day-card"><span class="astro-symbol" aria-hidden="true">${card.symbol}</span><strong>${escapeHTML(card.title)}</strong><p>${escapeHTML(card.planet.name)} en ${escapeHTML(card.sign)}</p><small>${escapeHTML(card.text)}.</small></article>`).join('')}</div>${astroEngineNoticeHTML(todayChart)}</div>
     </div>
-    <div class="result-card mt"><h3>Síntesis astral</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(lastReading.text,'Astros')}</div>` });
+    <div class="result-card mt"><h3>${escapeHTML(t('stSintesisAstral'))}</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(lastReading.text,'Astros')}</div>` });
 }
 
 async function loadGrabovoi() {
@@ -4154,7 +4164,7 @@ function renderGrabovoiPdfList(list = []) {
   }).join('\n') || `<p class="subtle">${escapeHTML(t('gbPdfNone'))}</p>`;
 }
 async function showNumerologyGrabovoiPdfPicker() {
-  if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');
+  if (!isNumerologyReading()) return toast(t('tsNeedNum'));
   await loadGrabovoi();
   const subject = getReadingSubjectName();
   const candidates = grabovoiPdfCandidates(lastReading);
@@ -4194,9 +4204,9 @@ ${t('gbSheetNote')}${entries.some(isHealthGrabovoiEntry) ? `
 ${t('gbHealthWarn')}` : ''}`;
 }
 function exportNumerologyGrabovoiPDFFromSelection() {
-  if (!isNumerologyReading()) return toast('Primero crea una lectura numerológica.');
+  if (!isNumerologyReading()) return toast(t('tsNeedNum'));
   const entries = selectedGrabovoiPdfEntries();
-  if (!entries.length) return toast('Elige al menos una secuencia Grabovoi.');
+  if (!entries.length) return toast(t('tsPickGrab'));
   const combinedReading = {
     ...lastReading,
     type:'Numerología · Grabovoi',
@@ -4237,7 +4247,7 @@ function showGrabDetail(e) {
       <div class="result-card"><h3>${escapeHTML(guide.method.name)}</h3><p>${escapeHTML(guide.method.description)}</p></div>
     </div>
     <div class="result-card mt"><h3>${escapeHTML(t('gbDigitMeaning'))}</h3>
-      <div class="grabovoi-digit-grid">${guide.digitAnalysis.map(item => `<div><strong>${item.digit}${item.count > 1 ? ` ×${item.count}` : ''}</strong><span>${escapeHTML(item.meaning)}</span></div>`).join('') || '<p>Conserva las letras y símbolos exactamente como aparecen.</p>'}</div>
+      <div class="grabovoi-digit-grid">${guide.digitAnalysis.map(item => `<div><strong>${item.digit}${item.count > 1 ? ` ×${item.count}` : ''}</strong><span>${escapeHTML(item.meaning)}</span></div>`).join('') || `<p>${escapeHTML(t('stConservaLasLetrasYSimbolosExactamente'))}</p>`}</div>
     </div>
     <div class="result-card mt"><h3>${escapeHTML(t('gbHowTo'))}</h3><ol class="grabovoi-steps">${guide.steps.map(step => `<li>${escapeHTML(step)}</li>`).join('')}</ol></div>
     <p class="notice mt">${escapeHTML(guide.isHealth ? t('gbNoticeHealth') : t('gbNoticePlain'))}</p>
@@ -4255,9 +4265,9 @@ function showBiblioteca(filter = 'all') {
   if (q) list = list.filter(d => `${d.title} ${d.type} ${d.text} ${d.note || ''}`.toLowerCase().includes(q));
   openModal({ icon:'📚', title:'Biblioteca Mística', subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
     <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="library" aria-label="Biblioteca Arcana"></div>
-    <div class="form-grid"><div class="field"><label>Buscar en el diario</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label>Filtrar tipo</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
+    <div class="form-grid"><div class="field"><label>${escapeHTML(t('stBuscarEnElDiario'))}</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label>${escapeHTML(t('stFiltrarTipo'))}</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
     <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar texto</button><button class="btn" data-act="export-diary-pdf">Crear PDF</button><button class="btn" data-act="backup-data">Copia de seguridad</button><button class="btn danger" data-act="clear-diary">Vaciar biblioteca</button></div>
-    <div class="diary-list mt">${list.map(item=>`<article class="diary-item ${item.favorite?'favorite':''}"><div class="split"><h3>${item.favorite?'⭐ ':''}${escapeHTML(item.title)}</h3><small>${new Date(item.date || Date.now()).toLocaleDateString()}</small></div><small class="pill">${escapeHTML(item.type || 'Lectura')}</small>${item.note ? `<p class="diary-note"><strong>Nota:</strong> ${escapeHTML(item.note)}</p>` : ''}<p>${escapeHTML(clampText(item.text,260))}</p><div class="actions mt"><button class="btn compact" data-fav-diary="${item.id}">${item.favorite?'Quitar ⭐':'Favorita ⭐'}</button><button class="btn compact" data-note-diary="${item.id}">Nota</button><button class="btn compact" data-copy-diary="${item.id}">Copiar</button><button class="btn compact" data-delete-diary="${item.id}">Borrar</button></div></article>`).join('\n\n') || '<p class="subtle">Todavía no hay lecturas guardadas con ese filtro.</p>'}</div>` });
+    <div class="diary-list mt">${list.map(item=>`<article class="diary-item ${item.favorite?'favorite':''}"><div class="split"><h3>${item.favorite?'⭐ ':''}${escapeHTML(item.title)}</h3><small>${new Date(item.date || Date.now()).toLocaleDateString()}</small></div><small class="pill">${escapeHTML(item.type || 'Lectura')}</small>${item.note ? `<p class="diary-note"><strong>${escapeHTML(t('stNota'))}</strong> ${escapeHTML(item.note)}</p>` : ''}<p>${escapeHTML(clampText(item.text,260))}</p><div class="actions mt"><button class="btn compact" data-fav-diary="${item.id}">${item.favorite?'Quitar ⭐':'Favorita ⭐'}</button><button class="btn compact" data-note-diary="${item.id}">Nota</button><button class="btn compact" data-copy-diary="${item.id}">Copiar</button><button class="btn compact" data-delete-diary="${item.id}">Borrar</button></div></article>`).join('\n\n') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayLecturasGuardadasCon'))}</p>`}</div>` });
 }
 
 function showSettings() {
@@ -4269,87 +4279,87 @@ function showSettings() {
   openModal({ icon:'⚙️', title:'Ajustes', subtitle:'Personaliza la experiencia por apartados.', body:`
     <div class="settings-stack">
     <details class="settings-section" open>
-    <summary>👤 Perfil e IA</summary>
+    <summary>${escapeHTML(t('stPerfilEIa'))}</summary>
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label>${escapeHTML(t('appLanguage'))}</label><select id="appLanguage">${languageOptionsHTML()}</select><small>${escapeHTML(t('languageHelp'))}</small></div>
-      <div class="field"><label>Nombre opcional</label>${inputWithMic('settingsName', `value="${name}" placeholder="Tu nombre"`)}</div>
-      <div class="field"><label>Estado IA</label><input class="input" value="${localStorage.getItem(LS.puter)==='true'?'Conectada':'Modo simbólico'}" readonly></div>
-      <div class="field"><label>Tipo de lectura IA</label><select id="aiStyle"><option value="mistica" ${getAIStyle() === 'mistica' ? 'selected' : ''}>Mística</option><option value="razonable" ${getAIStyle() === 'razonable' ? 'selected' : ''}>Razonable</option><option value="corta" ${getAIStyle() === 'corta' ? 'selected' : ''}>Corta</option><option value="profunda" ${getAIStyle() === 'profunda' ? 'selected' : ''}>Profunda</option><option value="directa" ${getAIStyle() === 'directa' ? 'selected' : ''}>Directa</option><option value="amorosa" ${getAIStyle() === 'amorosa' ? 'selected' : ''}>Amorosa</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stNombreOpcional'))}</label>${inputWithMic('settingsName', `value="${name}" placeholder="Tu nombre"`)}</div>
+      <div class="field"><label>${escapeHTML(t('stEstadoIa'))}</label><input class="input" value="${localStorage.getItem(LS.puter)==='true'?'Conectada':'Modo simbólico'}" readonly></div>
+      <div class="field"><label>${escapeHTML(t('stTipoDeLecturaIa'))}</label><select id="aiStyle"><option value="mistica" ${getAIStyle() === 'mistica' ? 'selected' : ''}>${escapeHTML(t('stMistica'))}</option><option value="razonable" ${getAIStyle() === 'razonable' ? 'selected' : ''}>${escapeHTML(t('stRazonable'))}</option><option value="corta" ${getAIStyle() === 'corta' ? 'selected' : ''}>${escapeHTML(t('stCorta'))}</option><option value="profunda" ${getAIStyle() === 'profunda' ? 'selected' : ''}>${escapeHTML(t('stProfunda'))}</option><option value="directa" ${getAIStyle() === 'directa' ? 'selected' : ''}>${escapeHTML(t('stDirecta'))}</option><option value="amorosa" ${getAIStyle() === 'amorosa' ? 'selected' : ''}>${escapeHTML(t('stAmorosa'))}</option></select></div>
     </div><p class="notice mt">${escapeHTML(t('internationalNote'))}</p></div></details>
 
     <details class="settings-section">
-    <summary>🔊 Voz y lectura</summary>
+    <summary>${escapeHTML(t('stVozYLectura'))}</summary>
     <div class="settings-section-content">
     <div class="form-grid">
-      <div class="field"><label>Motor de voz</label><select id="voiceEngine"><option value="device" ${voice.engine === 'device' ? 'selected' : ''}>TTS del sistema · sin Puter</option><option value="auto" ${voice.engine === 'auto' ? 'selected' : ''}>Automático · IA si está conectada</option><option value="puter" ${voice.engine === 'puter' ? 'selected' : ''}>Voz IA natural mediante Puter</option></select></div>
-      <div class="field"><label>Voz IA remota</label><select id="remoteVoice"><option value="coral" ${voice.remoteVoice === 'coral' ? 'selected' : ''}>Coral · femenina cálida</option><option value="sage" ${voice.remoteVoice === 'sage' ? 'selected' : ''}>Sage · femenina serena</option><option value="onyx" ${voice.remoteVoice === 'onyx' ? 'selected' : ''}>Onyx · masculina profunda</option><option value="ash" ${voice.remoteVoice === 'ash' ? 'selected' : ''}>Ash · masculina natural</option></select></div>
-      <div class="field"><label>Catálogo del sistema</label><select id="voiceFilter"><option value="all" ${(voice.voiceFilter || 'all') === 'all' ? 'selected' : ''}>Todas las voces visibles</option><option value="spanish" ${voice.voiceFilter === 'spanish' ? 'selected' : ''}>Solo voces españolas</option></select></div>
-      <div class="field"><label>Idioma de voz</label><select id="voiceLanguage">${getVoiceLanguageOptionsHTML(voice.language || 'auto')}</select></div>
-      <div class="field"><label>Voz concreta del dispositivo</label><select id="deviceVoiceURI">${getDeviceVoiceOptionsHTML(voice.deviceVoiceURI || '')}</select></div>
-      <div class="field"><label>Voz mística</label><select id="voicePreset"><option value="mistica_femenina" ${voice.preset === 'mistica_femenina' ? 'selected' : ''}>Mística femenina</option><option value="guia_suave" ${voice.preset === 'guia_suave' ? 'selected' : ''}>Guía suave</option><option value="oraculo_neutro" ${voice.preset === 'oraculo_neutro' ? 'selected' : ''}>Oráculo neutro</option><option value="sabio_masculino" ${voice.preset === 'sabio_masculino' ? 'selected' : ''}>Sabio masculino</option><option value="guardian_profundo" ${voice.preset === 'guardian_profundo' ? 'selected' : ''}>Guardián profundo</option><option value="lectura_rapida" ${voice.preset === 'lectura_rapida' ? 'selected' : ''}>Lectura rápida</option></select></div>
-      <div class="field"><label>Velocidad de voz</label><select id="voiceRate"><option value="0.78" ${String(voice.rate) === '0.78' ? 'selected' : ''}>Ceremonial</option><option value="0.88" ${String(voice.rate) === '0.88' ? 'selected' : ''}>Humana suave</option><option value="0.92" ${String(voice.rate) === '0.92' ? 'selected' : ''}>Natural</option><option value="1.04" ${String(voice.rate) === '1.04' ? 'selected' : ''}>Ágil</option></select></div>
-      <div class="field"><label>Pantalla durante la voz</label><select id="keepScreenAwake"><option value="true" ${voice.keepScreenAwake !== false ? 'selected' : ''}>Mantener encendida</option><option value="false" ${voice.keepScreenAwake === false ? 'selected' : ''}>Permitir apagado automático</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stMotorDeVoz'))}</label><select id="voiceEngine"><option value="device" ${voice.engine === 'device' ? 'selected' : ''}>${escapeHTML(t('stTtsDelSistemaSinPuter'))}</option><option value="auto" ${voice.engine === 'auto' ? 'selected' : ''}>${escapeHTML(t('stAutomaticoIaSiEstaConectada'))}</option><option value="puter" ${voice.engine === 'puter' ? 'selected' : ''}>${escapeHTML(t('stVozIaNaturalMediantePuter'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stVozIaRemota'))}</label><select id="remoteVoice"><option value="coral" ${voice.remoteVoice === 'coral' ? 'selected' : ''}>${escapeHTML(t('stCoralFemeninaCalida'))}</option><option value="sage" ${voice.remoteVoice === 'sage' ? 'selected' : ''}>${escapeHTML(t('stSageFemeninaSerena'))}</option><option value="onyx" ${voice.remoteVoice === 'onyx' ? 'selected' : ''}>${escapeHTML(t('stOnyxMasculinaProfunda'))}</option><option value="ash" ${voice.remoteVoice === 'ash' ? 'selected' : ''}>${escapeHTML(t('stAshMasculinaNatural'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stCatalogoDelSistema'))}</label><select id="voiceFilter"><option value="all" ${(voice.voiceFilter || 'all') === 'all' ? 'selected' : ''}>${escapeHTML(t('stTodasLasVocesVisibles'))}</option><option value="spanish" ${voice.voiceFilter === 'spanish' ? 'selected' : ''}>${escapeHTML(t('stSoloVocesEspanolas'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stIdiomaDeVoz'))}</label><select id="voiceLanguage">${getVoiceLanguageOptionsHTML(voice.language || 'auto')}</select></div>
+      <div class="field"><label>${escapeHTML(t('stVozConcretaDelDispositivo'))}</label><select id="deviceVoiceURI">${getDeviceVoiceOptionsHTML(voice.deviceVoiceURI || '')}</select></div>
+      <div class="field"><label>${escapeHTML(t('stVozMistica'))}</label><select id="voicePreset"><option value="mistica_femenina" ${voice.preset === 'mistica_femenina' ? 'selected' : ''}>${escapeHTML(t('stMisticaFemenina'))}</option><option value="guia_suave" ${voice.preset === 'guia_suave' ? 'selected' : ''}>${escapeHTML(t('stGuiaSuave'))}</option><option value="oraculo_neutro" ${voice.preset === 'oraculo_neutro' ? 'selected' : ''}>${escapeHTML(t('stOraculoNeutro'))}</option><option value="sabio_masculino" ${voice.preset === 'sabio_masculino' ? 'selected' : ''}>${escapeHTML(t('stSabioMasculino'))}</option><option value="guardian_profundo" ${voice.preset === 'guardian_profundo' ? 'selected' : ''}>${escapeHTML(t('stGuardianProfundo'))}</option><option value="lectura_rapida" ${voice.preset === 'lectura_rapida' ? 'selected' : ''}>${escapeHTML(t('stLecturaRapida'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stVelocidadDeVoz'))}</label><select id="voiceRate"><option value="0.78" ${String(voice.rate) === '0.78' ? 'selected' : ''}>${escapeHTML(t('stCeremonial'))}</option><option value="0.88" ${String(voice.rate) === '0.88' ? 'selected' : ''}>${escapeHTML(t('stHumanaSuave'))}</option><option value="0.92" ${String(voice.rate) === '0.92' ? 'selected' : ''}>${escapeHTML(t('stNatural'))}</option><option value="1.04" ${String(voice.rate) === '1.04' ? 'selected' : ''}>${escapeHTML(t('stAgil'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stPantallaDuranteLaVoz'))}</label><select id="keepScreenAwake"><option value="true" ${voice.keepScreenAwake !== false ? 'selected' : ''}>${escapeHTML(t('stMantenerEncendida'))}</option><option value="false" ${voice.keepScreenAwake === false ? 'selected' : ''}>${escapeHTML(t('stPermitirApagadoAutomatico'))}</option></select></div>
     </div>
     <p class="notice mt">“TTS del sistema” no necesita Puter ni conexión. La app mostrará todas las voces que Firefox, Chrome o Safari permitan consultar; el navegador puede ocultar algunas voces instaladas. El modo IA y el MP3 quedan como opciones adicionales.</p>
     </div></details>
 
     <details class="settings-section">
-    <summary>✨ Ceremonia</summary>
+    <summary>${escapeHTML(t('stCeremonia'))}</summary>
     <div class="settings-section-content">
     <div class="form-grid">
-      <div class="field"><label>Velocidad de revelación</label><select id="ceremonySpeed"><option value="slow" ${ceremony.speed==='slow'?'selected':''}>Lenta ceremonial</option><option value="normal" ${(ceremony.speed||'normal')==='normal'?'selected':''}>Normal</option><option value="fast" ${ceremony.speed==='fast'?'selected':''}>Rápida</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stVelocidadDeRevelacion'))}</label><select id="ceremonySpeed"><option value="slow" ${ceremony.speed==='slow'?'selected':''}>${escapeHTML(t('stLentaCeremonial'))}</option><option value="normal" ${(ceremony.speed||'normal')==='normal'?'selected':''}>${escapeHTML(t('stNormal'))}</option><option value="fast" ${ceremony.speed==='fast'?'selected':''}>${escapeHTML(t('stRapida'))}</option></select></div>
       <div class="field"><label>${escapeHTML(t('sndTitle'))}</label><select id="ceremonySounds"><option value="false" ${!ceremony.sounds?'selected':''}>${escapeHTML(t('sndOff'))}</option><option value="true" ${ceremony.sounds?'selected':''}>${escapeHTML(t('sndOn'))}</option></select><small>${escapeHTML(t('sndHelp'))}</small></div>
       <div class="field"><label>${escapeHTML(t('sndVib'))}</label><select id="ceremonyVibration"><option value="false" ${!ceremony.vibration?'selected':''}>${escapeHTML(t('sndVibOff'))}</option><option value="true" ${ceremony.vibration?'selected':''}>${escapeHTML(t('sndVibOn'))}</option></select></div>
     </div></div></details>
 
 
     <details class="settings-section">
-    <summary>🪄 Avatar del oráculo</summary>
+    <summary>${escapeHTML(t('stAvatarDelOraculo'))}</summary>
     <div class="settings-section-content">
     <div class="form-grid">
-      <div class="field"><label>Estilo de avatar</label><select id="oracleAvatarStyle"><option value="auto" ${getVoicePrefs().avatarStyle==='auto'?'selected':''}>Automático según voz</option><option value="female" ${getVoicePrefs().avatarStyle==='female'?'selected':''}>Chica oráculo</option><option value="male" ${getVoicePrefs().avatarStyle==='male'?'selected':''}>Chico oráculo</option></select></div>
-      <div class="field"><label>Mostrar avatar</label><select id="oracleAvatarEnabled"><option value="true" ${getVoicePrefs().avatarEnabled!==false?'selected':''}>Sí, mostrar al hablar</option><option value="false" ${getVoicePrefs().avatarEnabled===false?'selected':''}>No mostrar</option></select></div>
-      <div class="field"><label>Posición del avatar</label><select id="oracleAvatarPosition"><option value="right" ${getVoicePrefs().avatarPosition!=='left'?'selected':''}>Derecha</option><option value="left" ${getVoicePrefs().avatarPosition==='left'?'selected':''}>Izquierda</option></select></div>
-      <div class="field"><label>Tamaño del avatar</label><select id="oracleAvatarSize"><option value="small" ${getVoicePrefs().avatarSize==='small'?'selected':''}>Pequeño</option><option value="medium" ${getVoicePrefs().avatarSize!=='small' && getVoicePrefs().avatarSize!=='large'?'selected':''}>Mediano</option><option value="large" ${getVoicePrefs().avatarSize==='large'?'selected':''}>Grande</option></select></div>
-      <div class="field"><label>Expresión del avatar</label><select id="oracleAvatarMood"><option value="auto" ${getVoicePrefs().avatarMood==='auto'?'selected':''}>Automática emocional</option><option value="calm" ${getVoicePrefs().avatarMood==='calm'?'selected':''}>Serena</option><option value="smile" ${getVoicePrefs().avatarMood==='smile'?'selected':''}>Sonriente</option><option value="love" ${getVoicePrefs().avatarMood==='love'?'selected':''}>Amor</option><option value="warning" ${getVoicePrefs().avatarMood==='warning'?'selected':''}>Advertencia</option><option value="blocked" ${getVoicePrefs().avatarMood==='blocked'?'selected':''}>Bloqueo</option><option value="dream" ${getVoicePrefs().avatarMood==='dream'?'selected':''}>Intuición</option><option value="power" ${getVoicePrefs().avatarMood==='power'?'selected':''}>Fuerza</option><option value="serious" ${getVoicePrefs().avatarMood==='serious'?'selected':''}>Seria</option></select></div>
-      <div class="field"><label>Modo al hablar</label><select id="oracleAvatarSpeechMode"><option value="auto" ${getVoicePrefs().avatarSpeechMode==='auto'?'selected':''}>Automático</option><option value="channeling" ${getVoicePrefs().avatarSpeechMode==='channeling'?'selected':''}>Canalizando</option><option value="whisper" ${getVoicePrefs().avatarSpeechMode==='whisper'?'selected':''}>Susurrando</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stEstiloDeAvatar'))}</label><select id="oracleAvatarStyle"><option value="auto" ${getVoicePrefs().avatarStyle==='auto'?'selected':''}>${escapeHTML(t('stAutomaticoSegunVoz'))}</option><option value="female" ${getVoicePrefs().avatarStyle==='female'?'selected':''}>${escapeHTML(t('stChicaOraculo'))}</option><option value="male" ${getVoicePrefs().avatarStyle==='male'?'selected':''}>${escapeHTML(t('stChicoOraculo'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stMostrarAvatar'))}</label><select id="oracleAvatarEnabled"><option value="true" ${getVoicePrefs().avatarEnabled!==false?'selected':''}>${escapeHTML(t('stSiMostrarAlHablar'))}</option><option value="false" ${getVoicePrefs().avatarEnabled===false?'selected':''}>${escapeHTML(t('stNoMostrar'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stPosicionDelAvatar'))}</label><select id="oracleAvatarPosition"><option value="right" ${getVoicePrefs().avatarPosition!=='left'?'selected':''}>${escapeHTML(t('stDerecha'))}</option><option value="left" ${getVoicePrefs().avatarPosition==='left'?'selected':''}>${escapeHTML(t('stIzquierda'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stTamanoDelAvatar'))}</label><select id="oracleAvatarSize"><option value="small" ${getVoicePrefs().avatarSize==='small'?'selected':''}>${escapeHTML(t('stPequeno'))}</option><option value="medium" ${getVoicePrefs().avatarSize!=='small' && getVoicePrefs().avatarSize!=='large'?'selected':''}>${escapeHTML(t('stMediano'))}</option><option value="large" ${getVoicePrefs().avatarSize==='large'?'selected':''}>${escapeHTML(t('stGrande'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stExpresionDelAvatar'))}</label><select id="oracleAvatarMood"><option value="auto" ${getVoicePrefs().avatarMood==='auto'?'selected':''}>${escapeHTML(t('stAutomaticaEmocional'))}</option><option value="calm" ${getVoicePrefs().avatarMood==='calm'?'selected':''}>${escapeHTML(t('stSerena'))}</option><option value="smile" ${getVoicePrefs().avatarMood==='smile'?'selected':''}>${escapeHTML(t('stSonriente'))}</option><option value="love" ${getVoicePrefs().avatarMood==='love'?'selected':''}>${escapeHTML(t('stAmor'))}</option><option value="warning" ${getVoicePrefs().avatarMood==='warning'?'selected':''}>${escapeHTML(t('stAdvertencia'))}</option><option value="blocked" ${getVoicePrefs().avatarMood==='blocked'?'selected':''}>${escapeHTML(t('stBloqueo'))}</option><option value="dream" ${getVoicePrefs().avatarMood==='dream'?'selected':''}>${escapeHTML(t('stIntuicion'))}</option><option value="power" ${getVoicePrefs().avatarMood==='power'?'selected':''}>${escapeHTML(t('stFuerza'))}</option><option value="serious" ${getVoicePrefs().avatarMood==='serious'?'selected':''}>${escapeHTML(t('stSeria'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stModoAlHablar'))}</label><select id="oracleAvatarSpeechMode"><option value="auto" ${getVoicePrefs().avatarSpeechMode==='auto'?'selected':''}>${escapeHTML(t('stAutomatico'))}</option><option value="channeling" ${getVoicePrefs().avatarSpeechMode==='channeling'?'selected':''}>${escapeHTML(t('stCanalizando'))}</option><option value="whisper" ${getVoicePrefs().avatarSpeechMode==='whisper'?'selected':''}>${escapeHTML(t('stSusurrando'))}</option></select></div>
     </div></div></details>
 
     <details class="settings-section">
-    <summary>🎨 Apariencia y privacidad</summary>
+    <summary>${escapeHTML(t('stAparienciaYPrivacidad'))}</summary>
     <div class="settings-section-content">
     <div class="form-grid">
-      <div class="field"><label>Tema visual</label><select id="themeSelect"><option value="gold" ${getTheme()==='gold'?'selected':''}>Dorado místico</option><option value="violet" ${getTheme()==='violet'?'selected':''}>Noche violeta</option><option value="forest" ${getTheme()==='forest'?'selected':''}>Bosque rúnico</option><option value="blue" ${getTheme()==='blue'?'selected':''}>Luna azul</option><option value="classic" ${getTheme()==='classic'?'selected':''}>Tarot clásico</option><option value="light" ${getTheme()==='light'?'selected':''}>Claro elegante</option></select></div>
-      <div class="field"><label>Luz de la app</label><select id="appearanceModeSelect" data-om-appearance-select><option value="dark" ${getAppearanceMode()==='dark'?'selected':''}>Noche</option><option value="light" ${getAppearanceMode()==='light'?'selected':''}>Día</option></select></div>
-      <div class="field"><label>Modo privado</label><select id="privateModeSelect"><option value="false" ${!isPrivateMode()?'selected':''}>Guardar historial normalmente</option><option value="true" ${isPrivateMode()?'selected':''}>No guardar nuevas lecturas</option></select></div>
-      <div class="field"><label>Estilo PDF por defecto</label><select id="pdfStyleSelect"><option value="premium" ${getPdfStyle()==='premium'?'selected':''}>Premium místico</option><option value="light" ${getPdfStyle()==='light'?'selected':''}>Claro elegante</option><option value="summary" ${getPdfStyle()==='summary'?'selected':''}>Resumen 1 página</option></select></div>
-      <div class="field"><label>Modo foco / menos animaciones</label><select id="focusModeSelect"><option value="false" ${!isFocusMode()?'selected':''}>Animaciones completas</option><option value="true" ${isFocusMode()?'selected':''}>Reducir animaciones</option></select></div>
-      <div class="field"><label>Modo rendimiento real</label><select id="performanceModeSelect"><option value="false" ${!isPerformanceMode()?'selected':''}>Normal</option><option value="true" ${isPerformanceMode()?'selected':''}>Rendimiento móvil</option></select></div>
-      <div class="field om-3d-control"><label>Efectos 3D</label><select id="effects3dSelect"><option value="auto" ${effects3d==='auto'?'selected':''}>Automático</option><option value="high" ${effects3d==='high'?'selected':''}>Alto</option><option value="balanced" ${effects3d==='balanced'?'selected':''}>Equilibrado</option><option value="reduced" ${effects3d==='reduced'?'selected':''}>Reducido</option><option value="off" ${effects3d==='off'?'selected':''}>Desactivado</option></select><small>Usa fallback 2D si WebGL falla, el dispositivo lo pide o eliges desactivarlo.</small></div>
+      <div class="field"><label>${escapeHTML(t('stTemaVisual'))}</label><select id="themeSelect"><option value="gold" ${getTheme()==='gold'?'selected':''}>${escapeHTML(t('stDoradoMistico'))}</option><option value="violet" ${getTheme()==='violet'?'selected':''}>${escapeHTML(t('stNocheVioleta'))}</option><option value="forest" ${getTheme()==='forest'?'selected':''}>${escapeHTML(t('stBosqueRunico'))}</option><option value="blue" ${getTheme()==='blue'?'selected':''}>${escapeHTML(t('stLunaAzul'))}</option><option value="classic" ${getTheme()==='classic'?'selected':''}>${escapeHTML(t('stTarotClasico'))}</option><option value="light" ${getTheme()==='light'?'selected':''}>${escapeHTML(t('stClaroElegante'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stLuzDeLaApp'))}</label><select id="appearanceModeSelect" data-om-appearance-select><option value="dark" ${getAppearanceMode()==='dark'?'selected':''}>${escapeHTML(t('stNoche'))}</option><option value="light" ${getAppearanceMode()==='light'?'selected':''}>${escapeHTML(t('stDia'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stModoPrivado'))}</label><select id="privateModeSelect"><option value="false" ${!isPrivateMode()?'selected':''}>${escapeHTML(t('stGuardarHistorialNormalmente'))}</option><option value="true" ${isPrivateMode()?'selected':''}>${escapeHTML(t('stNoGuardarNuevasLecturas'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stEstiloPdfPorDefecto'))}</label><select id="pdfStyleSelect"><option value="premium" ${getPdfStyle()==='premium'?'selected':''}>${escapeHTML(t('stPremiumMistico'))}</option><option value="light" ${getPdfStyle()==='light'?'selected':''}>${escapeHTML(t('stClaroElegante'))}</option><option value="summary" ${getPdfStyle()==='summary'?'selected':''}>${escapeHTML(t('stResumen1Pagina'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stModoFocoMenosAnimaciones'))}</label><select id="focusModeSelect"><option value="false" ${!isFocusMode()?'selected':''}>${escapeHTML(t('stAnimacionesCompletas'))}</option><option value="true" ${isFocusMode()?'selected':''}>${escapeHTML(t('stReducirAnimaciones'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stModoRendimientoReal'))}</label><select id="performanceModeSelect"><option value="false" ${!isPerformanceMode()?'selected':''}>${escapeHTML(t('stNormal'))}</option><option value="true" ${isPerformanceMode()?'selected':''}>${escapeHTML(t('stRendimientoMovil'))}</option></select></div>
+      <div class="field om-3d-control"><label>${escapeHTML(t('stEfectos3d'))}</label><select id="effects3dSelect"><option value="auto" ${effects3d==='auto'?'selected':''}>${escapeHTML(t('stAutomatico'))}</option><option value="high" ${effects3d==='high'?'selected':''}>${escapeHTML(t('stAlto'))}</option><option value="balanced" ${effects3d==='balanced'?'selected':''}>${escapeHTML(t('stEquilibrado'))}</option><option value="reduced" ${effects3d==='reduced'?'selected':''}>${escapeHTML(t('stReducido'))}</option><option value="off" ${effects3d==='off'?'selected':''}>${escapeHTML(t('stDesactivado'))}</option></select><small>${escapeHTML(t('stUsaFallback2dSiWebglFalla'))}</small></div>
     </div></div></details>
     </div>
 
-    <h3 class="section-title">Acciones rápidas</h3>
+    <h3 class="section-title">${escapeHTML(t('stAccionesRapidas'))}</h3>
     <div class="panel-grid settings-actions">
-      <button class="choice" data-act="save-settings"><strong>💾 Guardar ajustes</strong><small>Guarda perfil, voz y ceremonia.</small></button>
-      <button class="choice" data-act="connect-ai"><strong>🤖 Conectar Puter IA</strong><small>Amplía lecturas y habilita búsquedas externas.</small></button>
-      <button class="choice" data-act="test-voice"><strong>🔊 Escuchar ejemplo</strong><small>Comprueba la voz seleccionada.</small></button>
-      <button class="choice" data-act="voice-library"><strong>🎙️ Añadir voces</strong><small>Guía para iPhone y Android.</small></button>
-      <button class="choice" data-act="preview-avatar"><strong>🪄 Vista previa del avatar</strong><small>Ver el oráculo animado.</small></button>
-      <button class="choice" data-act="stop-voice"><strong>⏹️ Parar voz</strong><small>Detiene la lectura hablada.</small></button>
-      <button class="choice" data-act="toggle-contrast"><strong>🌗 Alto contraste</strong><small>${prefs.highContrast?'Activado':'Desactivado'}</small></button>
-      <button class="choice" data-act="toggle-large-text"><strong>🔎 Texto grande</strong><small>${prefs.largeText?'Activado':'Desactivado'}</small></button>
+      <button class="choice" data-act="save-settings"><strong>${escapeHTML(t('stGuardarAjustes'))}</strong><small>${escapeHTML(t('stGuardaPerfilVozYCeremonia'))}</small></button>
+      <button class="choice" data-act="connect-ai"><strong>${escapeHTML(t('stConectarPuterIa'))}</strong><small>${escapeHTML(t('stAmpliaLecturasYHabilitaBusquedasExternas'))}</small></button>
+      <button class="choice" data-act="test-voice"><strong>${escapeHTML(t('stEscucharEjemplo'))}</strong><small>${escapeHTML(t('stCompruebaLaVozSeleccionada'))}</small></button>
+      <button class="choice" data-act="voice-library"><strong>${escapeHTML(t('stAnadirVoces'))}</strong><small>${escapeHTML(t('stGuiaParaIphoneYAndroid'))}</small></button>
+      <button class="choice" data-act="preview-avatar"><strong>${escapeHTML(t('stVistaPreviaDelAvatar'))}</strong><small>${escapeHTML(t('stVerElOraculoAnimado'))}</small></button>
+      <button class="choice" data-act="stop-voice"><strong>${escapeHTML(t('stPararVoz'))}</strong><small>${escapeHTML(t('stDetieneLaLecturaHablada'))}</small></button>
+      <button class="choice" data-act="toggle-contrast"><strong>${escapeHTML(t('stAltoContraste'))}</strong><small>${prefs.highContrast?'Activado':'Desactivado'}</small></button>
+      <button class="choice" data-act="toggle-large-text"><strong>${escapeHTML(t('stTextoGrande'))}</strong><small>${prefs.largeText?'Activado':'Desactivado'}</small></button>
     </div>
-    <h3 class="section-title">Datos y ayuda</h3>
+    <h3 class="section-title">${escapeHTML(t('stDatosYAyuda'))}</h3>
     <div class="panel-grid settings-actions">
-      <button class="choice" data-act="backup-data"><strong>🧳 Crear copia de seguridad</strong><small>Exporta tus datos en un archivo.</small></button>
-      <button class="choice" data-act="import-backup"><strong>📥 Restaurar copia</strong><small>Recupera una copia guardada anteriormente.</small></button>
-      <button class="choice" data-act="privacy-center"><strong>🔐 Privacidad y datos</strong><small>Controla el historial local.</small></button>
-      <button class="choice" data-act="install-help"><strong>📲 Instalar aplicación</strong><small>Añádela a iPhone o Android.</small></button>
-      <button class="choice" data-act="open-manual"><strong>📘 Manual de usuario</strong><small>Abrir la guía completa en PDF.</small></button>
+      <button class="choice" data-act="backup-data"><strong>${escapeHTML(t('stCrearCopiaDeSeguridad'))}</strong><small>${escapeHTML(t('stExportaTusDatosEnUnArchivo'))}</small></button>
+      <button class="choice" data-act="import-backup"><strong>${escapeHTML(t('stRestaurarCopia'))}</strong><small>${escapeHTML(t('stRecuperaUnaCopiaGuardadaAnteriormente'))}</small></button>
+      <button class="choice" data-act="privacy-center"><strong>${escapeHTML(t('stPrivacidadYDatos'))}</strong><small>${escapeHTML(t('stControlaElHistorialLocal'))}</small></button>
+      <button class="choice" data-act="install-help"><strong>${escapeHTML(t('stInstalarAplicacion'))}</strong><small>${escapeHTML(t('stAnadelaAIphoneOAndroid'))}</small></button>
+      <button class="choice" data-act="open-manual"><strong>${escapeHTML(t('stManualDeUsuario'))}</strong><small>${escapeHTML(t('stAbrirLaGuiaCompletaEnPdf'))}</small></button>
     </div>
-    <p class="notice mt">Las lecturas y preferencias se guardan en este dispositivo, salvo que actives servicios de IA externos.</p>` });
+    <p class="notice mt">${escapeHTML(t('stLasLecturasYPreferenciasSeGuardan'))}</p>` });
 }
 
 
@@ -4640,7 +4650,7 @@ function handleAction(action) {
     'clear-chat': clearChatData,
     'clear-profile': clearProfileData,
     'factory-reset': factoryResetData,
-    'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast('Guía completada.'); },
+    'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast(t('tsGuideDone')); },
     'grab-clear': () => { grabSeleccion.clear(); refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
     'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
@@ -4649,7 +4659,7 @@ function handleAction(action) {
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
     'open-manual': () => window.open('docs/manual_usuario_oraculo_mistico_v1_0.pdf', '_blank'),
     'mi-oraculo': showMiOraculo,
-    'save-profile': () => { const birth=$('#profileBirth')?.value || ''; const birthTime=$('#profileBirthTime')?.value || ''; const placeLabel=($('#profileBirthPlace')?.value || '').trim(); const birthPlace=placeLabel ? { ...(getBirthPlace() || {}), label:placeLabel } : null; setProfile({ birth, birthTime, birthPlace, sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); setBirthDate(birth); setBirthTime(birthTime); if (birthPlace) setBirthPlace(birthPlace); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast('Mi Oráculo guardado.'); showMiOraculo(); },
+    'save-profile': () => { const birth=$('#profileBirth')?.value || ''; const birthTime=$('#profileBirthTime')?.value || ''; const placeLabel=($('#profileBirthPlace')?.value || '').trim(); const birthPlace=placeLabel ? { ...(getBirthPlace() || {}), label:placeLabel } : null; setProfile({ birth, birthTime, birthPlace, sign: $('#profileSign')?.value || '', intention: $('#profileIntention')?.value || '', favoriteSpread: $('#profileSpread')?.value || 'three' }); setBirthDate(birth); setBirthTime(birthTime); if (birthPlace) setBirthPlace(birthPlace); localStorage.setItem(LS.intention, $('#profileIntention')?.value || 'libre'); updateHome(); toast(t('tsProfileSaved')); showMiOraculo(); },
     'profile-favorite-spread': () => drawTarotSpread(getProfile().favoriteSpread || 'three'),
     'toggle-private': () => { setPrivateMode(!isPrivateMode()); updateHome(); showMiOraculo(); },
     'import-backup': () => { const input=document.createElement('input'); input.type='file'; input.accept='application/json,.json'; input.onchange=()=>importBackupFromFile(input.files?.[0]); input.click(); },
@@ -4676,9 +4686,9 @@ function handleAction(action) {
     'start-guided-three': startGuidedThree,
     'ai-reading': async () => {
       const base = getReadingText();
-      if (!lastReading) return toast('Primero crea una lectura.');
+      if (!lastReading) return toast(t('tsNeedReading'));
       if (localStorage.getItem(LS.puter) !== 'true') {
-        setAIReadingPanel(`<h3>🤖 IA no conectada</h3><p>Conecta Puter IA para profundizar esta lectura sin salir de la tirada.</p><div class="actions mt"><button class="btn primary compact" data-act="connect-ai" type="button">Conectar IA</button></div>`, 'warning');
+        setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoConectada'))}</h3><p>${escapeHTML(t('stConectaPuterIaParaProfundizarEsta'))}</p><div class="actions mt"><button class="btn primary compact" data-act="connect-ai" type="button">Conectar IA</button></div>`, 'warning');
         return;
       }
       const isGrabovoi = lastReading.type === 'Grabovoi';
@@ -4693,9 +4703,9 @@ ${base}`;
       const ai = cleanClosedReading(rawAI);
       if (ai) {
         lastReading.ai = ai;
-        setAIReadingPanel(`<h3>🤖 Interpretación IA</h3><p>${escapeHTML(ai).replace(/\n/g,'<br>')}</p><div class="actions mt"><button class="btn compact" data-act="speak-ai" type="button">🔊 Leer IA</button><button class="btn compact" data-act="stop-voice" type="button">⏹️ Parar</button><button class="btn compact" data-act="copy-reading" type="button">📋 Copiar todo</button><button class="btn compact" data-act="pdf-reading" type="button">📄 Incluir IA en PDF</button></div>`, 'success');
+        setAIReadingPanel(`<h3>${escapeHTML(t('stInterpretacionIa'))}</h3><p>${escapeHTML(ai).replace(/\n/g,'<br>')}</p><div class="actions mt"><button class="btn compact" data-act="speak-ai" type="button">🔊 Leer IA</button><button class="btn compact" data-act="stop-voice" type="button">⏹️ Parar</button><button class="btn compact" data-act="copy-reading" type="button">📋 Copiar todo</button><button class="btn compact" data-act="pdf-reading" type="button">📄 Incluir IA en PDF</button></div>`, 'success');
       } else {
-        setAIReadingPanel(`<h3>IA no disponible ahora</h3><p>La lectura simbólica sigue activa. Puedes reintentar en unos segundos o conectar Puter IA desde ajustes.</p>`, 'warning');
+        setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoDisponibleAhora'))}</h3><p>${escapeHTML(t('stLaLecturaSimbolicaSigueActivaPuedes'))}</p>`, 'warning');
       }
     },
     'speak-reading': () => speakText(getReadingText()),
@@ -4706,7 +4716,7 @@ ${base}`;
     'voice-library': showVoiceLibrary,
     'open-tts-settings': () => window.AndroidTTS?.openSettings?.(),
     'open-web-ai': () => window.AndroidTTS?.openExternal?.('https://appsjcm.github.io/oraculomistico2/'),
-    'refresh-voices': () => { toast('Revisando las voces instaladas...'); reloadDeviceVoices({ reopenLibrary:true }); },
+    'refresh-voices': () => { toast(t('tsCheckVoices')); reloadDeviceVoices({ reopenLibrary:true }); },
     'export-diary': () => { const diary=storeGet(LS.diary,[]); downloadTextFile('biblioteca-mistica.txt', diary.map(d=>`${d.title}\n${new Date(d.date).toLocaleString()}\n${d.text}`).join('\n\n---\n\n')); },
     'clear-diary': () => { if(confirm('¿Vaciar la Biblioteca Mística?')){ storeSet(LS.diary,[]); showBiblioteca(); } },
     'open-chat': showChatRitual
@@ -4851,7 +4861,7 @@ function boot() {
   }
   window.addEventListener('nativevoiceschanged', () => {
     refreshDeviceVoiceSelect();
-    toast('Catálogo TTS de Android preparado.');
+    toast(t('tsTtsReady'));
   });
     showGuide(false);
     ensureOracleAvatarHost();
