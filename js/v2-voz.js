@@ -16,6 +16,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const LS_VELOCIDAD = 'oraculo.v2.voz.velocidad';
   const LS_SILENCIO  = 'oraculo.v2.voz.silencio';
+  let cierrePendiente = null;
 
   const sintesis = () => window.speechSynthesis || null;
 
@@ -87,6 +88,10 @@
       panel.className = 'om-voz-panel';
       document.body.appendChild(panel);
     }
+    if (cierrePendiente) {
+      clearTimeout(cierrePendiente);
+      cierrePendiente = null;
+    }
     const vel = leerNum(LS_VELOCIDAD, 1);
     panel.innerHTML = `
       <div class="om-sheet-backdrop" data-voz="cerrar"></div>
@@ -126,6 +131,7 @@
         </div>
       </div>`;
     panel.hidden = false;
+    panel.setAttribute('aria-hidden', 'false');
     requestAnimationFrame(() => panel.classList.add('om-sheet-open'));
     (window.OraculoSheets?.lock || (() => document.body.classList.add('om-sheet-lock')))();
     pintarControles();
@@ -138,14 +144,36 @@
     });
   }
 
-  function cerrarPanel() {
+  function cerrarPanel({ inmediato = false } = {}) {
     const panel = $('#omVozPanel');
-    if (!panel) return;
+    if (!panel) {
+      window.OraculoSheets?.refreshLock?.();
+      return;
+    }
+    if (cierrePendiente) {
+      clearTimeout(cierrePendiente);
+      cierrePendiente = null;
+    }
     panel.classList.remove('om-sheet-open');
-    if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
-    else document.body.classList.remove('om-sheet-lock');
-    setTimeout(() => { panel.hidden = true; }, 240);
+    panel.setAttribute('aria-hidden', 'true');
+    const ocultar = () => {
+      if (panel.classList.contains('om-sheet-open')) return;
+      panel.hidden = true;
+      cierrePendiente = null;
+      if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+      else document.body.classList.remove('om-sheet-lock');
+    };
+    if (inmediato) ocultar();
+    else {
+      if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+      else document.body.classList.remove('om-sheet-lock');
+      cierrePendiente = setTimeout(ocultar, 240);
+    }
   }
+
+  window.OraculoSheets = Object.assign({}, window.OraculoSheets, {
+    closeVoice: cerrarPanel
+  });
 
   /* ---------- Acciones ---------- */
   function probar() {
@@ -167,6 +195,13 @@
     const est = $('.om-voz-estado');
     if (est) est.textContent = sil ? tr('vMutedNote') : tr('vBackNote');
   }
+
+  document.addEventListener('click', (ev) => {
+    const accion = ev.target?.closest?.('[data-act]');
+    if (accion?.closest?.('#omVozPanel') && ['voice-library', 'preview-avatar'].includes(accion.dataset.act)) {
+      cerrarPanel({ inmediato: true });
+    }
+  }, true);
 
   document.addEventListener('click', (ev) => {
     const t = ev.target?.closest?.('[data-voz]');

@@ -399,7 +399,13 @@
 @keyframes omPuntos { 0%, 60%, 100% { opacity: 0 } 30% { opacity: 1 } }
 
 /* Panel de La Voz del Oráculo */
-.om-voz-panel { position: fixed; inset: 0; z-index: 130; }
+.om-voz-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  pointer-events: none;
+}
+.om-voz-panel.om-sheet-open { pointer-events: auto; }
 .om-voz-panel[hidden] { display: none !important; }
 .om-voz-caja { width: min(520px, 100%); }
 .om-voz-caja .om-sheet-body { display: flex; flex-direction: column; align-items: center; text-align: center; }
