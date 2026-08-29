@@ -90,6 +90,40 @@ function toast(text) {
   setTimeout(() => el.remove(), 3200);
 }
 
+/* aria-modal="true" solo habla a los lectores de pantalla: el Tab seguia
+   saliendo del dialogo hacia la pagina de detras, invisible bajo el velo
+   y sin forma evidente de volver. inert la retira a la vez del recorrido
+   de teclado y del arbol de accesibilidad. */
+const SIN_AISLAR = new Set(['modalRoot', 'toastRoot']);
+const HAY_INERT = 'inert' in HTMLElement.prototype;
+
+function aislarFondo(activo) {
+  Array.from(document.body.children).forEach(el => {
+    if (SIN_AISLAR.has(el.id)) return;
+    if (activo) el.setAttribute('inert', '');
+    else el.removeAttribute('inert');
+  });
+}
+
+/* Reserva para navegadores sin inert: se cicla el Tab a mano dentro del
+   panel. Hace lo mismo, solo que sin ocultarlo del lector de pantalla,
+   que en esos navegadores ya cubre aria-modal. */
+const FOCALIZABLES = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+function cicloDeTabulacion(e) {
+  if (e.key !== 'Tab') return;
+  const panel = $('#modalRoot .modal-panel');
+  if (!panel) return;
+  const focos = Array.from(panel.querySelectorAll(FOCALIZABLES)).filter(x => x.offsetParent !== null);
+  if (!focos.length) return;
+  const primero = focos[0], ultimo = focos[focos.length - 1];
+  if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+  else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+}
+
+/* Quien abrio el modal recupera el foco al cerrarse: si no, el teclado
+   vuelve al principio del documento y se pierde el sitio. */
+let focoPrevio = null;
+
 function openModal({ icon = '🔮', title = 'Oráculo', subtitle = '', body = '', actions = '' }) {
   const root = $('#modalRoot');
   root.className = 'modal-root open';
@@ -104,6 +138,11 @@ function openModal({ icon = '🔮', title = 'Oráculo', subtitle = '', body = ''
       ${actions ? `<footer class="modal-actions">${actions}</footer>` : ''}
     </section>`;
   applyAppTranslations(root);
+  /* Solo se recuerda quien abrio el primero: un modal que abre otro no
+     debe pisar la referencia al boton original. */
+  if (!focoPrevio) focoPrevio = document.activeElement;
+  if (HAY_INERT) aislarFondo(true);
+  else document.addEventListener('keydown', cicloDeTabulacion, true);
   root.addEventListener('click', modalClickHandler, { once: true });
   document.addEventListener('keydown', escHandler, { once: true });
   setTimeout(() => $('.modal-close')?.focus(), 10);
@@ -113,7 +152,16 @@ function modalClickHandler(e) {
   else $('#modalRoot')?.addEventListener('click', modalClickHandler, { once: true });
 }
 function escHandler(e) { if (e.key === 'Escape') closeModal(); else document.addEventListener('keydown', escHandler, { once: true }); }
-function closeModal() { $('#modalRoot').className = 'modal-root'; $('#modalRoot').innerHTML = ''; }
+function closeModal() {
+  $('#modalRoot').className = 'modal-root';
+  $('#modalRoot').innerHTML = '';
+  if (HAY_INERT) aislarFondo(false);
+  else document.removeEventListener('keydown', cicloDeTabulacion, true);
+  if (focoPrevio && document.contains(focoPrevio)) {
+    try { focoPrevio.focus(); } catch { /* el elemento pudo desaparecer */ }
+  }
+  focoPrevio = null;
+}
 
 /* Las fuentes base de jsPDF no llevan acentos ni CJK: sin esto la
    cabecera salia con simbolos rotos al cambiar de idioma. */
