@@ -291,7 +291,7 @@
       </div>`;
     raiz.hidden = false;
     requestAnimationFrame(() => raiz.classList.add('om-sheet-open'));
-    document.body.classList.add('om-sheet-lock');
+    (window.OraculoSheets?.lock || (() => document.body.classList.add('om-sheet-lock')))();
     pintar();
     const buscar = $('#omGrimBuscar');
     if (buscar) buscar.addEventListener('input', () => { consulta = buscar.value.trim(); pintar(); });
@@ -301,7 +301,8 @@
     const raiz = $('#omGrimorio');
     if (!raiz) return;
     raiz.classList.remove('om-sheet-open');
-    document.body.classList.remove('om-sheet-lock');
+    if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+    else document.body.classList.remove('om-sheet-lock');
     setTimeout(() => { raiz.hidden = true; }, 240);
   }
 

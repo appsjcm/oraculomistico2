@@ -15,6 +15,8 @@
 
   const LS_THEME = 'oraculo.v2.theme';
   const LS_APPEARANCE = 'oraculo.appearanceMode.v1';
+  let cierrePerfilPendiente = null;
+  let focoAntesPerfil = null;
 
   /* ---------- Tema ---------- */
   const TEMAS = ['arcano', 'lunar', 'cosmico', 'bosque', 'eclipse'];
@@ -124,27 +126,83 @@
     });
   }
 
+  function hayPanelBloqueanteAbierto() {
+    return Boolean($([
+      '#omProfile.om-sheet-open:not([hidden])',
+      '#omVozPanel.om-sheet-open:not([hidden])',
+      '#omGrimorio.om-sheet-open:not([hidden])',
+      '#omBiblioteca.om-sheet-open:not([hidden])',
+      '#omRitual.om-ritual-abierto:not([hidden])'
+    ].join(',')));
+  }
+
+  function bloquearPantalla() {
+    document.body.classList.add('om-sheet-lock');
+  }
+
+  function refrescarBloqueoPantalla() {
+    document.body.classList.toggle('om-sheet-lock', hayPanelBloqueanteAbierto());
+  }
+
+  function liberarPantallaSiProcede() {
+    requestAnimationFrame(() => setTimeout(refrescarBloqueoPantalla, 0));
+  }
+
   /* ---------- Perfil ---------- */
   function abrirPerfil() {
     const hoja = $('#omProfile');
     if (!hoja) return;
+    if (cierrePerfilPendiente) {
+      clearTimeout(cierrePerfilPendiente);
+      cierrePerfilPendiente = null;
+    }
+    focoAntesPerfil = document.activeElement;
     hoja.hidden = false;
-    requestAnimationFrame(() => hoja.classList.add('om-sheet-open'));
-    document.body.classList.add('om-sheet-lock');
+    hoja.setAttribute('aria-hidden', 'false');
+    bloquearPantalla();
+    requestAnimationFrame(() => {
+      if (hoja.hidden) return;
+      hoja.classList.add('om-sheet-open');
+      bloquearPantalla();
+    });
     const primero = hoja.querySelector('.om-sheet-close');
     if (primero) primero.focus();
   }
 
   function cerrarPerfil() {
     const hoja = $('#omProfile');
-    if (!hoja) return;
+    if (!hoja) {
+      liberarPantallaSiProcede();
+      return;
+    }
+    if (cierrePerfilPendiente) {
+      clearTimeout(cierrePerfilPendiente);
+      cierrePerfilPendiente = null;
+    }
     hoja.classList.remove('om-sheet-open');
-    document.body.classList.remove('om-sheet-lock');
-    const ocultar = () => { hoja.hidden = true; };
+    hoja.setAttribute('aria-hidden', 'true');
+    liberarPantallaSiProcede();
+    const ocultar = () => {
+      if (hoja.classList.contains('om-sheet-open')) return;
+      hoja.hidden = true;
+      cierrePerfilPendiente = null;
+      liberarPantallaSiProcede();
+    };
     if (movimientoReducido()) ocultar();
-    else setTimeout(ocultar, 260);
+    else cierrePerfilPendiente = setTimeout(ocultar, 260);
+    if (focoAntesPerfil && document.contains(focoAntesPerfil)) {
+      try { focoAntesPerfil.focus(); } catch {}
+    }
+    focoAntesPerfil = null;
     marcarNav('inicio');
   }
+
+  window.OraculoSheets = Object.assign({}, window.OraculoSheets, {
+    lock: bloquearPantalla,
+    refreshLock: liberarPantallaSiProcede,
+    syncLock: refrescarBloqueoPantalla,
+    closeProfile: cerrarPerfil
+  });
 
   /* ---------- Paneles avanzados ----------
      Siguen en el documento con todas sus acciones vivas. Si algo
@@ -183,7 +241,13 @@
       const nav = t.closest('[data-om-nav]');
       if (nav) {
         const destino = nav.dataset.omNav;
-        if (destino === 'perfil') { ev.preventDefault(); abrirPerfil(); return; }
+        if (destino === 'perfil') {
+          ev.preventDefault();
+          const perfil = $('#omProfile');
+          if (perfil && !perfil.hidden && perfil.classList.contains('om-sheet-open')) cerrarPerfil();
+          else abrirPerfil();
+          return;
+        }
         if (destino === 'cerrar-perfil') { ev.preventDefault(); cerrarPerfil(); return; }
         if (destino === 'paneles') { ev.preventDefault(); cerrarPerfil(); mostrarPaneles(); return; }
         ev.preventDefault();
@@ -204,10 +268,16 @@
       // El Orbe abre el Santuario
       if (t.closest('#omOrb')) { ev.preventDefault(); irA('santuario'); return; }
 
+      // Los subpaneles lanzados desde Perfil cierran primero la hoja para
+      // no dejar dos velos táctiles compitiendo en iOS.
+      const subpanel = t.closest('[data-om-voz], [data-om-grimorio], [data-om-biblioteca]');
+      if (subpanel && subpanel.closest('#omProfile')) cerrarPerfil();
+
       // Cualquier acción del motor que viva en los paneles ocultos
       // los despliega antes de ejecutarse.
       const accion = t.closest('[data-premium-action], [data-act], [data-module], [data-action]');
       if (accion) {
+        if (accion.closest('#omProfile')) cerrarPerfil();
         const cont = $('#omAdvanced');
         if (cont && cont.hidden && cont.contains(accion)) mostrarPaneles(false);
         // Al elegir un altar del Santuario se cierra el Perfil si estaba abierto.
@@ -287,6 +357,7 @@
     aplicarModoLuz(modoLuzGuardado());
     aplicarTema(temaGuardado());
     enlazar();
+    refrescarBloqueoPantalla();
     marcarNav('inicio');
     atenderAtajo();
   }

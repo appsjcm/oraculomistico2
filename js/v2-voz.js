@@ -127,7 +127,7 @@
       </div>`;
     panel.hidden = false;
     requestAnimationFrame(() => panel.classList.add('om-sheet-open'));
-    document.body.classList.add('om-sheet-lock');
+    (window.OraculoSheets?.lock || (() => document.body.classList.add('om-sheet-lock')))();
     pintarControles();
 
     const rango = $('#omVozVel');
@@ -142,7 +142,8 @@
     const panel = $('#omVozPanel');
     if (!panel) return;
     panel.classList.remove('om-sheet-open');
-    document.body.classList.remove('om-sheet-lock');
+    if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+    else document.body.classList.remove('om-sheet-lock');
     setTimeout(() => { panel.hidden = true; }, 240);
   }
 

@@ -53,7 +53,7 @@
         ${html}
       </div>`;
     raiz.hidden = false;
-    document.body.classList.add('om-sheet-lock');
+    (window.OraculoSheets?.lock || (() => document.body.classList.add('om-sheet-lock')))();
     requestAnimationFrame(() => raiz.classList.add('om-ritual-abierto'));
     const foco = raiz.querySelector('textarea, .om-ritual-cta');
     if (foco) setTimeout(() => foco.focus(), 60);
@@ -63,7 +63,8 @@
     const raiz = $('#omRitual');
     if (!raiz) return;
     raiz.classList.remove('om-ritual-abierto');
-    document.body.classList.remove('om-sheet-lock');
+    if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+    else document.body.classList.remove('om-sheet-lock');
     const ocultar = () => { raiz.hidden = true; raiz.innerHTML = ''; };
     menosMovimiento() ? ocultar() : setTimeout(ocultar, 240);
     estado = null;

@@ -315,7 +315,14 @@ body { background-color: var(--om-void); }
 /* ============================================================
    4 · PERFIL
    ============================================================ */
-.om-sheet { position: fixed; inset: 0; z-index: 120; }
+.om-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+.om-sheet[hidden] { display: none !important; }
+.om-sheet-open { pointer-events: auto; }
 .om-sheet-backdrop {
   position: absolute; inset: 0;
   background: rgba(4, 3, 9, .62);
@@ -328,9 +335,10 @@ body { background-color: var(--om-void); }
   position: absolute;
   left: 50%; bottom: 0;
   width: min(560px, 100%);
-  max-height: 88svh;
+  max-height: min(88svh, calc(var(--om-vv-alto, 100svh) - var(--om-safe-top) - 8px));
   transform: translate(-50%, 100%);
   display: flex; flex-direction: column;
+  touch-action: pan-y;
   border: 1px solid var(--om-line-2);
   border-bottom: 0;
   border-radius: var(--om-r-xl) var(--om-r-xl) 0 0;
@@ -365,8 +373,12 @@ body { background-color: var(--om-void); }
   overflow-y: auto;
   padding: var(--om-s-4) var(--om-s-5) calc(var(--om-s-7) + var(--om-safe-bottom));
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
-body.om-sheet-lock { overflow: hidden; }
+body.om-sheet-lock {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 
 .om-group-label {
   margin: var(--om-s-5) 0 var(--om-s-3);

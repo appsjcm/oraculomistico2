@@ -236,7 +236,7 @@
       </div>`;
     raiz.hidden = false;
     requestAnimationFrame(() => raiz.classList.add('om-sheet-open'));
-    document.body.classList.add('om-sheet-lock');
+    (window.OraculoSheets?.lock || (() => document.body.classList.add('om-sheet-lock')))();
     if (categoria === 'grabovoi') cargarGrabovoi();
     pintar();
     const b = $('#omBibBuscar');
@@ -247,7 +247,8 @@
     const raiz = $('#omBiblioteca');
     if (!raiz) return;
     raiz.classList.remove('om-sheet-open');
-    document.body.classList.remove('om-sheet-lock');
+    if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
+    else document.body.classList.remove('om-sheet-lock');
     setTimeout(() => { raiz.hidden = true; }, 240);
     abierto = null;
   }
