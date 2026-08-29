@@ -243,9 +243,7 @@
     const activo = ritualActivo();
     b.setAttribute('aria-pressed', String(activo));
     const desc = b.querySelector('small');
-    if (desc) desc.textContent = activo
-      ? 'Activado · intención, conexión y elección antes de cada tirada'
-      : 'Desactivado · las tiradas salen directamente';
+    if (desc) desc.textContent = activo ? tr('ritOn') : tr('ritOff');
   }
 
   document.addEventListener('click', (ev) => {
