@@ -5283,6 +5283,7 @@ function handleAction(action) {
     'ai-reading': async () => {
       const base = getReadingText();
       if (!lastReading) return toast(t('tsNeedReading'));
+      window.Oraculo3D?.releaseMemory?.();
       if (localStorage.getItem(LS.puter) !== 'true') {
         setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoConectada'))}</h3><p>${escapeHTML(t('stConectaPuterIaParaProfundizarEsta'))}</p><div class="actions mt"><button class="btn primary compact" data-act="connect-ai" type="button">Conectar IA</button></div>`, 'warning');
         return;
