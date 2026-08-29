@@ -1828,7 +1828,9 @@ function updateHome() {
     chipIA.innerHTML = `🤖 <span data-i18n="${clave}">${escapeHTML(t(clave))}</span>`;
   }
   const intention = localStorage.getItem(LS.intention) || getProfile().intention || 'libre';
-  $('#intentionChip').textContent = `🧭 Intención: ${intention}${isPrivateMode() ? ' · privado' : ''}`;
+  /* La intencion la escribe la persona: se muestra tal cual. Lo que
+     se traduce es la etiqueta y el aviso de modo privado. */
+  $('#intentionChip').textContent = `🧭 ${t('pmIntentionSet', { v: intention })}${isPrivateMode() ? ' · ' + t('pmPrivateTag') : ''}`;
   const platformChip = $('#platformStatusChip');
   if (platformChip) {
     const nativePlatform = window.AndroidTTS?.platform?.() || (window.AndroidTTS ? 'android' : '');

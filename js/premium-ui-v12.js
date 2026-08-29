@@ -215,14 +215,14 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
 
     if (hint) {
       hint.textContent = value
-        ? `Intención activa: ${value}`
-        : 'Se guardará solo en este dispositivo.';
+        ? OI('pmIntentionActive', { v: value })
+        : OI('ixSeGuardaraSoloEnEsteDispositivo');
     }
 
     if (chip) {
       chip.innerHTML = value
-        ? `🧭 <span>Intención: ${value}</span>`
-        : `🧭 <span data-i18n="intentionFree">Intención: libre</span>`;
+        ? `🧭 <span>${OI('pmIntentionSet', { v: value })}</span>`
+        : `🧭 <span data-i18n="intentionFree">${OI('intentionFree')}</span>`;
     }
   }
 
@@ -250,7 +250,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
 
     if (action === 'clear-intention') {
       setIntention('');
-      toast('Intención limpiada.');
+      toast(OI('pmIntentionCleared'));
       return;
     }
 
@@ -312,15 +312,15 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
   const LS_IMMERSIVE = 'oraculo.superPremium.immersive';
 
   const actions = [
-    { label: 'Tarot', desc: 'Abrir módulo de tarot', run: () => document.querySelector('.module-card[data-module="tarot"]')?.click() },
-    { label: 'Runas', desc: 'Abrir runas', run: () => document.querySelector('.module-card[data-module="runas"]')?.click() },
-    { label: 'Luna', desc: 'Abrir lectura lunar', run: () => document.querySelector('.module-card[data-module="luna"]')?.click() },
-    { label: 'Sueños', desc: 'Interpretación de sueños', run: () => document.querySelector('.module-card[data-module="suenos"]')?.click() },
-    { label: 'Numerología', desc: 'Abrir numerología', run: () => document.querySelector('.module-card[data-module="numerologia"]')?.click() },
-    { label: 'Biblioteca', desc: 'Abrir diario y guardados', run: () => document.querySelector('.module-card[data-module="biblioteca"]')?.click() },
-    { label: 'Chat ritual', desc: 'Abrir chat ritual', run: () => document.querySelector('.module-card[data-module="chat"]')?.click() },
-    { label: 'Mensaje del día', desc: 'Revelar mensaje diario', run: () => document.querySelector('[data-action="daily"]')?.click() },
-    { label: 'Ajustes', desc: 'Abrir ajustes', run: () => document.querySelector('.module-card[data-action="settings"]')?.click() }
+    { label: 'tarot', desc: 'paTarotD', run: () => document.querySelector('.module-card[data-module="tarot"]')?.click() },
+    { label: 'runes', desc: 'paRunasD', run: () => document.querySelector('.module-card[data-module="runas"]')?.click() },
+    { label: 'moon', desc: 'paLunaD', run: () => document.querySelector('.module-card[data-module="luna"]')?.click() },
+    { label: 'dreams', desc: 'paSuenosD', run: () => document.querySelector('.module-card[data-module="suenos"]')?.click() },
+    { label: 'numerology', desc: 'paNumerologiaD', run: () => document.querySelector('.module-card[data-module="numerologia"]')?.click() },
+    { label: 'library', desc: 'paBibliotecaD', run: () => document.querySelector('.module-card[data-module="biblioteca"]')?.click() },
+    { label: 'paChat', desc: 'paChatD', run: () => document.querySelector('.module-card[data-module="chat"]')?.click() },
+    { label: 'dailyMessage', desc: 'paDailyD', run: () => document.querySelector('[data-action="daily"]')?.click() },
+    { label: 'settings', desc: 'paAjustesD', run: () => document.querySelector('.module-card[data-action="settings"]')?.click() }
   ];
 
   function openPalette() {
@@ -351,14 +351,14 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     if (!root) return;
     const q = query.trim().toLowerCase();
     const filtered = actions.filter(item =>
-      !q || item.label.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
+      !q || OI(item.label).toLowerCase().includes(q) || OI(item.desc).toLowerCase().includes(q)
     );
     root.innerHTML = '';
     filtered.forEach((item, idx) => {
       const btn = document.createElement('button');
       btn.className = 'premium-palette-item';
       btn.type = 'button';
-      btn.innerHTML = `<strong>${item.label}</strong><br><small>${item.desc}</small>`;
+      btn.innerHTML = `<strong>${escapeHTML(OI(item.label))}</strong><br><small>${escapeHTML(OI(item.desc))}</small>`;
       btn.addEventListener('click', () => {
         closePalette();
         item.run();
@@ -368,14 +368,14 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     if (!filtered.length) {
       const empty = document.createElement('div');
       empty.className = 'premium-palette-item';
-      empty.innerHTML = '<strong>Sin resultados</strong><br><small>Prueba otra búsqueda.</small>';
+      empty.innerHTML = `<strong>${OI('pmNoResults')}</strong><br><small>${OI('pmTryAnother')}</small>`;
       root.appendChild(empty);
     }
   }
 
   function syncDashboard() {
     const now = new Date();
-    const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const days = ['posDomingo','posLunes','posMartes','posMiercoles','posJueves','posViernes','posSabado'].map(k => OI(k));
     const day = days[now.getDay()];
     const visitNode = $('#premiumVisitCount');
     const todayNode = $('#premiumTodayLabel');
@@ -391,11 +391,13 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     }
 
     if (todayNode) todayNode.textContent = day;
-    if (todayMsg) todayMsg.textContent = 'Buen momento para una lectura con calma.';
-    const hint = $('#premiumIntentionHint')?.textContent || 'Libre';
-    if (intentionStatus) intentionStatus.textContent = hint.includes('Intención activa:')
-      ? hint.replace('Intención activa: ', '')
-      : 'Libre';
+    if (todayMsg) todayMsg.textContent = OI('pmTodayMessage');
+    const hint = $('#premiumIntentionHint')?.textContent || OI('pmFree');
+    /* La pista lleva delante la etiqueta traducida; se recorta por ella. */
+    const etiqueta = OI('pmIntentionActive', { v: '' }).trim();
+    if (intentionStatus) intentionStatus.textContent = hint.startsWith(etiqueta)
+      ? hint.slice(etiqueta.length).trim()
+      : OI('pmFree');
   }
 
   function bootTimer() {
@@ -507,11 +509,11 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     const bar = document.createElement('div');
     bar.className = 'premium-modal-toolbar';
     bar.innerHTML = `
-      <button type="button" data-v6-act="save">⭐ Guardar</button>
-      <button type="button" data-v6-act="copy">📋 Copiar</button>
-      <button type="button" data-v6-act="speak">🔊 Escuchar</button>
+      <button type="button" data-v6-act="save">${OI('pmSave')}</button>
+      <button type="button" data-v6-act="copy">${OI('pmCopy')}</button>
+      <button type="button" data-v6-act="speak">${OI('pmListen')}</button>
       <button type="button" data-v6-act="pdf">📄 PDF</button>
-      <button type="button" data-v6-act="focus">🌙 Enfoque</button>
+      <button type="button" data-v6-act="focus">${OI('pmFocusBtn')}</button>
     `;
     body.prepend(bar);
   }
@@ -546,7 +548,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
       return;
     }
     if (clickReal(selectors[action])) return;
-    toast('Esta acción estará disponible cuando haya una lectura activa.');
+    toast(OI('pmNeedReading'));
   }
 
   document.addEventListener('click', (e) => {
@@ -670,7 +672,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     if (!items.length) {
       const empty = document.createElement('div');
       empty.className = 'premium-activity-item';
-      empty.innerHTML = '<strong>Sin actividad todavía</strong><small>Empieza una lectura o guarda una nota.</small>';
+      empty.innerHTML = `<strong>${OI('pmNoActivity')}</strong><small>${OI('pmStartReading')}</small>`;
       root.appendChild(empty);
       return;
     }
@@ -1271,14 +1273,29 @@ const escapeHTML=(v="")=>String(v).replaceAll("&","&amp;").replaceAll("<","&lt;"
 const toast=(m)=>{const root=$("#toastRoot");if(!root){console.log("[Oráculo v12]",m);return}const t=document.createElement("div");t.className="toast premium-toast";t.textContent=m;root.appendChild(t);requestAnimationFrame(()=>t.classList.add("show"));setTimeout(()=>{t.classList.remove("show");setTimeout(()=>t.remove(),280)},2400)};
 const getSettings=()=>({...DEFAULT_SETTINGS,...readJSON(LS_SETTINGS,{})});const saveSettings=(patch)=>{const next={...getSettings(),...patch};writeJSON(LS_SETTINGS,next);applySettings(next)};
 const getVault=()=>readJSON(LS_VAULT,[]);const setVault=(items)=>{writeJSON(LS_VAULT,items);updateStats()};
-const label=(f)=>f==="all"?"Todas":f==="mayor"?"Mayores":f.charAt(0).toUpperCase()+f.slice(1);
+/* El filtro se guarda por su clave interna (all, mayor, bastos...) y
+   solo la etiqueta visible cambia de idioma. */
+const FILTER_KEY={all:"ixTodas",mayor:"ixMayores",bastos:"ixBastos",copas:"ixCopas",espadas:"ixEspadas",oros:"ixOros"};
+const label=(f)=>FILTER_KEY[f]?OI(FILTER_KEY[f]):f.charAt(0).toUpperCase()+f.slice(1);
 /* El motor arranca con datos propios y, en cuanto puede, se enriquece con el mazo
    real de la app (imágenes y significados por carta) mediante un mapeo posicional. */
 const DECK_BASE={M:0,B:22,C:36,E:50,O:64};
+const SUIT_KEY={M:"ixMayores",B:"ixBastos",C:"ixCopas",E:"ixEspadas",O:"ixOros"};
 const tidy=(v="")=>String(v).replace(/\s+/g," ").trim();
 const clampText=(t,n)=>{t=String(t||"");return t.length>n?t.slice(0,n-1).trimEnd()+"…":t};
-const cardArt=(c,cls,src)=>{const url=src||c.img;return url?`<div class="${cls}"><img src="${escapeHTML(url)}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async"></div>`:""};
+const cardArt=(c,cls,src)=>{const url=src||c.img;return url?`<div class="${cls}"><img src="${escapeHTML(url)}" alt="${escapeHTML(cardName(c))}" loading="lazy" decoding="async"></div>`:""};
 const cardText=(c)=>c.meaning||c.keywords;
+/* El nombre sale del catalogo del motor, que ya esta traducido. Se
+   consulta al pintar y no al cargar: la traduccion del mazo es
+   asincrona y antes llegaba tarde, dejando la biblioteca en castellano.
+   El id (M00, B01...) sigue siendo la clave y no cambia. */
+const cardName=(c)=>{
+  const mazo=window.OraculoArcanos?.mazo;
+  const base=DECK_BASE[c.id[0]];
+  if(!Array.isArray(mazo)||mazo.length!==78||base===undefined)return c.name;
+  const num=Number(c.id.slice(1));
+  return mazo[base+(c.id[0]==="M"?num:num-1)]?.name||c.name;
+};
 async function enrichWithDeck(){
   try{
     const [mod,cfg]=await Promise.all([
@@ -1295,31 +1312,32 @@ async function enrichWithDeck(){
       c.img=real.img||"";
       c.thumb=thumb(c.img);
       c.meaning=tidy(real.up)||c.keywords;
+      c.suit=OI(SUIT_KEY[c.id[0]]||"ixMayores");
     });
     return true;
   }catch(e){return false}
 }
-const filteredCards=()=>{const q=activeQuery.trim().toLowerCase();return CARDS.filter(c=>{const mf=activeFilter==="all"||c.type===activeFilter;const hay=`${c.name} ${c.type} ${c.suit} ${c.keywords} ${c.meaning||""}`.toLowerCase();return mf&&(!q||hay.includes(q))})};
+const filteredCards=()=>{const q=activeQuery.trim().toLowerCase();return CARDS.filter(c=>{const mf=activeFilter==="all"||c.type===activeFilter;const hay=`${cardName(c)} ${c.name} ${c.type} ${c.suit} ${c.keywords} ${c.meaning||""}`.toLowerCase();return mf&&(!q||hay.includes(q))})};
 /* La biblioteca se pagina: con las 78 ilustraciones de golpe la portada medía
    más de 30.000 px de scroll en móvil. */
 const PAGE_SIZE=12;let shownCards=PAGE_SIZE;
 const resetPaging=()=>{shownCards=PAGE_SIZE};
-const renderCards=()=>{const grid=$("#premiumRealCardGrid");if(!grid)return;const list=filteredCards();const count=$("#premiumCardCount"),current=$("#premiumCurrentFilter");if(count)count.textContent=String(list.length);if(current)current.textContent=label(activeFilter);if(!list.length){grid.innerHTML='<div class="premium-empty-state"><strong>No hay cartas con ese filtro.</strong><span>Prueba otra búsqueda o vuelve a “Todas”.</span></div>';return}const page=list.slice(0,shownCards);grid.innerHTML=page.map(c=>`<article class="premium-real-card${c.img?" has-art":""}" data-card-id="${escapeHTML(c.id)}" data-card-type="${escapeHTML(c.type)}">${c.img?cardArt(c,"card-art",c.thumb):`<div class="card-sigil">${escapeHTML(c.symbol)}</div>`}<h3>${escapeHTML(c.name)}</h3><p>${escapeHTML(clampText(cardText(c),120))}</p><div class="card-meta"><span>${escapeHTML(c.suit)}</span><span>${escapeHTML(c.type==="mayor"?"Arcano Mayor":"Arcano Menor")}</span></div></article>`).join("");if(list.length>page.length){const rest=list.length-page.length;grid.insertAdjacentHTML("beforeend",`<button type="button" class="premium-load-more" data-premium-action="load-more-cards">Mostrar ${Math.min(PAGE_SIZE,rest)} cartas más<small>${page.length} de ${list.length}</small></button>`)}};
+const renderCards=()=>{const grid=$("#premiumRealCardGrid");if(!grid)return;const list=filteredCards();const count=$("#premiumCardCount"),current=$("#premiumCurrentFilter");if(count)count.textContent=String(list.length);if(current)current.textContent=label(activeFilter);if(!list.length){grid.innerHTML=`<div class="premium-empty-state"><strong>${OI('pmNoCards')}</strong><span>${OI('pmTryOtherFilter')}</span></div>`;return}const page=list.slice(0,shownCards);grid.innerHTML=page.map(c=>`<article class="premium-real-card${c.img?" has-art":""}" data-card-id="${escapeHTML(c.id)}" data-card-type="${escapeHTML(c.type)}">${c.img?cardArt(c,"card-art",c.thumb):`<div class="card-sigil">${escapeHTML(c.symbol)}</div>`}<h3>${escapeHTML(cardName(c))}</h3><p>${escapeHTML(clampText(cardText(c),120))}</p><div class="card-meta"><span>${escapeHTML(c.suit)}</span><span>${escapeHTML(c.type==="mayor"?OI("pmMajor"):OI("pmMinor"))}</span></div></article>`).join("");if(list.length>page.length){const rest=list.length-page.length;grid.insertAdjacentHTML("beforeend",`<button type="button" class="premium-load-more" data-premium-action="load-more-cards">${OI("pmShowMore",{n:Math.min(PAGE_SIZE,rest)})}<small>${OI("pmOfTotal",{a:page.length,b:list.length})}</small></button>`)}};
 const updateStats=()=>{const v=$("#premiumVaultCount");if(v)v.textContent=String(getVault().length)};
 const shuffle=(a)=>{const n=[...a];for(let i=n.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[n[i],n[j]]=[n[j],n[i]]}return n};
 const spreadLabel=(c)=>c===1?OI("pmSpread1"):c===3?OI("pmSpread3"):c===5?OI("pmSpread5"):OI("pmSpreadN",{n:c});
 /* Misma clave interna que el motor: la cadena castellana. */
 const posOI=(p)=>{const k="pos"+String(p).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g," ").replace(/\b\w/g,c=>c.toUpperCase()).replace(/ /g,"");const v=OI(k);return v&&v!==k?v:p;};
 const pos=(c,i)=>{const p=({1:["Mensaje"],3:["Pasado","Presente","Consejo"],5:["Raíz","Reto","Energía","Consejo","Resultado"]}[c]||[])[i];return p?posOI(p):OI("lblCardN",{n:i+1});};
-const drawSpread=(count)=>{const r=$("#premiumSpreadResult");if(!r)return;const drawn=shuffle(CARDS).slice(0,count);lastSpread={id:`spread-${Date.now()}`,createdAt:new Date().toISOString(),type:spreadLabel(count),cards:drawn};r.innerHTML=drawn.map((c,i)=>`<article class="premium-drawn-card${c.img?" has-art":""}"><span class="draw-position">${escapeHTML(pos(count,i))}</span>${cardArt(c,"draw-art")}<h3>${escapeHTML(c.name)}</h3><p>${escapeHTML(cardText(c))}</p></article>`).join("");toast(OI("pmSpreadDone",{x:spreadLabel(count)}))};
-const saveSpread=()=>{if(!lastSpread){toast("Primero genera una tirada.");return}const v=getVault();if(!v.some(i=>i.id===lastSpread.id)){v.unshift(lastSpread);setVault(v.slice(0,30))}renderVault();toast(OI("savedSpread"))};
+const drawSpread=(count)=>{const r=$("#premiumSpreadResult");if(!r)return;const drawn=shuffle(CARDS).slice(0,count);lastSpread={id:`spread-${Date.now()}`,createdAt:new Date().toISOString(),type:spreadLabel(count),cards:drawn};r.innerHTML=drawn.map((c,i)=>`<article class="premium-drawn-card${c.img?" has-art":""}"><span class="draw-position">${escapeHTML(pos(count,i))}</span>${cardArt(c,"draw-art")}<h3>${escapeHTML(cardName(c))}</h3><p>${escapeHTML(cardText(c))}</p></article>`).join("");toast(OI("pmSpreadDone",{x:spreadLabel(count)}))};
+const saveSpread=()=>{if(!lastSpread){toast(OI("pmDrawFirst"));return}const v=getVault();if(!v.some(i=>i.id===lastSpread.id)){v.unshift(lastSpread);setVault(v.slice(0,30))}renderVault();toast(OI("savedSpread"))};
 const formatDate=(iso)=>{try{return new Intl.DateTimeFormat("es-ES",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(iso))}catch(e){return iso}};
-const renderVault=()=>{const root=$("#premiumVaultRealList");if(!root)return;const v=getVault();updateStats();if(!v.length){root.innerHTML='<div class="premium-empty-state"><strong>Aún no hay tiradas guardadas.</strong><span>Genera una lectura y pulsa “Guardar tirada”.</span></div>';return}root.innerHTML=v.map(item=>`<article class="premium-vault-entry"><strong>${escapeHTML(item.type)}</strong><span>${escapeHTML(formatDate(item.createdAt))}</span><div class="premium-vault-cards">${item.cards.map(c=>`<em>${escapeHTML(c.name)}</em>`).join("")}</div></article>`).join("")};
+const renderVault=()=>{const root=$("#premiumVaultRealList");if(!root)return;const v=getVault();updateStats();if(!v.length){root.innerHTML=`<div class="premium-empty-state"><strong>${OI('ixAunNoHayTiradasGuardadas')}</strong><span>${OI('ixGeneraUnaLecturaYPulsaGuardar')}</span></div>`;return}root.innerHTML=v.map(item=>`<article class="premium-vault-entry"><strong>${escapeHTML(item.type)}</strong><span>${escapeHTML(formatDate(item.createdAt))}</span><div class="premium-vault-cards">${item.cards.map(c=>`<em>${escapeHTML(c.name)}</em>`).join("")}</div></article>`).join("")};
 const clearVault=()=>{setVault([]);renderVault();toast(OI("savedCleared"))};
 const scrollEngine=()=>{const e=$("#premiumNativeEngine");if(e){e.scrollIntoView({behavior:"smooth",block:"start"});e.animate?.([{boxShadow:"0 0 0 rgba(247,217,139,0)"},{boxShadow:"0 0 80px rgba(247,217,139,.22)"},{boxShadow:"0 24px 90px rgba(0,0,0,.42)"}],{duration:900,easing:"ease-out"})}};
 const applySettings=(s=getSettings())=>{document.body.classList.toggle("premium-native-engine-off",!s.nativeEngine);document.body.classList.toggle("premium-compact-cards",!!s.compactCards);const n=$("#premiumNativeEngineToggle"),c=$("#premiumCompactCards");if(n)n.checked=!!s.nativeEngine;if(c)c.checked=!!s.compactCards};
-const bind=()=>{const search=$("#premiumRealCardSearch");if(search)search.addEventListener("input",()=>{activeQuery=search.value;resetPaging();renderCards()});$$(".engine-filter").forEach(b=>b.addEventListener("click",()=>{activeFilter=b.dataset.cardFilter||"all";$$('.engine-filter').forEach(x=>x.classList.toggle('active',x===b));resetPaging();renderCards()}));$$('[data-native-spread]').forEach(b=>b.addEventListener('click',()=>{if(!getSettings().nativeEngine){toast('Activa los Arcanos en Ajustes.');return}drawSpread(Number(b.dataset.nativeSpread||'1'))}));document.addEventListener('click',ev=>{const action=ev.target?.closest?.('[data-premium-action]')?.dataset?.premiumAction;if(action==='save-native-spread')saveSpread();if(action==='render-native-vault'){renderVault();toast('Lecturas guardadas actualizadas.')}if(action==='clear-native-vault')clearVault();if(action==='open-native-engine')scrollEngine();if(action==='load-more-cards'){shownCards+=PAGE_SIZE;renderCards()}});const n=$('#premiumNativeEngineToggle'),c=$('#premiumCompactCards');if(n)n.addEventListener('change',()=>saveSettings({nativeEngine:n.checked}));if(c)c.addEventListener('change',()=>saveSettings({compactCards:c.checked}))};
+const bind=()=>{const search=$("#premiumRealCardSearch");if(search)search.addEventListener("input",()=>{activeQuery=search.value;resetPaging();renderCards()});$$(".engine-filter").forEach(b=>b.addEventListener("click",()=>{activeFilter=b.dataset.cardFilter||"all";$$('.engine-filter').forEach(x=>x.classList.toggle('active',x===b));resetPaging();renderCards()}));$$('[data-native-spread]').forEach(b=>b.addEventListener('click',()=>{if(!getSettings().nativeEngine){toast(OI('pmEnableArcana'));return}drawSpread(Number(b.dataset.nativeSpread||'1'))}));document.addEventListener('click',ev=>{const action=ev.target?.closest?.('[data-premium-action]')?.dataset?.premiumAction;if(action==='save-native-spread')saveSpread();if(action==='render-native-vault'){renderVault();toast(OI('pmVaultUpdated'))}if(action==='clear-native-vault')clearVault();if(action==='open-native-engine')scrollEngine();if(action==='load-more-cards'){shownCards+=PAGE_SIZE;renderCards()}});const n=$('#premiumNativeEngineToggle'),c=$('#premiumCompactCards');if(n)n.addEventListener('change',()=>saveSettings({nativeEngine:n.checked}));if(c)c.addEventListener('change',()=>saveSettings({compactCards:c.checked}))};
 /* Si una ilustración no carga (sin conexión, host caído) la carta vuelve a su forma de texto. */
 const handleArtError=(e)=>{const img=e.target;if(!img||img.tagName!=="IMG")return;const art=img.closest(".card-art,.draw-art");if(!art)return;const host=art.closest(".premium-real-card,.premium-drawn-card");art.remove();if(host)host.classList.remove("has-art")};
-const init=()=>{applySettings();bind();renderCards();renderVault();updateStats();document.addEventListener("error",handleArtError,true);enrichWithDeck().then(ok=>{if(ok)renderCards()})};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init,{once:true}):init();
+const init=()=>{applySettings();bind();renderCards();renderVault();updateStats();document.addEventListener("error",handleArtError,true);enrichWithDeck().then(ok=>{if(ok)renderCards()});/* El mazo se traduce despues de este arranque; al avisar el motor se repinta. */document.addEventListener("oraculo:idioma-tarot",()=>{renderCards();renderVault()})};document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init,{once:true}):init();
 })();

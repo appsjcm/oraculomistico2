@@ -240,6 +240,12 @@ export async function usarIdiomaTarot(idioma = 'es') {
     await cargarIdioma(idioma);
     aplicarIdiomaTarot(idioma);
     aplicarIdiomaRunas(idioma);
+    /* La carga del idioma es asincrona: quien ya haya pintado nombres de
+       cartas (la biblioteca de la portada) necesita saber que ya estan
+       traducidos para repintar. Sin este aviso se quedaba en castellano. */
+    try {
+        document.dispatchEvent(new CustomEvent('oraculo:idioma-tarot', { detail: { idioma } }));
+    } catch { /* sin DOM no hay nada que avisar */ }
     return idioma;
 }
 
