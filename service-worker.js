@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-fraunces-95';
+const CACHE_NAME = 'oraculo-v1-0-public-astronomy-engine-96';
 const APP_SHELL = [
   './',
   './index.html',
@@ -19,6 +19,8 @@ const APP_SHELL = [
      titulos no cambien de aspecto al caer al respaldo. */
   './assets/vendor/fonts/fraunces-latin.woff2',
   './assets/vendor/fonts/fraunces-latin-ext.woff2',
+  './assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js',
+  './assets/vendor/astronomy-engine/2.1.19/LICENSE',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',

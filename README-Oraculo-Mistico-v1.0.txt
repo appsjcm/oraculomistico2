@@ -31,6 +31,13 @@ Numerología:
 - Sinastría entre dos personas basada en nombres y fechas.
 - Uso reflexivo y simbólico; no determina personalidad, futuro ni compatibilidad real.
 
+Astrología:
+- Carta natal, tirada astral del día y revolución solar simbólica.
+- Motor astronómico local con Astronomy Engine 2.1.19, licencia MIT, guardado en assets/vendor/astronomy-engine.
+- Respaldo propio para posiciones básicas si el motor externo no está disponible.
+- No usa Swiss Ephemeris ni requiere licencia profesional de Astrodienst.
+- La precisión busca acercarse a efemérides públicas; no sustituye una carta profesional certificada.
+
 Uso simbólico y de entretenimiento. No sustituye consejo profesional.
 
 Privacidad:

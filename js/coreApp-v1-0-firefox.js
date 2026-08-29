@@ -3145,6 +3145,18 @@ const ASTRO_ORBITAL_ELEMENTS = {
   uranus: d => ({ N:74.0005 + 1.3978e-5 * d, i:0.7733 + 1.9e-8 * d, w:96.6612 + 3.0565e-5 * d, a:19.18171 - 1.55e-8 * d, e:0.047318 + 7.45e-9 * d, M:142.5905 + 0.011725806 * d }),
   neptune: d => ({ N:131.7806 + 3.0173e-5 * d, i:1.77 - 2.55e-7 * d, w:272.8461 - 6.027e-6 * d, a:30.05826 + 3.313e-8 * d, e:0.008606 + 2.15e-9 * d, M:260.2471 + 0.005995147 * d })
 };
+const ASTRONOMY_ENGINE_BODY = {
+  sun:'Sun',
+  moon:'Moon',
+  mercury:'Mercury',
+  venus:'Venus',
+  mars:'Mars',
+  jupiter:'Jupiter',
+  saturn:'Saturn',
+  uranus:'Uranus',
+  neptune:'Neptune',
+  pluto:'Pluto'
+};
 const ASTRO_ASPECTS = [
   { name:'Conjunción', symbol:'☌', code:'CONJ', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
   { name:'Sextil', symbol:'⚹', code:'SEXT', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
@@ -3163,6 +3175,9 @@ function sinDeg(value) { return Math.sin(degToRad(value)); }
 function cosDeg(value) { return Math.cos(degToRad(value)); }
 function tanDeg(value) { return Math.tan(degToRad(value)); }
 function astroEngineLabel() { return t('asEngine'); }
+function astronomyEngine() {
+  return typeof window !== 'undefined' && window.Astronomy ? window.Astronomy : null;
+}
 function astroHouseSystemLabel(system = 'whole') {
   if (system === 'quadrant') return 'Casas por cuadrantes locales';
   return system === 'equal' ? 'Casas iguales desde el ascendente' : 'Casa entera por signo ascendente';
@@ -3413,6 +3428,23 @@ function geocentricPlanetLongitude(id = '', dateInfo = null) {
   const tomorrowDegree = normalizeDegree(radToDeg(Math.atan2(tomorrowPlanet.y + tomorrowSun.y, tomorrowPlanet.x + tomorrowSun.x)));
   return { degree, retrograde:signedDegreeDelta(degree, tomorrowDegree) < 0 };
 }
+function astronomyEngineLongitude(id = '', dateInfo = null) {
+  const Astronomy = astronomyEngine();
+  const bodyName = ASTRONOMY_ENGINE_BODY[id];
+  const body = bodyName && Astronomy?.Body?.[bodyName];
+  if (!body || !Number.isFinite(dateInfo?.ms) || typeof Astronomy.GeoVector !== 'function' || typeof Astronomy.Ecliptic !== 'function') return null;
+  try {
+    const longitudeAt = ms => {
+      const vector = Astronomy.GeoVector(body, new Date(ms), true);
+      return normalizeDegree(Astronomy.Ecliptic(vector).elon);
+    };
+    const degree = longitudeAt(dateInfo.ms);
+    const tomorrowDegree = longitudeAt(dateInfo.ms + 86400000);
+    return { degree, retrograde:id !== 'sun' && id !== 'moon' && signedDegreeDelta(degree, tomorrowDegree) < 0, engine:'astronomy-engine' };
+  } catch {
+    return null;
+  }
+}
 function sunLongitudeFromDays(days = 0) {
   const t = julianCenturiesFromDays(days);
   const sunMean = normalizeDegree(280.46646 + 36000.76983 * t + 0.0003032 * t * t);
@@ -3473,8 +3505,8 @@ function planetPositions(date = '', time = '12:00', place = null) {
   const dateInfo = astroDayCount(date, time, place);
   if (!dateInfo) return [];
   const { days } = dateInfo;
-  const sunLongitude = sunLongitudeFromDays(days);
-  const moonLongitude = moonLongitudeFromDays(days);
+  const sunLongitude = astronomyEngineLongitude('sun', dateInfo)?.degree ?? sunLongitudeFromDays(days);
+  const moonLongitude = astronomyEngineLongitude('moon', dateInfo)?.degree ?? moonLongitudeFromDays(days);
   const nodeLongitude = meanNorthNodeLongitude(days);
   return ASTRO_PLANETS.map(planet => {
     let degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
@@ -3482,7 +3514,7 @@ function planetPositions(date = '', time = '12:00', place = null) {
     if (planet.id === 'moon') degree = moonLongitude;
     if (planet.id === 'node') degree = nodeLongitude;
     let pointOverride = null;
-    const orbitalPosition = geocentricPlanetLongitude(planet.id, dateInfo);
+    const orbitalPosition = astronomyEngineLongitude(planet.id, dateInfo) || geocentricPlanetLongitude(planet.id, dateInfo);
     if (orbitalPosition) pointOverride = orbitalPosition;
     if (planet.id === 'chiron') pointOverride = chironLongitudeFromDateInfo(dateInfo, degree);
     if (planet.id === 'lilith') pointOverride = { degree:meanBlackMoonLilithLongitude(days), retrograde:false };
