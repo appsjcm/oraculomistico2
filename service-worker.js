@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-profile-lock-105';
+const CACHE_NAME = 'oraculo-v1-0-public-voice-picker-106';
 const APP_SHELL = [
   './',
   './index.html',
