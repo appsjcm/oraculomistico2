@@ -751,7 +751,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
   const defaultSettings = {
     reduceMotion: false,
     richCards: true,
-    showSplash: true
+    showSplash: false
   };
 
   function readSettings() {
@@ -855,8 +855,11 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
   function bootSplash() {
     const settings = readSettings();
     if (settings.showSplash) {
-      setTimeout(showSplash, 180);
+      settings.showSplash = false;
+      writeSettings(settings);
+      applySettings(settings);
     }
+    hideSplash();
   }
 
   document.addEventListener('click', (e) => {
