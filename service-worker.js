@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-day-night-87';
+const CACHE_NAME = 'oraculo-v1-0-public-astro-points-88';
 const APP_SHELL = [
   './',
   './index.html',
