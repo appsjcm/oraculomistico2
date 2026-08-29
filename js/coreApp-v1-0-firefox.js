@@ -3050,6 +3050,34 @@ const ASTRO_PLANETS = [
   { id:'chiron', name:'Quirón', symbol:'⚷', role:'herida sabia e integración', cycle:18453.3, offset:243.56, retroCycle:346 },
   { id:'lilith', name:'Lilith', symbol:'⚸', role:'instinto, límite y voz propia', cycle:3232.61, offset:83.353, type:'point' }
 ];
+const ASTRO_SIGN_SHORT = { ar:0, ta:1, ge:2, cn:3, le:4, vi:5, li:6, sc:7, sa:8, cp:9, aq:10, pi:11 };
+const CHIRON_MONTHLY_EPHEMERIS = {
+  1975:['19 ar 57','20 ar 24','21 ar 29','23 ar 9','24 ar 56','26 ar 36','27 ar 43','28 ar 9','27 ar 45 rx','26 ar 42 rx','25 ar 17 rx','24 ar 7 rx'],
+  1976:['23 ar 35 rx','23 ar 56','25 ar 0','26 ar 39','28 ar 27','0 ta 10','1 ta 22','1 ta 54','1 ta 35 rx','0 ta 34 rx','29 ar 9 rx','27 ar 56 rx'],
+  1977:['27 ar 18 rx','27 ar 35','28 ar 33','0 ta 11','2 ta 0','3 ta 47','5 ta 5','5 ta 44','5 ta 32 rx','4 ta 36 rx','3 ta 10 rx','1 ta 53 rx'],
+  1978:['1 ta 9 rx','1 ta 19','2 ta 12','3 ta 48','5 ta 39','7 ta 30','8 ta 54','9 ta 41','9 ta 37 rx','8 ta 45 rx','7 ta 20 rx','5 ta 59 rx'],
+  1979:['5 ta 8 rx','5 ta 10','5 ta 59','7 ta 33','9 ta 25','11 ta 20','12 ta 51','13 ta 46','13 ta 50 rx','13 ta 4 rx','11 ta 41 rx','10 ta 16 rx'],
+  1980:['9 ta 17 rx','9 ta 12','9 ta 58','11 ta 31','13 ta 24','15 ta 23','17 ta 0','18 ta 3','18 ta 14 rx','17 ta 32 rx','16 ta 10 rx','14 ta 42 rx']
+};
+const CHIRON_SIGN_PERIODS = [
+  ['1960-03-26',11], ['1960-08-19',10], ['1961-01-20',11],
+  ['1968-04-01',0], ['1968-10-18',11], ['1969-01-30',0],
+  ['1976-05-28',1], ['1976-10-13',0], ['1977-03-28',1],
+  ['1983-06-21',2], ['1983-11-29',1], ['1984-04-10',2],
+  ['1988-06-21',3], ['1991-07-21',4], ['1993-09-03',5],
+  ['1995-09-09',6], ['1996-12-29',7], ['1997-04-04',6],
+  ['1997-09-02',7], ['1999-01-07',8], ['1999-06-01',7],
+  ['1999-09-21',8], ['2001-12-11',9], ['2005-02-21',10],
+  ['2005-07-31',9], ['2005-12-05',10], ['2010-04-20',11],
+  ['2010-07-20',10], ['2011-02-08',11], ['2018-04-17',0],
+  ['2018-09-25',11], ['2019-02-18',0], ['2026-06-19',1],
+  ['2026-09-17',0], ['2027-04-14',1], ['2033-07-19',2],
+  ['2033-10-23',1], ['2034-05-05',2], ['2038-07-22',3],
+  ['2039-01-08',2], ['2039-04-26',3], ['2041-08-28',4],
+  ['2042-02-09',3], ['2042-05-16',4], ['2043-10-23',5],
+  ['2044-02-10',4], ['2044-07-01',5], ['2045-10-24',6]
+].map(([date, sign]) => ({ ms:Date.parse(`${date}T12:00:00Z`), sign }));
+let chironAnchorsCache = null;
 const ASTRO_ASPECTS = [
   { name:'Conjunción', symbol:'☌', code:'CONJ', angle:0, orb:7, text:'dos fuerzas piden actuar como una sola voz' },
   { name:'Sextil', symbol:'⚹', code:'SEXT', angle:60, orb:5, text:'aparece una cooperación sutil si se da el primer paso' },
@@ -3107,6 +3135,70 @@ function zodiacFromDegree(degree) {
 function astroDaysFromMs(ms) {
   return (Number(ms) - Date.UTC(2000, 0, 1, 12, 0)) / 86400000;
 }
+function parseAstroShortDegree(text = '') {
+  const match = String(text).trim().match(/^(\d{1,2})\s+([a-z]{2})\s+(\d{1,2})(?:\s+(rx))?$/i);
+  if (!match) return null;
+  const sign = ASTRO_SIGN_SHORT[match[2].toLowerCase()];
+  if (!Number.isFinite(sign)) return null;
+  return {
+    degree:normalizeDegree(sign * 30 + Number(match[1]) + Number(match[3]) / 60),
+    retrograde:Boolean(match[4])
+  };
+}
+function buildChironAnchors() {
+  if (chironAnchorsCache) return chironAnchorsCache;
+  const anchors = [];
+  Object.entries(CHIRON_MONTHLY_EPHEMERIS).forEach(([year, months]) => {
+    months.forEach((value, monthIndex) => {
+      const parsed = parseAstroShortDegree(value);
+      if (!parsed) return;
+      anchors.push({ ms:Date.UTC(Number(year), monthIndex, 1, 0, 0), ...parsed });
+    });
+  });
+  chironAnchorsCache = anchors.sort((a, b) => a.ms - b.ms);
+  return chironAnchorsCache;
+}
+function signedDegreeDelta(start = 0, end = 0) {
+  return ((normalizeDegree(end) - normalizeDegree(start) + 540) % 360) - 180;
+}
+function interpolatedChironFromAnchors(ms) {
+  const anchors = buildChironAnchors();
+  if (!anchors.length || ms < anchors[0].ms || ms > anchors[anchors.length - 1].ms) return null;
+  const nextIndex = anchors.findIndex(anchor => anchor.ms >= ms);
+  if (nextIndex <= 0) return { degree:anchors[0].degree, retrograde:anchors[0].retrograde };
+  const prev = anchors[nextIndex - 1];
+  const next = anchors[nextIndex];
+  const ratio = Math.max(0, Math.min(1, (ms - prev.ms) / (next.ms - prev.ms || 1)));
+  const delta = signedDegreeDelta(prev.degree, next.degree);
+  return { degree:normalizeDegree(prev.degree + delta * ratio), retrograde:delta < 0 || prev.retrograde || next.retrograde };
+}
+function chironFromSignPeriods(ms, fallbackDegree = 0) {
+  if (!Number.isFinite(ms)) return { degree:fallbackDegree, retrograde:false };
+  let index = -1;
+  for (let i = 0; i < CHIRON_SIGN_PERIODS.length; i += 1) {
+    if (CHIRON_SIGN_PERIODS[i].ms <= ms) index = i;
+    else break;
+  }
+  if (index < 0 || !CHIRON_SIGN_PERIODS[index + 1]) return { degree:fallbackDegree, retrograde:false };
+  const current = CHIRON_SIGN_PERIODS[index];
+  const next = CHIRON_SIGN_PERIODS[index + 1];
+  const ratio = Math.max(0, Math.min(1, (ms - current.ms) / (next.ms - current.ms || 1)));
+  const nextStep = (next.sign - current.sign + 12) % 12;
+  const retrograde = nextStep === 11;
+  const degreeInSign = retrograde ? 29.9 * (1 - ratio) : 29.9 * ratio;
+  return { degree:normalizeDegree(current.sign * 30 + degreeInSign), retrograde };
+}
+function chironLongitudeFromDateInfo(dateInfo, fallbackDegree = 0) {
+  const fromAnchors = interpolatedChironFromAnchors(dateInfo?.ms);
+  if (fromAnchors) return fromAnchors;
+  return chironFromSignPeriods(dateInfo?.ms, fallbackDegree);
+}
+function meanBlackMoonLilithLongitude(days = 0) {
+  const t = Number(days) / 36525;
+  const moonMean = 218.3164477 + 481267.88123421 * t - 0.0015786 * t * t + t * t * t / 538841 - Math.pow(t, 4) / 65194000;
+  const moonAnomaly = 134.9633964 + 477198.8675055 * t + 0.0087414 * t * t + t * t * t / 69699 - Math.pow(t, 4) / 14712000;
+  return normalizeDegree(moonMean - moonAnomaly + 180);
+}
 function sunLongitudeFromDays(days = 0) {
   const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
   const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
@@ -3155,8 +3247,12 @@ function planetPositions(date = '', time = '12:00', place = null) {
     let degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
     if (planet.id === 'sun') degree = sunLongitude;
     if (planet.id === 'moon') degree = moonLongitude;
+    let pointOverride = null;
+    if (planet.id === 'chiron') pointOverride = chironLongitudeFromDateInfo(dateInfo, degree);
+    if (planet.id === 'lilith') pointOverride = { degree:meanBlackMoonLilithLongitude(days), retrograde:false };
+    if (pointOverride) degree = pointOverride.degree;
     const retroPhase = planet.retroCycle ? normalizeDegree(days * 360 / planet.retroCycle + planet.offset) : 0;
-    const retrograde = Boolean(planet.retroCycle && cosDeg(retroPhase) < -0.58);
+    const retrograde = pointOverride ? Boolean(pointOverride.retrograde) : Boolean(planet.retroCycle && cosDeg(retroPhase) < -0.58);
     const sign = zodiacFromDegree(degree);
     return { ...planet, degree, retrograde, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, element:sign.element, keywords:sign.keywords };
   });
