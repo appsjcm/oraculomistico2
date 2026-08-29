@@ -450,6 +450,69 @@
   margin-bottom: 10px;
 }
 
+html[data-appearance-mode="light"] .modal-panel:has(.astro-grid),
+html[data-appearance-mode="light"] .modal-panel:has(.astro-panel-list),
+html[data-appearance-mode="light"] .modal-panel:has(.astro-day-grid) {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(141, 102, 255, .10), transparent 24rem),
+    radial-gradient(circle at 80% 8%, rgba(244, 207, 117, .16), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 253, 248, .99), rgba(246, 239, 227, .99));
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .modal-panel:has(.astro-grid) .modal-head,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-panel-list) .modal-head,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-day-grid) .modal-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .70), rgba(255, 255, 255, .22));
+  border-bottom-color: rgba(64, 45, 76, .14);
+}
+
+html[data-appearance-mode="light"] .modal-panel:has(.astro-grid) .modal-title,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-panel-list) .modal-title,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-day-grid) .modal-title,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-grid) .modal-title small,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-panel-list) .modal-title small,
+html[data-appearance-mode="light"] .modal-panel:has(.astro-day-grid) .modal-title small {
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .astro-chip,
+html[data-appearance-mode="light"] .astro-day-card {
+  border-color: rgba(64, 45, 76, .14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .84), rgba(255, 248, 236, .68));
+  color: #241b2e;
+  box-shadow: 0 10px 24px rgba(76, 54, 32, .08);
+}
+
+html[data-appearance-mode="light"] .astro-chip strong,
+html[data-appearance-mode="light"] .astro-day-card strong,
+html[data-appearance-mode="light"] .astro-summary-card h3,
+html[data-appearance-mode="light"] .astro-summary-card strong {
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .astro-chip small,
+html[data-appearance-mode="light"] .astro-day-card small,
+html[data-appearance-mode="light"] .astro-summary-card p,
+html[data-appearance-mode="light"] .astro-engine-note span {
+  color: rgba(36, 27, 46, .72);
+}
+
+html[data-appearance-mode="light"] .astro-symbol {
+  background: rgba(156, 116, 32, .12);
+  color: #9c7420;
+}
+
+html[data-appearance-mode="light"] .astro-engine-note {
+  border-color: rgba(64, 45, 76, .14);
+  background: rgba(255, 255, 255, .62);
+}
+
+html[data-appearance-mode="light"] .astro-engine-note strong {
+  color: #8c6518;
+}
+
 .astro-return-bridge {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
