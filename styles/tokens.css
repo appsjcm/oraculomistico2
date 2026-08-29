@@ -1,3 +1,29 @@
+/* ------------------------------------------------------------------
+   Fraunces, la tipografia de titulos del sistema de diseno.
+   Se aloja aqui en vez de enlazar a Google Fonts: el service worker
+   ignora todo lo que no sea del propio dominio, asi que enlazada de
+   fuera los titulos cambiarian de aspecto al quedarse sin conexion.
+   Es una fuente variable: un solo archivo cubre los pesos 400 a 700.
+   El subconjunto extendido solo se descarga si la pagina usa alguno
+   de sus caracteres. Licencia SIL Open Font License 1.1.
+   ------------------------------------------------------------------ */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../assets/vendor/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../assets/vendor/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* ============================================================
    ORÁCULO MÍSTICO · SISTEMA DE DISEÑO
    Fase 2 de la V2 Premium.
@@ -100,11 +126,10 @@
 
   /* ---------- 11. TIPOGRAFÍA ---------- */
   --om-font-body:    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* OJO: Fraunces se declara pero no se carga en ninguna parte (no hay
-     @font-face ni preload), asi que todos los titulos caen a Georgia.
-     Se deja la declaracion para no cambiar el aspecto actual; si se
-     quiere la intencion original hay que auto-alojar el woff2. */
-  --om-font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  /* Fraunces ya se carga de verdad (ver el @font-face de arriba). La
+     cadena de respaldo se mantiene por si el woff2 fallara, y anade
+     Noto Serif porque Android no trae Georgia ni Times New Roman. */
+  --om-font-display: "Fraunces", Georgia, "Noto Serif", "Times New Roman", serif;
   --om-font-mono:    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
 
   --om-t-xs:  .78rem;
