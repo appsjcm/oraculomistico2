@@ -102,18 +102,18 @@
 }
 
 .astro-wheel-wrap {
-  --wheel-size: min(76vw, 500px);
+  --wheel-size: clamp(280px, 68vw, 500px);
   box-sizing: border-box;
   display: grid;
   justify-items: center;
-  gap: 11px;
-  width: min(100%, calc(var(--wheel-size) + 38px));
+  gap: 13px;
+  width: min(100%, calc(var(--wheel-size) + 46px));
   max-width: 100%;
   margin-inline: auto;
 }
 
 .astro-wheel-paper {
-  padding: clamp(14px, 3vw, 22px);
+  padding: clamp(16px, 3vw, 24px);
   border-radius: 8px;
   border: 1px solid rgba(214, 188, 96, .42);
   background:
@@ -129,6 +129,7 @@
   margin-inline: auto;
   border-radius: 50%;
   border: 0;
+  isolation: isolate;
   background:
     radial-gradient(circle, transparent 0 7.2%, rgba(187, 187, 190, .62) 7.35% 7.7%, transparent 7.85%),
     radial-gradient(circle, transparent 0 25%, rgba(78, 78, 82, .22) 25.1% 25.3%, transparent 25.45%),
@@ -139,16 +140,17 @@
 
 .astro-aspect-web {
   position: absolute;
-  inset: 28%;
+  inset: 18%;
   z-index: 1;
-  overflow: visible;
+  overflow: hidden;
   pointer-events: none;
+  border-radius: 50%;
 }
 
 .astro-aspect-line {
-  stroke-width: .55;
+  stroke-width: .5;
   vector-effect: non-scaling-stroke;
-  opacity: .88;
+  opacity: .78;
 }
 
 .astro-aspect-conjunction,
@@ -163,7 +165,7 @@
 .astro-aspect-square,
 .astro-aspect-opposition {
   stroke: rgba(189, 59, 117, .94);
-  stroke-width: .78;
+  stroke-width: .68;
 }
 
 .astro-aspect-opposition {
@@ -244,14 +246,14 @@
   left: 50%;
   top: 50%;
   transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.395)) rotate(calc(var(--angle) * -1));
-  width: clamp(30px, 8.5vw, 46px);
-  height: clamp(30px, 8.5vw, 46px);
-  margin: calc(clamp(30px, 8.5vw, 46px) / -2);
+  width: clamp(28px, 7.6vw, 46px);
+  height: clamp(28px, 7.6vw, 46px);
+  margin: calc(clamp(28px, 7.6vw, 46px) / -2);
   display: grid;
   place-items: center;
   color: var(--sign-color, #bd3b75);
   font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", sans-serif;
-  font-size: clamp(1.6rem, 6.7vw, 2.65rem);
+  font-size: clamp(1.35rem, 5.4vw, 2.55rem);
   font-weight: 800;
   line-height: 1;
 }
@@ -272,7 +274,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.455)) rotate(calc(var(--angle) * -1));
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.447)) rotate(calc(var(--angle) * -1));
   width: 20px;
   height: 20px;
   margin: -10px;
@@ -288,16 +290,16 @@
   left: 50%;
   top: 50%;
   transform: rotate(var(--angle)) translateY(var(--radius)) rotate(calc(var(--angle) * -1));
-  width: clamp(22px, 6vw, 30px);
-  height: clamp(22px, 6vw, 30px);
-  margin: calc(clamp(22px, 6vw, 30px) / -2);
+  width: clamp(20px, 5.2vw, 28px);
+  height: clamp(20px, 5.2vw, 28px);
+  margin: calc(clamp(20px, 5.2vw, 28px) / -2);
   display: grid;
   place-items: center;
   border: 0;
   background: transparent;
   color: rgb(78, 78, 82);
   font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", sans-serif;
-  font-size: clamp(1rem, 4.5vw, 1.5rem);
+  font-size: clamp(.92rem, 3.8vw, 1.38rem);
   line-height: 1;
   text-shadow: 0 1px 0 rgba(255,255,255,.88);
   z-index: 3;
@@ -569,16 +571,22 @@
 
   .astro-wheel-wrap,
   .astro-wheel {
-    --wheel-size: min(70vw, 300px);
+    --wheel-size: min(78vw, 340px);
   }
 
   .astro-wheel-wrap {
-    justify-self: start;
-    margin-inline: 0 auto;
+    justify-self: center;
+    margin-inline: auto;
+    width: min(100%, calc(var(--wheel-size) + 28px));
+  }
+
+  .astro-wheel-paper {
+    padding: 12px;
   }
 
   .astro-aspect-legend {
     max-width: 390px;
+    gap: 5px;
   }
 
   .astro-aspect-overview {
@@ -591,6 +599,11 @@
 
   .astro-aspect-key {
     padding-inline: 7px;
+    min-height: 26px;
+  }
+
+  .astro-aspect-key small {
+    font-size: .63rem;
   }
 
   .astro-positions-list {
@@ -598,10 +611,10 @@
   }
 
   .astro-planet-dot {
-    width: clamp(20px, 6vw, 27px);
-    height: clamp(20px, 6vw, 27px);
-    margin: calc(clamp(20px, 6vw, 27px) / -2);
-    font-size: clamp(.95rem, 4.4vw, 1.28rem);
+    width: clamp(18px, 5vw, 24px);
+    height: clamp(18px, 5vw, 24px);
+    margin: calc(clamp(18px, 5vw, 24px) / -2);
+    font-size: clamp(.86rem, 3.8vw, 1.12rem);
   }
 }
 
