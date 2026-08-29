@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-iphone-mic-101';
+const CACHE_NAME = 'oraculo-v1-0-public-astro-placidus-102';
 const APP_SHELL = [
   './',
   './index.html',
