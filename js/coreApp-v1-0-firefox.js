@@ -1827,34 +1827,188 @@ function stopSpeech() {
 }
 
 function micButton(targetId, label = 'Dictar con micrófono') {
-  return `<button class="mic-btn" data-mic-target="${escapeHTML(targetId)}" type="button" aria-label="${escapeHTML(label)}">🎙️</button>`;
+  return `<button class="mic-btn" data-mic-target="${escapeHTML(targetId)}" type="button" aria-label="${escapeHTML(label)}" aria-pressed="false">🎙️</button>`;
 }
 function speechRecognitionSupport() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
-function startDictation(targetId) {
-  const target = document.getElementById(targetId);
-  if (!target) return toast(t('tsNoField'));
+let activeDictation = null;
+const DICTATION_MAX_MS = 11000;
+
+function isIosLikeDevice() {
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function supportedAudioMimeType() {
+  if (!window.MediaRecorder?.isTypeSupported) return '';
+  return [
+    'audio/mp4',
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/aac'
+  ].find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function setMicButtonState(targetId, active) {
+  document.querySelectorAll(`[data-mic-target="${CSS.escape(targetId)}"]`).forEach(btn => {
+    btn.classList.toggle('recording', !!active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.title = active ? t('tsMicTapStop') : 'Dictar con micrófono';
+    btn.setAttribute('aria-label', btn.title);
+  });
+}
+
+function appendDictationText(target, original, transcript) {
+  const text = String(transcript || '').trim();
+  if (!text) return false;
+  target.value = `${original}${original && text ? ' ' : ''}${text}`.trim();
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+  target.focus();
+  return true;
+}
+
+function extractTranscript(result) {
+  if (typeof result === 'string') return result;
+  if (result?.text) return result.text;
+  if (result?.transcript) return result.transcript;
+  if (Array.isArray(result?.segments)) return result.segments.map(s => s.text || '').join(' ');
+  return '';
+}
+
+function stopActiveDictation() {
+  const current = activeDictation;
+  if (!current) return false;
+  activeDictation = null;
+  clearTimeout(current.timer);
+  setMicButtonState(current.targetId, false);
+  try { current.recognition?.stop?.(); } catch {}
+  try {
+    if (current.recorder?.state && current.recorder.state !== 'inactive') current.recorder.stop();
+  } catch {}
+  try { current.stream?.getTracks?.().forEach(track => track.stop()); } catch {}
+  return true;
+}
+
+async function transcribeRecordedDictation(target, original, blob) {
+  if (!blob?.size) return toast(t('tsMicNoAudio'));
+  if (!window.puter?.ai?.speech2txt) return toast(t('tsMicConnectAi'));
+  toast(t('tsMicTranscribing'));
+  try {
+    const language = (getAppLanguage() || 'es').slice(0, 2);
+    const result = await window.puter.ai.speech2txt(blob, {
+      language,
+      response_format: 'json',
+      model: 'gpt-4o-mini-transcribe'
+    });
+    const transcript = extractTranscript(result);
+    if (!appendDictationText(target, original, transcript)) toast(t('tsMicNoAudio'));
+  } catch (error) {
+    pushErrorLog('mic-stt', error?.message || 'No se pudo transcribir el audio', 'speech to text');
+    toast(t('tsMicFail'));
+  }
+}
+
+async function startRecordedDictation(target) {
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return false;
+  const targetId = target.id;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: { ideal: true },
+        noiseSuppression: { ideal: true },
+        autoGainControl: { ideal: true }
+      }
+    });
+    const mimeType = supportedAudioMimeType();
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    const chunks = [];
+    const original = target.value || '';
+
+    recorder.addEventListener('dataavailable', event => {
+      if (event.data?.size) chunks.push(event.data);
+    });
+    recorder.addEventListener('stop', () => {
+      const blobType = recorder.mimeType || mimeType || 'audio/webm';
+      const blob = new Blob(chunks, { type: blobType });
+      stream.getTracks().forEach(track => track.stop());
+      if (activeDictation?.recorder === recorder) activeDictation = null;
+      setMicButtonState(targetId, false);
+      transcribeRecordedDictation(target, original, blob);
+    }, { once: true });
+
+    activeDictation = {
+      mode: 'record',
+      targetId,
+      recorder,
+      stream,
+      timer: setTimeout(() => {
+        toast(t('tsMicTranscribing'));
+        stopActiveDictation();
+      }, DICTATION_MAX_MS)
+    };
+    setMicButtonState(targetId, true);
+    recorder.start();
+    toast(t('tsMicTapStop'));
+    return true;
+  } catch (error) {
+    pushErrorLog('mic-recorder', error?.message || 'No se pudo iniciar la grabación', 'microphone');
+    setMicButtonState(targetId, false);
+    toast(error?.name === 'NotAllowedError' ? t('tsMicPermission') : t('tsMicNoStart'));
+    return true;
+  }
+}
+
+function startBrowserSpeechDictation(target) {
   const Recognition = speechRecognitionSupport();
-  if (!Recognition) return toast(t('tsMicNoBrowser'));
+  if (!Recognition) return false;
+  const targetId = target.id;
   try {
     const recognition = new Recognition();
     recognition.lang = getAppLocale();
     recognition.interimResults = true;
     recognition.continuous = false;
     const original = target.value || '';
+    activeDictation = { mode: 'speech', targetId, recognition };
+    setMicButtonState(targetId, true);
     toast(t('tsListening'));
     recognition.onresult = event => {
       const transcript = Array.from(event.results).map(r => r[0]?.transcript || '').join('\n\n').trim();
-      target.value = `${original}${original && transcript ? ' ' : ''}${transcript}`.trim();
-      target.dispatchEvent(new Event('input', { bubbles: true }));
+      appendDictationText(target, original, transcript);
     };
-    recognition.onerror = () => toast(t('tsMicFail'));
-    recognition.onend = () => target.focus();
+    recognition.onerror = event => {
+      pushErrorLog('mic-browser-speech', event?.error || 'Speech recognition failed', 'speech recognition');
+      toast(t('tsMicFail'));
+    };
+    recognition.onend = () => {
+      if (activeDictation?.recognition === recognition) activeDictation = null;
+      setMicButtonState(targetId, false);
+      target.focus();
+    };
     recognition.start();
-  } catch {
+    return true;
+  } catch (error) {
+    pushErrorLog('mic-browser-start', error?.message || 'Speech recognition could not start', 'speech recognition');
+    setMicButtonState(targetId, false);
     toast(t('tsMicNoStart'));
+    return true;
   }
+}
+
+async function startDictation(targetId) {
+  const target = document.getElementById(targetId);
+  if (!target) return toast(t('tsNoField'));
+  if (activeDictation?.targetId === targetId) return stopActiveDictation();
+  if (activeDictation) stopActiveDictation();
+
+  if (isIosLikeDevice()) {
+    if (await startRecordedDictation(target)) return;
+    return toast(t('tsMicNoBrowser'));
+  }
+
+  if (startBrowserSpeechDictation(target)) return;
+  if (await startRecordedDictation(target)) return;
+  toast(t('tsMicNoBrowser'));
 }
 function inputWithMic(id, attrs = '') {
   return `<div class="input-mic-wrap"><input id="${escapeHTML(id)}" class="input" ${attrs}>${micButton(id)}</div>`;
@@ -4991,7 +5145,10 @@ function openModule(module) {
 function attachGlobalEvents() {
   document.addEventListener('click', async e => {
     const micTarget = e.target.closest('[data-mic-target]')?.dataset.micTarget;
-    if (micTarget) return startDictation(micTarget);
+    if (micTarget) {
+      e.preventDefault();
+      return startDictation(micTarget);
+    }
     if (e.target.closest('[data-chat-send]')) return processChatMessage($('#chatInput')?.value || '').then(() => { const i=$('#chatInput'); if(i) i.value=''; });
     const chatQuick = e.target.closest('[data-chat-quick]')?.dataset.chatQuick;
     if (chatQuick) return processChatMessage(chatQuick);
