@@ -1907,12 +1907,25 @@ body.premium-rich-cards .premium-stat-card {
   z-index: 120;
 }
 
+.premium-native-splash[hidden],
+.premium-settings-drawer[hidden] {
+  display: none !important;
+}
+
+body.premium-splash-open {
+  overflow: hidden;
+}
+
 .premium-native-splash-bg,
 .premium-settings-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(5,3,11,.72);
   backdrop-filter: blur(10px);
+}
+
+.premium-native-splash-bg {
+  cursor: pointer;
 }
 
 .premium-native-splash-card {
@@ -1930,6 +1943,28 @@ body.premium-rich-cards .premium-stat-card {
   box-shadow: 0 40px 120px rgba(0,0,0,.56);
   backdrop-filter: blur(24px);
   animation: premiumModalIn .28s ease both;
+  z-index: 1;
+}
+
+.premium-native-splash-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255,255,255,.08);
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.premium-native-splash-actions .btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .premium-native-splash-card h2 {
