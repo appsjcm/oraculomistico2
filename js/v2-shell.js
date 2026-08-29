@@ -14,9 +14,19 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   const LS_THEME = 'oraculo.v2.theme';
+  const LS_APPEARANCE = 'oraculo.appearanceMode.v1';
 
   /* ---------- Tema ---------- */
   const TEMAS = ['arcano', 'lunar', 'cosmico', 'bosque', 'eclipse'];
+  const MODOS_LUZ = ['dark', 'light'];
+
+  function refrescarThemeColor() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      const fondo = getComputedStyle(document.documentElement).getPropertyValue('--om-void').trim();
+      if (fondo) meta.setAttribute('content', fondo);
+    }
+  }
 
   function aplicarTema(tema) {
     if (!TEMAS.includes(tema)) tema = 'arcano';
@@ -25,16 +35,66 @@
     else document.documentElement.setAttribute('data-theme', tema);
     try { localStorage.setItem(LS_THEME, tema); } catch {}
     $$('[data-om-theme]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.omTheme === tema)));
-    // El color de la barra del navegador acompaña al tema.
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      const fondo = getComputedStyle(document.documentElement).getPropertyValue('--om-void').trim();
-      if (fondo) meta.setAttribute('content', fondo);
-    }
+    // El color de la barra del navegador acompaña al tema y al modo Dia/Noche.
+    refrescarThemeColor();
   }
 
   function temaGuardado() {
     try { return localStorage.getItem(LS_THEME) || 'arcano'; } catch { return 'arcano'; }
+  }
+
+  function modoLuzGuardado() {
+    try {
+      const modo = localStorage.getItem(LS_APPEARANCE);
+      return MODOS_LUZ.includes(modo) ? modo : 'dark';
+    } catch {
+      return 'dark';
+    }
+  }
+
+  function etiquetaModo(modo) {
+    const idioma = window.OraculoI18n?.idioma?.() || document.documentElement.lang || 'es';
+    const esDia = modo === 'light';
+    const textos = {
+      es: esDia ? 'Día' : 'Noche',
+      ca: esDia ? 'Dia' : 'Nit',
+      en: esDia ? 'Day' : 'Night',
+      fr: esDia ? 'Jour' : 'Nuit',
+      de: esDia ? 'Tag' : 'Nacht',
+      zh: esDia ? '日间' : '夜间'
+    };
+    return textos[idioma.slice(0, 2)] || textos.es;
+  }
+
+  function pintarControlesModo(modo) {
+    $$('[data-om-appearance]').forEach(b => {
+      const valor = b.dataset.omAppearance;
+      b.setAttribute('aria-pressed', String(valor === modo));
+      b.innerHTML = `<span aria-hidden="true">${valor === 'light' ? '☼' : '☾'}</span> ${etiquetaModo(valor)}`;
+    });
+    $$('[data-om-appearance-select]').forEach(select => { select.value = modo; });
+    $$('[data-om-appearance-toggle]').forEach(b => {
+      b.setAttribute('aria-pressed', String(modo === 'light'));
+      b.setAttribute('aria-label', modo === 'light' ? 'Cambiar a Noche' : 'Cambiar a Día');
+      const icon = b.querySelector('[data-om-appearance-icon]');
+      const label = b.querySelector('[data-om-appearance-label]');
+      if (icon) icon.textContent = modo === 'light' ? '☼' : '☾';
+      if (label) label.textContent = etiquetaModo(modo);
+    });
+  }
+
+  function aplicarModoLuz(modo) {
+    if (!MODOS_LUZ.includes(modo)) modo = 'dark';
+    document.documentElement.dataset.appearanceMode = modo;
+    document.body?.setAttribute('data-appearance-mode', modo);
+    try { localStorage.setItem(LS_APPEARANCE, modo); } catch {}
+    pintarControlesModo(modo);
+    refrescarThemeColor();
+    document.dispatchEvent(new CustomEvent('om:appearance-changed', { detail: { modo } }));
+  }
+
+  function alternarModoLuz() {
+    aplicarModoLuz(modoLuzGuardado() === 'light' ? 'dark' : 'light');
   }
 
   /* ---------- Vistas ---------- */
@@ -135,6 +195,12 @@
       const tema = t.closest('[data-om-theme]');
       if (tema) { ev.preventDefault(); aplicarTema(tema.dataset.omTheme); return; }
 
+      const selectorModo = t.closest('[data-om-appearance]');
+      if (selectorModo) { ev.preventDefault(); aplicarModoLuz(selectorModo.dataset.omAppearance); return; }
+
+      const alternadorModo = t.closest('[data-om-appearance-toggle]');
+      if (alternadorModo) { ev.preventDefault(); alternarModoLuz(); return; }
+
       // El Orbe abre el Santuario
       if (t.closest('#omOrb')) { ev.preventDefault(); irA('santuario'); return; }
 
@@ -155,6 +221,17 @@
           if (raiz) raiz.setAttribute('data-om-oracle', modulo);
         }
       }
+    });
+
+    document.addEventListener('change', (ev) => {
+      const select = ev.target?.closest?.('[data-om-appearance-select]');
+      if (select) aplicarModoLuz(select.value);
+    });
+
+    document.addEventListener('om:idioma-cambiado', () => pintarControlesModo(modoLuzGuardado()));
+    document.addEventListener('om:appearance-changed', (ev) => {
+      const modo = ev.detail?.modo;
+      if (MODOS_LUZ.includes(modo)) pintarControlesModo(modo);
     });
 
     // Escape cierra el Perfil.
@@ -207,6 +284,7 @@
   }
 
   function iniciar() {
+    aplicarModoLuz(modoLuzGuardado());
     aplicarTema(temaGuardado());
     enlazar();
     marcarNav('inicio');

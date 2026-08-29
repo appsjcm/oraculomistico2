@@ -421,6 +421,65 @@ body.om-sheet-lock { overflow: hidden; }
 }
 .om-theme[aria-pressed="true"] { border-color: var(--om-gold); color: var(--om-ivory); }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--om-s-2);
+}
+
+.om-appearance-toggle,
+.om-appearance-switch button {
+  min-height: 42px;
+  border: 1px solid var(--om-line-2);
+  border-radius: var(--om-r-full);
+  background: var(--om-surface-1);
+  color: var(--om-ivory);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.om-appearance-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--om-s-2);
+  padding: 0 var(--om-s-3);
+  white-space: nowrap;
+}
+
+.om-appearance-toggle > span:first-child,
+.om-appearance-switch span {
+  color: var(--om-gold);
+}
+
+.om-appearance-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--om-s-2);
+  margin-top: var(--om-s-3);
+}
+
+.om-appearance-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--om-s-2);
+  padding: 0 var(--om-s-3);
+  color: var(--om-ivory-2);
+}
+
+.om-appearance-switch button[aria-pressed="true"],
+.om-appearance-toggle:hover,
+.om-appearance-switch button:hover {
+  border-color: var(--om-line-gold);
+  background: var(--om-surface-2);
+  color: var(--om-ivory);
+}
+
+.om-profile-appearance {
+  width: 100%;
+}
+
 
 /* ============================================================
    5 · NAVEGACIÓN
@@ -433,6 +492,21 @@ body.om-sheet-lock { overflow: hidden; }
    6 · RESPONSIVE
    ============================================================ */
 @media (max-width: 720px) {
+  .topbar-actions { gap: 6px; }
+  .om-appearance-toggle {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .om-appearance-toggle [data-om-appearance-label] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
   .om-altars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .om-altar { min-height: 150px; padding: var(--om-s-4); }
   .om-altar-wide { grid-column: span 2; min-height: 112px; }

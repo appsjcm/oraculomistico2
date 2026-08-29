@@ -4,6 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080713">
+  <script>
+    (() => {
+      const key = 'oraculo.appearanceMode.v1';
+      let mode = 'dark';
+      try { mode = localStorage.getItem(key) === 'light' ? 'light' : 'dark'; } catch {}
+      document.documentElement.dataset.appearanceMode = mode;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mode === 'light' ? '#f6efe3' : '#080713');
+    })();
+  </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -40,17 +49,17 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-i18n-carcasa-86">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-day-night-87">
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-i18n-carcasa-86">
-  <link rel="stylesheet" href="styles/astro.css?v=1.0-i18n-carcasa-86">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/oraculo-3d.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-day-night-87">
+  <link rel="stylesheet" href="styles/astro.css?v=1.0-day-night-87">
   <script type="importmap">
   {
     "imports": {
@@ -65,22 +74,22 @@
        borra las cachés viejas al activarse, así que aquí basta con dejar
        constancia de la versión instalada. */
     (() => {
-      const build = '1.0-i18n-carcasa-86';
+      const build = '1.0-day-night-87';
       const key = 'oraculo.publicBuild';
       try { localStorage.setItem(key, build); } catch {}
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
-  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-i18n-carcasa-86"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-shell.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-voz.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-i18n-carcasa-86"></script>
-  <script defer src="js/v2-movil.js?v=1.0-i18n-carcasa-86"></script>
-  <script type="module" src="js/oraculo-3d.js?v=1.0-i18n-carcasa-86"></script>
+  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-day-night-87"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-day-night-87"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-shell.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-voz.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-day-night-87"></script>
+  <script defer src="js/v2-movil.js?v=1.0-day-night-87"></script>
+  <script type="module" src="js/oraculo-3d.js?v=1.0-day-night-87"></script>
 </head>
 <body>
   <div id="premiumLoader" class="premium-loader" aria-hidden="true">
@@ -99,7 +108,13 @@
       <span class="brand-orb">🔮</span>
       <span><strong>Oráculo Místico</strong><small data-i18n="ixElSantuario">El Santuario</small></span>
     </div>
-    <button id="gearBtn" class="gear" type="button" aria-label="Ajustes" data-i18n-aria="arAjustes" data-i18n="settings">⚙️</button>
+    <div class="topbar-actions">
+      <button class="om-appearance-toggle" data-om-appearance-toggle type="button" aria-label="Cambiar entre noche y día" aria-pressed="false">
+        <span data-om-appearance-icon aria-hidden="true">☾</span>
+        <span data-om-appearance-label>Noche</span>
+      </button>
+      <button id="gearBtn" class="gear" type="button" aria-label="Ajustes" data-i18n-aria="arAjustes" data-i18n="settings">⚙️</button>
+    </div>
   </header>
 
   <main id="home" class="app-shell premium-shell">
@@ -322,6 +337,10 @@
             <button type="button" data-premium-theme="gold" data-i18n="ixGold">Gold</button>
             <button type="button" data-premium-theme="violet" data-i18n="ixViolet">Violet</button>
             <button type="button" data-premium-theme="obsidian" data-i18n="ixObsidian">Obsidian</button>
+          </div>
+          <div class="om-appearance-switch" role="group" aria-label="Modo de luz">
+            <button type="button" data-om-appearance="dark"><span aria-hidden="true">☾</span> Noche</button>
+            <button type="button" data-om-appearance="light"><span aria-hidden="true">☼</span> Día</button>
           </div>
         </article>
 
@@ -759,6 +778,10 @@
           <button class="om-theme" data-om-theme="bosque" type="button"><i style="--a:#e2c37a;--b:#060f0b"></i><span data-i18n="ixBosque">Bosque</span></button>
           <button class="om-theme" data-om-theme="eclipse" type="button"><i style="--a:#e8b84b;--b:#050409"></i><span data-i18n="ixEclipse">Eclipse</span></button>
         </div>
+        <div class="om-appearance-switch om-profile-appearance" role="group" aria-label="Modo claro u oscuro">
+          <button type="button" data-om-appearance="dark"><span aria-hidden="true">☾</span> Noche</button>
+          <button type="button" data-om-appearance="light"><span aria-hidden="true">☼</span> Día</button>
+        </div>
 
         <p class="om-group-label" data-i18n="omGroupOracle">Oráculo y voz</p>
         <div class="om-rows">
@@ -978,6 +1001,17 @@
             <option value="balanced">Equilibrado</option>
             <option value="reduced">Reducido</option>
             <option value="off">Desactivado</option>
+          </select>
+        </label>
+
+        <label class="premium-setting-row">
+          <div>
+            <strong>Luz de la app</strong>
+            <small>Cambia entre Noche y Día sin perder el color elegido.</small>
+          </div>
+          <select class="input" data-om-appearance-select>
+            <option value="dark">Noche</option>
+            <option value="light">Día</option>
           </select>
         </label>
       </div>

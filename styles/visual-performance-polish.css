@@ -21,6 +21,175 @@ body::before {
   opacity: .72;
 }
 
+:root[data-appearance-mode="light"] {
+  color-scheme: light;
+  --om-void: #f6efe3;
+  --om-abyss: #eadfce;
+  --om-night: #fffaf2;
+  --om-nebula: #efe5f8;
+  --om-surface-1: rgba(255, 255, 255, .72);
+  --om-surface-2: rgba(255, 255, 255, .86);
+  --om-surface-3: rgba(255, 255, 255, .96);
+  --om-surface-ink: rgba(255, 255, 255, .42);
+  --om-line-1: rgba(60, 45, 73, .13);
+  --om-line-2: rgba(60, 45, 73, .19);
+  --om-line-gold: color-mix(in srgb, var(--om-gold) 52%, rgba(60, 45, 73, .26));
+  --om-ivory: #241b2e;
+  --om-ivory-2: rgba(36, 27, 46, .72);
+  --om-ivory-3: rgba(36, 27, 46, .50);
+  --om-on-gold: #241b2e;
+  --om-polish-panel: rgba(255, 255, 255, .72);
+  --om-polish-panel-deep: rgba(255, 250, 242, .84);
+  --om-polish-line: rgba(150, 112, 42, .20);
+  --om-polish-line-strong: rgba(150, 112, 42, .34);
+  --om-polish-shadow: 0 18px 46px rgba(76, 54, 32, .16);
+  --premium-bg-deep: #f6efe3;
+  --premium-bg-aura: #efe5f8;
+  --premium-glass: rgba(255, 255, 255, .76);
+  --premium-glass-strong: rgba(255, 255, 255, .92);
+  --bg: var(--om-void);
+  --bg2: var(--om-night);
+  --panel: var(--om-surface-1);
+  --panel2: var(--om-surface-2);
+  --stroke: var(--om-line-1);
+  --text: var(--om-ivory);
+  --muted: var(--om-ivory-2);
+}
+
+html[data-appearance-mode="light"] body {
+  background:
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--om-gold) 22%, transparent), transparent 31rem),
+    radial-gradient(circle at 10% 9%, color-mix(in srgb, var(--om-violet) 20%, transparent), transparent 24rem),
+    radial-gradient(circle at 88% 12%, rgba(236, 124, 255, .10), transparent 22rem),
+    linear-gradient(160deg, #f6efe3, #fffaf2 48%, #ece1f6);
+  color: var(--om-ivory);
+}
+
+html[data-appearance-mode="light"] body::before {
+  opacity: .34;
+  background:
+    linear-gradient(rgba(74, 55, 88, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 55, 88, .065) 1px, transparent 1px);
+}
+
+html[data-appearance-mode="light"] .cosmos {
+  opacity: .12;
+  mix-blend-mode: multiply;
+}
+
+html[data-appearance-mode="light"] .om-sky {
+  opacity: .34;
+}
+
+html[data-appearance-mode="light"] .premium-topbar {
+  background: linear-gradient(180deg, rgba(255, 251, 244, .92), rgba(255, 251, 244, .72));
+  border-bottom-color: rgba(64, 45, 76, .12);
+  box-shadow: 0 12px 34px rgba(76, 54, 32, .12);
+}
+
+html[data-appearance-mode="light"] .brand-orb,
+html[data-appearance-mode="light"] .modal-title .emoji,
+html[data-appearance-mode="light"] .module-card span,
+html[data-appearance-mode="light"] .om-altar-icon {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--om-gold) 26%, white), color-mix(in srgb, var(--om-violet) 18%, white));
+  box-shadow: 0 10px 24px rgba(76, 54, 32, .10);
+}
+
+html[data-appearance-mode="light"] .brand-orb {
+  color: #241b2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .72);
+}
+
+html[data-appearance-mode="light"] .om-tagline,
+html[data-appearance-mode="light"] .om-section-sub,
+html[data-appearance-mode="light"] .premium-concierge-head p {
+  color: var(--om-ivory-2);
+}
+
+html[data-appearance-mode="light"] .om-altar,
+html[data-appearance-mode="light"] .module-card,
+html[data-appearance-mode="light"] .choice,
+html[data-appearance-mode="light"] .mini-card,
+html[data-appearance-mode="light"] .result-card,
+html[data-appearance-mode="light"] .diary-item,
+html[data-appearance-mode="light"] .premium-concierge-card,
+html[data-appearance-mode="light"] .premium-settings-group,
+html[data-appearance-mode="light"] .premium-native-status-card,
+html[data-appearance-mode="light"] .ai-reading-panel {
+  border-color: var(--om-line-2);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .88), rgba(255, 250, 242, .68));
+  box-shadow: var(--om-polish-shadow);
+}
+
+html[data-appearance-mode="light"] .premium-concierge {
+  border-color: var(--om-line-2);
+  background:
+    linear-gradient(rgba(255, 252, 246, .72), rgba(246, 239, 227, .92)),
+    url("../assets/premium/constellation-panel.svg") center / cover no-repeat;
+}
+
+html[data-appearance-mode="light"] .premium-concierge-card h3,
+html[data-appearance-mode="light"] .premium-settings-title,
+html[data-appearance-mode="light"] .premium-setting-row strong,
+html[data-appearance-mode="light"] .premium-settings-head h3,
+html[data-appearance-mode="light"] .om-wordmark,
+html[data-appearance-mode="light"] .om-section-head h2 {
+  color: var(--om-ivory);
+}
+
+html[data-appearance-mode="light"] .modal-panel,
+html[data-appearance-mode="light"] .om-sheet-panel,
+html[data-appearance-mode="light"] .premium-settings-panel,
+html[data-appearance-mode="light"] .premium-native-splash-card,
+html[data-appearance-mode="light"] .premium-palette-panel,
+html[data-appearance-mode="light"] .premium-onboarding-panel {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--om-violet) 14%, transparent), transparent 32rem),
+    linear-gradient(180deg, rgba(255, 252, 246, .98), rgba(246, 239, 227, .98));
+  border-color: var(--om-line-2);
+  box-shadow: 0 26px 70px rgba(76, 54, 32, .22);
+}
+
+html[data-appearance-mode="light"] .modal-backdrop,
+html[data-appearance-mode="light"] .om-sheet-backdrop,
+html[data-appearance-mode="light"] .premium-native-splash-bg,
+html[data-appearance-mode="light"] .premium-settings-backdrop {
+  background: rgba(70, 52, 78, .24);
+}
+
+html[data-appearance-mode="light"] .premium-native-splash-card h2,
+html[data-appearance-mode="light"] .premium-native-splash-card p {
+  color: var(--om-ivory);
+}
+
+html[data-appearance-mode="light"] .premium-bottom-nav {
+  background: rgba(255, 251, 244, .88);
+  border-color: rgba(64, 45, 76, .14);
+  box-shadow: 0 -18px 46px rgba(76, 54, 32, .16);
+}
+
+html[data-appearance-mode="light"] .input,
+html[data-appearance-mode="light"] textarea,
+html[data-appearance-mode="light"] select,
+html[data-appearance-mode="light"] .premium-note-input {
+  background: rgba(255, 255, 255, .82);
+  border-color: rgba(60, 45, 73, .18);
+  color: var(--om-ivory);
+}
+
+html[data-appearance-mode="light"] .modal-body select option {
+  background: #fffaf2;
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .toast {
+  background: rgba(255, 250, 242, .97);
+  border-color: var(--om-line-gold);
+  color: var(--om-ivory);
+  box-shadow: 0 16px 38px rgba(76, 54, 32, .18);
+}
+
 .premium-topbar {
   background:
     linear-gradient(180deg, rgba(8, 7, 19, .88), rgba(8, 7, 19, .70));
