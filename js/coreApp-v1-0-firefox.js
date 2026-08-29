@@ -724,7 +724,7 @@ async function exportPDF(title, text, reading = lastReading) {
         doc.setDrawColor(...line);
         doc.setFillColor(249, 246, 238);
         doc.roundedRect(x, boxY, cardW, boxH, 3, 3, 'FD');
-        const label = cleanPdfText(asset.position || asset.name || `Elemento ${i + 1}`);
+        const label = cleanPdfText(posLabel(asset.position) || asset.name || t('lblElementN', { n: i + 1 }));
         doc.setTextColor(...ink);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.8);
@@ -2335,7 +2335,7 @@ function backupData() {
 function tarotReading(cards, title = 'Lectura de Tarot') {
   const question = $('#tarotPrompt')?.value?.trim() || '';
   const subject = getReadingSubject();
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? posLabel(c.position) + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
   const lines = `${subjectPrefix(subject)}${question ? `${t('lblQuestion')}: ${question}
 
 ` : ''}${linesOnly}`;
@@ -2345,7 +2345,7 @@ function tarotReading(cards, title = 'Lectura de Tarot') {
       <div>${cardImage(cards[0].card)}</div>
       <div class="result-card"><h3>${escapeHTML(cards[0].card.name)} ${cards[0].rev ? t('lblReversed') : ''}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}${question ? `<p><strong>${escapeHTML(t('lblQuestion'))}:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(cards[0].rev ? cards[0].card.rv : cards[0].card.up)}</p><p><strong>${escapeHTML(t('lblKey'))}:</strong> ${escapeHTML(cards[0].card.key || '')}</p>${readingActions(lines,'Tarot')}</div>
     </div>` : `
-    <div class="library-grid">${cards.map(c=>`<button class="mini-card" data-card-name="${escapeHTML(c.card.name)}">${c.card.img ? `<img src="${escapeHTML(c.card.img)}" alt="${escapeHTML(c.card.name)}">` : ''}<strong>${escapeHTML(c.card.name)}</strong><small>${escapeHTML(c.position || (c.rev ? 'Invertida' : 'Normal'))}</small></button>`).join('\n\n')}</div>
+    <div class="library-grid">${cards.map(c=>`<button class="mini-card" data-card-name="${escapeHTML(c.card.name)}">${c.card.img ? `<img src="${escapeHTML(c.card.img)}" alt="${escapeHTML(c.card.name)}">` : ''}<strong>${escapeHTML(c.card.name)}</strong><small>${escapeHTML(posLabel(c.position) || (c.rev ? t('lblReversed') : t('lblUpright')))}</small></button>`).join('\n\n')}</div>
     <div class="result-card"><h3>${escapeHTML(title)}</h3>${subject ? `<p><strong>${escapeHTML(t('lblFor'))}:</strong> ${escapeHTML(subject)}</p>` : ''}${question ? `<p><strong>${escapeHTML(t('lblQuestion'))}:</strong> ${escapeHTML(question)}</p>` : ''}<p>${escapeHTML(linesOnly).replace(/\n/g,'<br>')}</p>${readingActions(lines,'Tarot')}</div>`;
   openModal({ icon:'🃏', title, subtitle:subjectSubtitle('Lectura completa.', subject), body: content });
 }
@@ -2356,16 +2356,30 @@ function tarotReading(cards, title = 'Lectura de Tarot') {
    tipo de posición y no por su nombre exacto, para que sirva a
    las 21 tiradas sin escribir una regla por cada una.
    ============================================================ */
+/* Etiqueta visible de una posicion de tirada. El texto castellano
+   sigue siendo la clave interna: con el casan los CONTEXTOS y con el
+   se guardaron las lecturas anteriores. */
+function posLabel(posicion) {
+  if (!posicion) return '';
+  const clave = 'pos' + String(posicion)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/ /g, '');
+  const v = t(clave);
+  return v && v !== clave ? v : posicion;
+}
+
 const CONTEXTOS = [
-  [/pasado|origen|raíz|base|antes/i,            'En esta posición mira hacia atrás: qué de esto viene de antes.'],
-  [/presente|situación|actual|centro|yo\b/i,    'Aquí describe el momento tal como es ahora.'],
-  [/futuro|resultado|potencial|posible|camino/i,'Aquí apunta una tendencia, no un desenlace cerrado.'],
-  [/reto|obstáculo|bloqueo|cruce|dificultad/i,  'En esta posición señala qué se interpone o qué pide atención.'],
-  [/consejo|clave|llave|paso|recomend/i,        'Aquí conviene leerla como sugerencia práctica.'],
-  [/otra persona|vínculo|relación|pareja|los dos/i, 'Aquí habla de lo que ocurre entre ambas partes.'],
-  [/energía|apoyo|fortaleza|don|talento/i,      'En esta posición muestra un recurso disponible.'],
-  [/oculto|inconsciente|miedo|sombra|interior/i,'Aquí apunta a lo que actúa sin verse del todo.'],
-  [/entorno|influencia|casa \d|semana|mes|día/i,'Aquí describe el terreno alrededor, no a ti directamente.']
+  [/pasado|origen|raíz|base|antes/i,            'ctxPast'],
+  [/presente|situación|actual|centro|yo\b/i,    'ctxPresent'],
+  [/futuro|resultado|potencial|posible|camino/i,'ctxFuture'],
+  [/reto|obstáculo|bloqueo|cruce|dificultad/i,  'ctxChallenge'],
+  [/consejo|clave|llave|paso|recomend/i,        'ctxAdvice'],
+  [/otra persona|vínculo|relación|pareja|los dos/i, 'ctxBond'],
+  [/energía|apoyo|fortaleza|don|talento/i,      'ctxResource'],
+  [/oculto|inconsciente|miedo|sombra|interior/i,'ctxHidden'],
+  [/entorno|influencia|casa \d|semana|mes|día/i,'ctxEnv']
 ];
 
 /* El titulo visible sale de i18n; 'title' se conserva intacto porque
@@ -2377,13 +2391,13 @@ function spreadTitle(spread) {
 function contextoDePosicion(posicion = '') {
   if (!posicion) return '';
   const encontrado = CONTEXTOS.find(([re]) => re.test(posicion));
-  return encontrado ? encontrado[1] : '';
+  return encontrado ? t(encontrado[1]) : '';
 }
 
 function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0.3) {
   const question = $('#tarotPrompt')?.value?.trim() || '';
   const subject = getReadingSubject();
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\\n\\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? posLabel(c.position) + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\\n\\n');
   const lines = `${subjectPrefix(subject).replace(/\n/g, '\\n')}${question ? `${t('lblQuestion')}: ${question}\\n\\n` : ''}${linesOnly}`;
   setLastReading({ type: 'Tarot', title, text: lines, items: cards.map(c => ({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), meta:subjectMeta(subject, { reversedRate }) });
   ceremonyTone('shuffle');
@@ -2394,7 +2408,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
       <div class="ritual-particles">${Array.from({length:12}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
       <div class="channeling card-glow ritual-banner"><span class="orb-pulse">🔮</span><div><h3>${escapeHTML(t('cerTitle'))}</h3><p>${escapeHTML(t('cerText'))}</p></div></div>
       <div id="tarotShuffleBoard" class="shuffle-board tarot-board deluxe-board"><div class="altar-ring"></div><img src="img/tarot-shuffle-hero.svg" alt="Mezcla de cartas del oráculo" class="shuffle-hero tarot-hero">${cards.map((c, i) => `<div class="card-back shuffle-card deluxe-card" style="--i:${i}"><div class="card-back-inner"><span class="back-logo">🔮</span><strong>Oráculo</strong><small>${c.rev ? 'Invertida' : 'Directa'}</small></div></div>`).join('')}</div>
-      <div id="tarotRevealGrid" class="draw-reveal-grid tarot-reveal-grid tarot-count-${cards.length}">${cards.map((c, i) => `<div class="reveal-slot tarot-slot waiting cinematic-slot" id="tarot-slot-${i}"><div class="slot-aura"></div><div class="slot-label">${escapeHTML(c.position || `Carta ${i + 1}`)}</div><div class="slot-wait">El velo se está abriendo...</div></div>`).join('')}</div>
+      <div id="tarotRevealGrid" class="draw-reveal-grid tarot-reveal-grid tarot-count-${cards.length}">${cards.map((c, i) => `<div class="reveal-slot tarot-slot waiting cinematic-slot" id="tarot-slot-${i}"><div class="slot-aura"></div><div class="slot-label">${escapeHTML(posLabel(c.position) || t('lblCardN', { n: i + 1 }))}</div><div class="slot-wait">${escapeHTML(t('lblVeilOpening'))}</div></div>`).join('')}</div>
       <div id="tarotResultWrap" class="hidden"></div>
     </div>` });
   cards.forEach((item, index) => {
@@ -2407,7 +2421,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
          base viene del catálogo local: funciona sin IA y sin conexión. */
       const claves = Array.isArray(item.card.keywords) ? item.card.keywords.join(' · ') : (item.card.key || '');
       const lectura = item.rev ? (item.card.reversedMeaning || item.card.rv) : (item.card.uprightMeaning || item.card.up);
-      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(item.position || `Carta ${index + 1}`)}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}${item.card.num ? `<span class="card-roman">${escapeHTML(item.card.num)}</span>` : ''}<strong>${escapeHTML(item.card.name)}</strong>${claves ? `<span class="card-keys">${escapeHTML(claves)}</span>` : ''}${item.card.energy ? `<span class="card-energy">${escapeHTML(item.card.energy)}</span>` : ''}<small>${item.rev ? 'Invertida · carta girada 180°' : 'Al derecho'}</small></div>`;
+      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(posLabel(item.position) || t('lblCardN', { n: index + 1 }))}</div><div class="card-frame ${item.rev ? 'reversed' : ''}">${cardImage(item.card)}${item.card.num ? `<span class="card-roman">${escapeHTML(item.card.num)}</span>` : ''}<strong>${escapeHTML(item.card.name)}</strong>${claves ? `<span class="card-keys">${escapeHTML(claves)}</span>` : ''}${item.card.energy ? `<span class="card-energy">${escapeHTML(item.card.energy)}</span>` : ''}<small>${escapeHTML(item.rev ? t('lblReversed180') : t('lblUprightFull'))}</small></div>`;
       if (index === cards.length - 1) {
         const board = $('#tarotShuffleBoard');
         if (board) board.classList.add('fade-out');
@@ -4311,7 +4325,7 @@ function addChat(role, text, actions = '') {
   renderChatMessages();
 }
 function chatTarotCardHTML(item) {
-  return `<div class="chat-ritual-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${escapeHTML(item.position || 'Carta')}</div>${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}</strong><small>${item.rev ? 'Invertida · 180°' : 'Al derecho'}</small></div>`;
+  return `<div class="chat-ritual-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${escapeHTML(posLabel(item.position) || t('lblCard'))}</div>${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}</strong><small>${escapeHTML(item.rev ? t('lblReversedShort') : t('lblUprightFull'))}</small></div>`;
 }
 function chatRuneHTML(item, index) {
   return `<div class="chat-rune-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-big">${item.rune.sym}</div><strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
@@ -4365,12 +4379,12 @@ function chatDrawTarot(spreadKey = 'one', subject = '') {
   const spread = getTarotSpread(spreadKey);
   const reversedRate = chooseReversedRate();
   const cards = [...ALL_TAROT].sort(() => Math.random() - .5).slice(0, spread.count).map((card, index) => ({ card, rev: isReversed(reversedRate), position: spread.positions[index] || '' }));
-  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? c.position + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
+  const linesOnly = cards.map((c, i) => `${i + 1}. ${c.position ? posLabel(c.position) + ' — ' : ''}${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}: ${c.rev ? (c.card.reversedMeaning || c.card.rv) : (c.card.uprightMeaning || c.card.up)}${contextoDePosicion(c.position) ? " " + contextoDePosicion(c.position) : ""}`).join('\n\n');
   const lines = `${subjectPrefix(subject)}${linesOnly}`;
   setLastReading({ type:'Tarot privado', title:spreadTitle(spread), text:lines, items:cards.map(c=>({ kind:'tarot', name:c.card.name, subtitle:c.card.key || c.card.el || '', image:c.card.img || '', symbol:'🃏', position:c.position || '', reversed:!!c.rev })), ritual:{ module:'chat', action:'tarot', spread:spreadKey }, meta:subjectMeta(subject, { reversedRate }) });
   ceremonyTone('shuffle'); ceremonyVibrate([14,35,14]);
   addChat('oracle', `El oráculo está mezclando las cartas${subject ? ` para ${subject}` : ` para tu ${spreadTitle(spread)}`}...`);
-  cards.forEach((c, i) => setTimeout(() => { ceremonyTone('reveal'); ceremonyVibrate(22); addChat('oracle', `${c.position || `Carta ${i+1}`}: ${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}
+  cards.forEach((c, i) => setTimeout(() => { ceremonyTone('reveal'); ceremonyVibrate(22); addChat('oracle', `${posLabel(c.position) || t('lblCardN', { n: i + 1 })}: ${c.card.name}${c.rev ? ' ' + t('lblReversed') : ''}
 ${c.rev ? c.card.rv : c.card.up}`, `<div class="chat-ritual-grid single">${chatTarotCardHTML(c)}</div>`); }, ceremonyDelay(650 + i * 950)));
   setTimeout(() => addChat('oracle', t('chatDone'), `<div class="chat-ritual-grid summary tarot-count-${cards.length}">${cards.map(chatTarotCardHTML).join('')}</div><div class="actions mt"><button class="btn compact" data-act="ai-reading">🤖 Profundizar IA</button><button class="btn compact" data-act="speak-ai">🔊 Leer IA</button><button class="btn compact" data-act="save-reading">⭐ Guardar</button><button class="btn compact" data-act="pdf-options">📄 PDF</button><button class="btn compact" data-chat-quick="otra ${spreadTitle(spread)}">🔄 ${escapeHTML(t('qkAgain'))}</button></div>`), ceremonyDelay(900 + cards.length * 950));
 }
