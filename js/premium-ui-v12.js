@@ -795,12 +795,53 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
 
   function showSplash() {
     const s = $('#premiumNativeSplash');
-    if (s) s.hidden = false;
+    if (!s) return;
+    s.hidden = false;
+    s.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('premium-splash-open');
   }
 
   function hideSplash() {
     const s = $('#premiumNativeSplash');
-    if (s) s.hidden = true;
+    if (!s) return;
+    s.hidden = true;
+    s.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('premium-splash-open');
+  }
+
+  function dismissSplash(rememberChoice = false) {
+    if (rememberChoice) {
+      const settings = readSettings();
+      settings.showSplash = false;
+      writeSettings(settings);
+      applySettings(settings);
+    }
+    hideSplash();
+  }
+
+  function bindSplashControls() {
+    const root = $('#premiumNativeSplash');
+    if (!root || root.dataset.premiumSplashBound === 'true') return;
+    root.dataset.premiumSplashBound = 'true';
+
+    const bindAction = (selector, rememberChoice) => {
+      root.querySelectorAll(selector).forEach(control => {
+        const close = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dismissSplash(rememberChoice);
+        };
+        control.addEventListener('click', close);
+        control.addEventListener('touchend', close, { passive: false });
+      });
+    };
+
+    bindAction('[data-premium-action="dismiss-native-splash"]', false);
+    bindAction('[data-premium-action="dont-show-native-splash"]', true);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !root.hidden) dismissSplash(false);
+    });
   }
 
   function pulseTransition() {
@@ -832,15 +873,15 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     }
     if (action === 'dismiss-native-splash') {
       e.preventDefault();
-      hideSplash();
+      e.stopPropagation();
+      dismissSplash(false);
+      return;
     }
     if (action === 'dont-show-native-splash') {
       e.preventDefault();
-      const settings = readSettings();
-      settings.showSplash = false;
-      writeSettings(settings);
-      applySettings(settings);
-      hideSplash();
+      e.stopPropagation();
+      dismissSplash(true);
+      return;
     }
 
     if ([
@@ -890,6 +931,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     document.addEventListener('DOMContentLoaded', () => {
       const settings = readSettings();
       applySettings(settings);
+      bindSplashControls();
       bootSplash();
       syncThemeLabel();
       if (bodyObserver) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-premium-theme'] });
@@ -899,6 +941,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
   } else {
     const settings = readSettings();
     applySettings(settings);
+    bindSplashControls();
     bootSplash();
     syncThemeLabel();
     if (bodyObserver) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-premium-theme'] });
