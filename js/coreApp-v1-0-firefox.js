@@ -19,6 +19,7 @@ const LS = {
   chat: 'oraculo.chatRitual.v1',
   profile: 'oraculo.profile.v1',
   theme: 'oraculo.theme.v1',
+  appearanceMode: 'oraculo.appearanceMode.v1',
   privateMode: 'oraculo.privateMode.v1',
   achievements: 'oraculo.achievements.v1',
   dailyJournal: 'oraculo.dailyJournal.v1',
@@ -1842,6 +1843,7 @@ function updateHome() {
   document.body.classList.toggle('private-mode', isPrivateMode());
   document.body.classList.toggle('focus-mode', isFocusMode());
   document.body.classList.toggle('performance-mode', isPerformanceMode());
+  applyAppearanceMode();
   applyTheme();
 }
 
@@ -1942,6 +1944,32 @@ function applyTheme() {
   const theme = getTheme();
   document.body.classList.remove('theme-gold','theme-violet','theme-forest','theme-blue','theme-classic','theme-light');
   document.body.classList.add('theme-' + theme);
+}
+function getAppearanceMode() {
+  return localStorage.getItem(LS.appearanceMode) === 'light' ? 'light' : 'dark';
+}
+function setAppearanceMode(mode) {
+  localStorage.setItem(LS.appearanceMode, mode === 'light' ? 'light' : 'dark');
+  applyAppearanceMode();
+  document.dispatchEvent(new CustomEvent('om:appearance-changed', { detail: { modo: getAppearanceMode() } }));
+}
+function applyAppearanceMode() {
+  const mode = getAppearanceMode();
+  document.documentElement.dataset.appearanceMode = mode;
+  document.body?.setAttribute('data-appearance-mode', mode);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const rootBg = getComputedStyle(document.documentElement).getPropertyValue('--om-void').trim();
+  if (meta && rootBg) meta.setAttribute('content', rootBg);
+  document.querySelectorAll?.('[data-om-appearance-select]').forEach(select => { select.value = mode; });
+  document.querySelectorAll?.('[data-om-appearance]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.omAppearance === mode)));
+  document.querySelectorAll?.('[data-om-appearance-toggle]').forEach(button => {
+    button.setAttribute('aria-pressed', String(mode === 'light'));
+    button.setAttribute('aria-label', mode === 'light' ? 'Cambiar a Noche' : 'Cambiar a Día');
+    const icon = button.querySelector('[data-om-appearance-icon]');
+    const label = button.querySelector('[data-om-appearance-label]');
+    if (icon) icon.textContent = mode === 'light' ? '☼' : '☾';
+    if (label) label.textContent = mode === 'light' ? 'Día' : 'Noche';
+  });
 }
 
 function getPdfStyle() { return localStorage.getItem(LS.pdfStyle) || 'premium'; }
@@ -4197,6 +4225,7 @@ function showSettings() {
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label>Tema visual</label><select id="themeSelect"><option value="gold" ${getTheme()==='gold'?'selected':''}>Dorado místico</option><option value="violet" ${getTheme()==='violet'?'selected':''}>Noche violeta</option><option value="forest" ${getTheme()==='forest'?'selected':''}>Bosque rúnico</option><option value="blue" ${getTheme()==='blue'?'selected':''}>Luna azul</option><option value="classic" ${getTheme()==='classic'?'selected':''}>Tarot clásico</option><option value="light" ${getTheme()==='light'?'selected':''}>Claro elegante</option></select></div>
+      <div class="field"><label>Luz de la app</label><select id="appearanceModeSelect" data-om-appearance-select><option value="dark" ${getAppearanceMode()==='dark'?'selected':''}>Noche</option><option value="light" ${getAppearanceMode()==='light'?'selected':''}>Día</option></select></div>
       <div class="field"><label>Modo privado</label><select id="privateModeSelect"><option value="false" ${!isPrivateMode()?'selected':''}>Guardar historial normalmente</option><option value="true" ${isPrivateMode()?'selected':''}>No guardar nuevas lecturas</option></select></div>
       <div class="field"><label>Estilo PDF por defecto</label><select id="pdfStyleSelect"><option value="premium" ${getPdfStyle()==='premium'?'selected':''}>Premium místico</option><option value="light" ${getPdfStyle()==='light'?'selected':''}>Claro elegante</option><option value="summary" ${getPdfStyle()==='summary'?'selected':''}>Resumen 1 página</option></select></div>
       <div class="field"><label>Modo foco / menos animaciones</label><select id="focusModeSelect"><option value="false" ${!isFocusMode()?'selected':''}>Animaciones completas</option><option value="true" ${isFocusMode()?'selected':''}>Reducir animaciones</option></select></div>
@@ -4518,7 +4547,7 @@ function handleAction(action) {
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast('Guía completada.'); },
     'grab-clear': () => { grabSeleccion.clear(); refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
-    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
+    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'toggle-large-text': () => { const p=storeGet(LS.prefs,{}); p.largeText=!p.largeText; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
