@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-iphone-mic-107';
+const CACHE_NAME = 'oraculo-v1-0-public-ios-crash-108';
 const APP_SHELL = [
   './',
   './index.html',
@@ -100,6 +100,11 @@ self.addEventListener('fetch', event => {
 
   // Network-first for HTML, JS and CSS so GitHub Pages updates are seen immediately.
   const isFreshAsset = event.request.mode === 'navigate' || /\.(html|js|css|json)$/i.test(url.pathname);
+
+  if (/\.glb$/i.test(url.pathname)) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }).catch(() => Response.error()));
+    return;
+  }
 
   if (isFreshAsset) {
     event.respondWith(

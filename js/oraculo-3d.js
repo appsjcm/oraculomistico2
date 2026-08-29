@@ -23,6 +23,15 @@ function prefersReducedMotion() {
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function isIosLikeDevice() {
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isMobileWebKit() {
+  return isIosLikeDevice();
+}
+
 /* Esta sonda abria un contexto WebGL real y no lo cerraba, y se llamaba
    desde detectQuality() en cada montaje: bastaba subir y bajar unas
    veces para agotar los ~16 contextos que admite el navegador.
@@ -45,6 +54,7 @@ function detectQuality() {
   const preference = readPreference();
   if (preference === 'off') return { enabled: false, level: 'off', reason: 'user' };
   if (!webglAvailable()) return { enabled: false, level: 'off', reason: 'webgl' };
+  if (isMobileWebKit()) return { enabled: true, level: 'low', motion: false, reason: 'ios-safe-mode' };
   if (prefersReducedMotion()) return { enabled: true, level: 'low', motion: false, reason: 'reduced-motion' };
   if (preference === 'high') return { enabled: true, level: 'high', motion: true, reason: 'user' };
   if (preference === 'balanced') return { enabled: true, level: 'medium', motion: true, reason: 'user' };
@@ -452,7 +462,7 @@ function unmountStage(stage) {
 
 function schedulePrefetch(assetIds = []) {
   const unique = assetIds.filter(id => ORACULO_3D_ASSETS[id]);
-  if (!unique.length || readPreference() === 'off' || prefersReducedMotion()) return;
+  if (!unique.length || readPreference() === 'off' || prefersReducedMotion() || isMobileWebKit()) return;
   const quality = detectQuality();
   if (quality.level !== 'high') return;
   const run = () => unique.slice(0, 1).forEach(async id => {
@@ -556,6 +566,14 @@ function refreshAllStages() {
   etapas.forEach(stage => { if (visiblePorGeometria(stage) > 0) mountStage(stage); });
 }
 
+function release3DMemory() {
+  activeStages.forEach(stage => unmountStage(stage));
+  [...modelCache.values()].forEach(entry => {
+    if (entry.gltf?.scene && moduleState.THREE) disposeObject(moduleState.THREE, entry.gltf.scene);
+  });
+  modelCache.clear();
+}
+
 let temporizadorScroll = null;
 function reconciliarAlDesplazar() {
   if (detectQuality().level !== 'high') return;
@@ -564,7 +582,9 @@ function reconciliarAlDesplazar() {
 }
 
 function init() {
-  document.documentElement.dataset.oraculo3d = detectQuality().level;
+  const quality = detectQuality();
+  document.documentElement.dataset.oraculo3d = quality.level;
+  document.documentElement.dataset.oraculo3dReason = quality.reason || quality.level;
   observeStages();
   window.addEventListener('scroll', reconciliarAlDesplazar, { passive: true });
   window.addEventListener('resize', reconciliarAlDesplazar, { passive: true });
@@ -587,11 +607,7 @@ function init() {
   });
   mo.observe(document.body, { childList: true, subtree: true });
   window.addEventListener('pagehide', () => {
-    activeStages.forEach(stage => unmountStage(stage));
-    [...modelCache.values()].forEach(entry => {
-      if (entry.gltf?.scene && moduleState.THREE) disposeObject(moduleState.THREE, entry.gltf.scene);
-    });
-    modelCache.clear();
+    release3DMemory();
   });
 }
 
@@ -600,7 +616,9 @@ window.Oraculo3D = {
   getPreference: readPreference,
   setPreference(value) {
     writePreference(value);
-    document.documentElement.dataset.oraculo3d = detectQuality().level;
+    const quality = detectQuality();
+    document.documentElement.dataset.oraculo3d = quality.level;
+    document.documentElement.dataset.oraculo3dReason = quality.reason || quality.level;
     refreshAllStages();
   },
   getQuality: detectQuality,
@@ -609,6 +627,8 @@ window.Oraculo3D = {
     catch { return {}; }
   },
   refresh: refreshAllStages,
+  releaseMemory: release3DMemory,
+  isMobileSafeMode: isMobileWebKit,
   prefetch: schedulePrefetch
 };
 
