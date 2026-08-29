@@ -7,9 +7,16 @@ regenerarse cuando la app cambie, sin depender de un .docx suelto.
 
     python docs/generar_manual.py
 
-Tipografias: Georgia para titulos (es la que la app acaba usando de
-verdad, porque Fraunces se declara pero no se carga) y Calibri para el
-texto. Si no estan en el sistema, cae a las de serie de reportlab.
+Tipografias: Fraunces para los titulos, la misma que la app, tomada del
+woff2 que ya vive en assets/vendor/fonts. Como es una fuente variable y
+reportlab no las entiende, se instancia al vuelo en los ejes que
+interesan (opsz alto = corte de titulares) y se guarda como TTF en un
+directorio temporal; no se duplica ningun archivo en el repositorio.
+Requiere fonttools y brotli. Si faltan, o si falta el woff2, los titulos
+caen a Georgia y el manual se genera igual.
+
+El texto sigue en Calibri: Fraunces es una tipografia de titulares y a
+10 puntos se lee peor.
 
 Color: la portada usa el fondo oscuro de la app; las paginas interiores
 son claras para poder leerse e imprimirse. El oro sobre claro es el
@@ -18,6 +25,7 @@ profundo (#b8832d, 4.3:1), no el brillante, que sobre crema se queda en
 """
 import os
 import sys
+import tempfile
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
@@ -47,38 +55,101 @@ RULE = colors.HexColor('#e4dccb')
 BOX_BG = colors.HexColor('#faf4e6')
 
 VERSION = '1.0'
-BUILD = 'i18n-motor-90'
+BUILD = 'fraunces-95'
 
 # --------------------------------------------------------------------
 # Tipografias
 # --------------------------------------------------------------------
+WOFF2 = os.path.join('assets', 'vendor', 'fonts', 'fraunces-latin.woff2')
+
+
+def instanciar_fraunces(destino):
+    """Saca de la fuente variable dos cortes fijos para el PDF.
+
+    reportlab no entiende fuentes variables, asi que hay que congelar los
+    ejes. Se pide opsz alto a proposito: Fraunces cambia de dibujo con el
+    tamano optico y el corte de titulares es mas estrecho y contrastado,
+    que es justo lo que se quiere en un titulo. Devuelve (regular, bold)
+    o None si no se puede.
+    """
+    if not os.path.exists(WOFF2):
+        return None
+    try:
+        from fontTools.ttLib import TTFont as TTLib
+        from fontTools.varLib import instancer
+    except ImportError:
+        return None
+    salidas = []
+    for etiqueta, opsz, peso in (('Regular', 22, 500), ('Bold', 22, 650), ('Display', 96, 620)):
+        try:
+            f = TTLib(WOFF2)
+            instancer.instantiateVariableFont(f, {'opsz': opsz, 'wght': peso}, inplace=True)
+            # Instanciar no renombra: los tres cortes salian llamandose
+            # igual y reportlab acababa embebiendo uno solo para los tres,
+            # asi que ni la negrita ni el corte de titulares llegaban al
+            # PDF. Cada uno necesita su propio nombre interno.
+            nuevo = 'Fraunces-%s' % etiqueta
+            for registro in f['name'].names:
+                if registro.nameID in (1, 3, 4, 6):
+                    valor = nuevo if registro.nameID != 3 else nuevo + '-om'
+                    registro.string = valor.encode('utf-16-be') if registro.platformID == 3 else valor.encode('latin-1')
+            f.flavor = None                      # de woff2 a ttf plano
+            ruta = os.path.join(destino, 'fraunces-%s.ttf' % etiqueta.lower())
+            f.save(ruta)
+            salidas.append(ruta)
+        except Exception as e:
+            print('  (aviso) no se pudo instanciar Fraunces: %s' % e)
+            return None
+    return salidas
+
+
 def registrar_fuentes():
-    """Devuelve (titulo, texto, texto_negrita, texto_cursiva)."""
+    """Devuelve (titulo, titulo_negrita, texto, texto_negrita, texto_cursiva)."""
     win = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
-    intentos = [
-        ('OMTitulo', 'georgia.ttf'), ('OMTituloBold', 'georgiab.ttf'),
-        ('OMTituloItal', 'georgiai.ttf'),
-        ('OMTexto', 'calibri.ttf'), ('OMTextoBold', 'calibrib.ttf'),
-        ('OMTextoItal', 'calibrii.ttf'),
-    ]
-    ok = True
-    for nombre, fichero in intentos:
+
+    # --- el texto: Calibri, con Georgia y las de serie como respaldo ---
+    cuerpo = [('OMTexto', 'calibri.ttf'), ('OMTextoBold', 'calibrib.ttf'),
+              ('OMTextoItal', 'calibrii.ttf')]
+    hay_cuerpo = True
+    for nombre, fichero in cuerpo:
         ruta = os.path.join(win, fichero)
         if not os.path.exists(ruta):
-            ok = False
+            hay_cuerpo = False
             break
         try:
             pdfmetrics.registerFont(TTFont(nombre, ruta))
         except Exception:
-            ok = False
+            hay_cuerpo = False
             break
-    if not ok:
+    if not hay_cuerpo:
         print('  (aviso) tipografias del sistema no disponibles: se usan las de serie')
         return 'Times-Roman', 'Times-Bold', 'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique'
     pdfmetrics.registerFontFamily('OMTexto', normal='OMTexto', bold='OMTextoBold',
                                   italic='OMTextoItal', boldItalic='OMTextoBold')
+
+    # --- los titulos: Fraunces si se puede, Georgia si no ---
+    tmp = tempfile.mkdtemp(prefix='om-fuentes-')
+    rutas = instanciar_fraunces(tmp)
+    if rutas:
+        try:
+            pdfmetrics.registerFont(TTFont('OMTitulo', rutas[0]))
+            pdfmetrics.registerFont(TTFont('OMTituloBold', rutas[1]))
+            pdfmetrics.registerFont(TTFont('OMDisplay', rutas[2]))
+            pdfmetrics.registerFontFamily('OMTitulo', normal='OMTitulo',
+                                          bold='OMTituloBold', italic='OMTitulo',
+                                          boldItalic='OMTituloBold')
+            print('  titulos: Fraunces (la misma que la app)')
+            return 'OMTitulo', 'OMTituloBold', 'OMTexto', 'OMTextoBold', 'OMTextoItal'
+        except Exception as e:
+            print('  (aviso) Fraunces no se pudo registrar: %s' % e)
+
+    for nombre, fichero in (('OMTitulo', 'georgia.ttf'), ('OMTituloBold', 'georgiab.ttf')):
+        ruta = os.path.join(win, fichero)
+        if os.path.exists(ruta):
+            pdfmetrics.registerFont(TTFont(nombre, ruta))
     pdfmetrics.registerFontFamily('OMTitulo', normal='OMTitulo', bold='OMTituloBold',
-                                  italic='OMTituloItal', boldItalic='OMTituloBold')
+                                  italic='OMTitulo', boldItalic='OMTituloBold')
+    print('  titulos: Georgia (Fraunces no disponible)')
     return 'OMTitulo', 'OMTituloBold', 'OMTexto', 'OMTextoBold', 'OMTextoItal'
 
 
@@ -93,8 +164,11 @@ S = {}
 S['portada_marca'] = ParagraphStyle(
     'pm', parent=base['Normal'], fontName=TXT_B, fontSize=10.5, leading=14,
     textColor=GOLD, alignment=TA_CENTER, spaceAfter=0)
+# El titulo de portada va a 40 puntos: ahi si conviene el corte de
+# titulares, mas estrecho y contrastado.
+DISPLAY = 'OMDisplay' if 'OMDisplay' in pdfmetrics.getRegisteredFontNames() else TIT_B
 S['portada_titulo'] = ParagraphStyle(
-    'pt', parent=base['Normal'], fontName=TIT_B, fontSize=40, leading=46,
+    'pt', parent=base['Normal'], fontName=DISPLAY, fontSize=40, leading=46,
     textColor=IVORY, alignment=TA_CENTER)
 S['portada_sub'] = ParagraphStyle(
     'ps', parent=base['Normal'], fontName=TIT, fontSize=15, leading=22,
@@ -243,7 +317,8 @@ def vinetas(items, titulo=None):
         return KeepTogether(lista) if len(items) <= 7 else lista
     if len(items) <= 7:
         return KeepTogether([h2(titulo), lista])
-    return [h2(titulo), lista]
+    # Igual que en tabla(): un flowable, nunca una lista.
+    return KeepTogether([h2(titulo), lista])
 
 
 def _lista(items):
@@ -290,7 +365,15 @@ def tabla(cabeceras, filas, anchos):
         if i % 2 == 0:
             estilo.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#fbf7ee')))
     t.setStyle(TableStyle(estilo))
-    return KeepTogether([Spacer(1, 1 * mm), t, Spacer(1, 6 * mm)])
+    # Una tabla larga se parte entre paginas: para eso repite la cabecera.
+    # Forzarla entera dejaba el titulo solo al pie con un hueco enorme.
+    if len(datos) <= 8:
+        return KeepTogether([Spacer(1, 1 * mm), t, Spacer(1, 6 * mm)])
+    # Los margenes van en el propio objeto: devolver una lista rompe el
+    # append de quien la usa, y el marco de reportlab no la entiende.
+    t.spaceBefore = 1 * mm
+    t.spaceAfter = 6 * mm
+    return t
 
 
 # --------------------------------------------------------------------
