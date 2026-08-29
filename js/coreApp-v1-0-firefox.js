@@ -691,12 +691,12 @@ async function exportPDF(title, text, reading = lastReading) {
         tight ? `Aspecto mas exacto: ${tight.name} ${tight.a}/${tight.b}, orbe ${tight.orb} grados` : '',
         `Aspectos: ${astroPdfChart.aspects?.length || 0} mayores, ${stats.counts.flow} fluidos, ${stats.counts.tension} de ajuste`
       ], { columns:2, accent:true, rowH:6.2 });
-      addPdfRows('Posiciones planetarias', astroPdfChart.planets.map(planet => `${ASTRO_PDF_PLANETS[planet.id] || planet.name}: ${planet.signDegree} grados ${planet.sign}${planet.retrograde ? ' Rx' : ''} - ${planet.role}`), { columns:2, rowH:6.2, fontSize:7.2 });
+      addPdfRows('Posiciones planetarias', astroPdfChart.planets.map(planet => `${ASTRO_PDF_PLANETS[planet.id] || planet.name}: ${planet.degreeLabel || `${planet.signDegree} grados`} ${planet.sign}${planet.retrograde ? ' Rx' : ''} - ${planet.role}`), { columns:2, rowH:6.2, fontSize:7.2 });
       addPdfRows('Aspectos principales', (astroPdfChart.aspects || []).slice(0, 12).map(aspect => {
         const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:pdfAscii(aspect.name).slice(0, 4).toUpperCase() };
         return `${meta.code}: ${aspect.a} / ${aspect.b} - ${aspect.angle} grados, orbe ${aspect.orb} (${astroAspectOrbLabel(aspect.orb)})`;
       }), { columns:1, accent:true, rowH:6.1, fontSize:7.4 });
-      addPdfRows('Casas', astroPdfChart.houses.map(house => `Casa ${house.number} - ${house.label}: ${house.degree} grados ${house.sign}`), { columns:2, rowH:6, fontSize:7.4 });
+      addPdfRows('Casas', astroPdfChart.houses.map(house => `Casa ${house.number} - ${house.label}: ${house.degreeLabel || `${house.degree} grados`} ${house.sign}`), { columns:2, rowH:6, fontSize:7.4 });
     }
     if (assets.length) {
       const maxAssets = Math.min(10, assets.length);
@@ -3138,18 +3138,50 @@ function astroDateUTC(date = '', time = '12:00', timeZone = '') {
   if (!parts) return null;
   const [hour = 12, minute = 0] = String(time || '12:00').split(':').map(Number);
   const localAsUTC = Date.UTC(parts.year, parts.month - 1, parts.day, Number.isFinite(hour) ? hour : 12, Number.isFinite(minute) ? minute : 0);
-  const offset = timeZoneOffsetMinutes(timeZone, new Date(localAsUTC));
-  return localAsUTC - offset * 60000;
+  if (!timeZone) return localAsUTC;
+  let utc = localAsUTC;
+  for (let step = 0; step < 4; step += 1) {
+    const offset = timeZoneOffsetMinutes(timeZone, new Date(utc));
+    const nextUtc = localAsUTC - offset * 60000;
+    if (Math.abs(nextUtc - utc) < 1000) return nextUtc;
+    utc = nextUtc;
+  }
+  return utc;
 }
 function astroDayCount(date = '', time = '12:00', place = null) {
   const ms = astroDateUTC(date, time, place?.timezone || '');
   if (ms === null) return null;
-  return { ms, days:(ms - Date.UTC(2000, 0, 1, 12, 0)) / 86400000, jd:ms / 86400000 + 2440587.5 };
+  const jd = ms / 86400000 + 2440587.5;
+  return { ms, days:(ms - Date.UTC(2000, 0, 1, 12, 0)) / 86400000, jd, t:(jd - 2451545.0) / 36525 };
+}
+function julianCenturiesFromDays(days = 0) {
+  return Number(days) / 36525;
+}
+function meanObliquityDegree(t = 0) {
+  const seconds = 21.448 - 46.8150 * t - 0.00059 * t * t + 0.001813 * t * t * t;
+  return 23 + 26 / 60 + seconds / 3600;
+}
+function nutationLongitudeDegree(t = 0) {
+  const omega = 125.04452 - 1934.136261 * t;
+  const sunMean = 280.4665 + 36000.7698 * t;
+  const moonMean = 218.3165 + 481267.8813 * t;
+  return (-17.20 * sinDeg(omega) - 1.32 * sinDeg(2 * sunMean) - 0.23 * sinDeg(2 * moonMean) + 0.21 * sinDeg(2 * omega)) / 3600;
+}
+function trueObliquityDegree(t = 0) {
+  const omega = 125.04452 - 1934.136261 * t;
+  const sunMean = 280.4665 + 36000.7698 * t;
+  const moonMean = 218.3165 + 481267.8813 * t;
+  return meanObliquityDegree(t) + (9.20 * cosDeg(omega) + 0.57 * cosDeg(2 * sunMean) + 0.10 * cosDeg(2 * moonMean) - 0.09 * cosDeg(2 * omega)) / 3600;
 }
 function zodiacFromDegree(degree) {
   const normalized = normalizeDegree(degree);
   const index = Math.floor(normalized / 30) % 12;
-  return { ...ASTRO_SIGNS[index], degree:Math.round(normalized % 30), index, absolute:normalized };
+  const decimal = normalized % 30;
+  let signDegree = Math.floor(decimal);
+  let minute = Math.round((decimal - signDegree) * 60);
+  if (minute >= 60) { signDegree += 1; minute = 0; }
+  if (signDegree >= 30) { signDegree = 29; minute = 59; }
+  return { ...ASTRO_SIGNS[index], degree:signDegree, minute, degreeLabel:`${signDegree}°${String(minute).padStart(2, '0')}'`, decimalDegree:Number(decimal.toFixed(2)), index, absolute:normalized };
 }
 function astroDaysFromMs(ms) {
   return (Number(ms) - Date.UTC(2000, 0, 1, 12, 0)) / 86400000;
@@ -3245,6 +3277,41 @@ function heliocentricPosition(elements) {
     z:radius * sinDeg(vw) * sinDeg(elements.i)
   };
 }
+function eclipticFromCartesian(position) {
+  const radius = Math.sqrt(position.x * position.x + position.y * position.y + position.z * position.z);
+  return {
+    longitude:normalizeDegree(radToDeg(Math.atan2(position.y, position.x))),
+    latitude:radToDeg(Math.atan2(position.z, Math.sqrt(position.x * position.x + position.y * position.y))),
+    radius
+  };
+}
+function cartesianFromEcliptic(longitude = 0, latitude = 0, radius = 1) {
+  return {
+    x:radius * cosDeg(longitude) * cosDeg(latitude),
+    y:radius * sinDeg(longitude) * cosDeg(latitude),
+    z:radius * sinDeg(latitude)
+  };
+}
+function correctedHeliocentricPosition(id = '', d = 0) {
+  const model = ASTRO_ORBITAL_ELEMENTS[id];
+  if (!model) return null;
+  const base = eclipticFromCartesian(heliocentricPosition(model(d)));
+  let { longitude, latitude, radius } = base;
+  if (id === 'jupiter' || id === 'saturn' || id === 'uranus') {
+    const jupiterM = normalizeDegree(ASTRO_ORBITAL_ELEMENTS.jupiter(d).M);
+    const saturnM = normalizeDegree(ASTRO_ORBITAL_ELEMENTS.saturn(d).M);
+    const uranusM = normalizeDegree(ASTRO_ORBITAL_ELEMENTS.uranus(d).M);
+    if (id === 'jupiter') {
+      longitude += -0.332 * sinDeg(2 * jupiterM - 5 * saturnM - 67.6) - 0.056 * sinDeg(2 * jupiterM - 2 * saturnM + 21) + 0.042 * sinDeg(3 * jupiterM - 5 * saturnM + 21) - 0.036 * sinDeg(jupiterM - 2 * saturnM) + 0.022 * cosDeg(jupiterM - saturnM) + 0.023 * sinDeg(2 * jupiterM - 3 * saturnM + 52) - 0.016 * sinDeg(jupiterM - 5 * saturnM - 69);
+    } else if (id === 'saturn') {
+      longitude += 0.812 * sinDeg(2 * jupiterM - 5 * saturnM - 67.6) - 0.229 * cosDeg(2 * jupiterM - 4 * saturnM - 2) + 0.119 * sinDeg(jupiterM - 2 * saturnM - 3) + 0.046 * sinDeg(2 * jupiterM - 6 * saturnM - 69) + 0.014 * sinDeg(jupiterM - 3 * saturnM + 32);
+      latitude += -0.020 * cosDeg(2 * jupiterM - 4 * saturnM - 2) + 0.018 * sinDeg(2 * jupiterM - 6 * saturnM - 49);
+    } else if (id === 'uranus') {
+      longitude += 0.040 * sinDeg(saturnM - 2 * uranusM + 6) + 0.035 * sinDeg(saturnM - 3 * uranusM + 33) - 0.015 * sinDeg(jupiterM - uranusM + 20);
+    }
+  }
+  return cartesianFromEcliptic(longitude, latitude, radius);
+}
 function plutoHeliocentricPosition(d = 0) {
   const s = 50.03 + 0.033459652 * d;
   const p = 238.95 + 0.003968789 * d;
@@ -3290,34 +3357,52 @@ function geocentricPlanetLongitude(id = '', dateInfo = null) {
   if ((!model && id !== 'pluto') || !Number.isFinite(dateInfo?.ms)) return null;
   const d = daysSinceOrbitalEpoch(dateInfo.ms);
   const sun = sunGeocentricPosition(d);
-  const planet = id === 'pluto' ? plutoHeliocentricPosition(d) : heliocentricPosition(model(d));
+  const planet = id === 'pluto' ? plutoHeliocentricPosition(d) : correctedHeliocentricPosition(id, d);
   const degree = normalizeDegree(radToDeg(Math.atan2(planet.y + sun.y, planet.x + sun.x)));
   const tomorrowD = daysSinceOrbitalEpoch(dateInfo.ms + 86400000);
   const tomorrowSun = sunGeocentricPosition(tomorrowD);
-  const tomorrowPlanet = id === 'pluto' ? plutoHeliocentricPosition(tomorrowD) : heliocentricPosition(model(tomorrowD));
+  const tomorrowPlanet = id === 'pluto' ? plutoHeliocentricPosition(tomorrowD) : correctedHeliocentricPosition(id, tomorrowD);
   const tomorrowDegree = normalizeDegree(radToDeg(Math.atan2(tomorrowPlanet.y + tomorrowSun.y, tomorrowPlanet.x + tomorrowSun.x)));
   return { degree, retrograde:signedDegreeDelta(degree, tomorrowDegree) < 0 };
 }
 function sunLongitudeFromDays(days = 0) {
-  const sunMean = normalizeDegree(280.46646 + 0.98564736 * days);
-  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
-  return normalizeDegree(sunMean + 1.914602 * sinDeg(sunAnomaly) + 0.019993 * sinDeg(2 * sunAnomaly));
+  const t = julianCenturiesFromDays(days);
+  const sunMean = normalizeDegree(280.46646 + 36000.76983 * t + 0.0003032 * t * t);
+  const sunAnomaly = normalizeDegree(357.52911 + 35999.05029 * t - 0.0001537 * t * t);
+  const center = (1.914602 - 0.004817 * t - 0.000014 * t * t) * sinDeg(sunAnomaly) + (0.019993 - 0.000101 * t) * sinDeg(2 * sunAnomaly) + 0.000289 * sinDeg(3 * sunAnomaly);
+  const omega = 125.04 - 1934.136 * t;
+  return normalizeDegree(sunMean + center - 0.00569 - 0.00478 * sinDeg(omega));
 }
 function moonLongitudeFromDays(days = 0) {
-  const moonMean = normalizeDegree(218.316 + 13.176396 * days);
-  const moonAnomaly = normalizeDegree(134.963 + 13.064993 * days);
-  const moonElongation = normalizeDegree(297.85 + 12.190749 * days);
-  const moonArgument = normalizeDegree(93.272 + 13.22935 * days);
-  const sunAnomaly = normalizeDegree(357.52911 + 0.98560028 * days);
-  return normalizeDegree(
-    moonMean +
-    6.289 * sinDeg(moonAnomaly) +
-    1.274 * sinDeg(2 * moonElongation - moonAnomaly) +
-    0.658 * sinDeg(2 * moonElongation) +
-    0.214 * sinDeg(2 * moonAnomaly) -
-    0.186 * sinDeg(sunAnomaly) -
-    0.114 * sinDeg(2 * moonArgument)
-  );
+  const t = julianCenturiesFromDays(days);
+  const moonMean = normalizeDegree(218.3164477 + 481267.88123421 * t - 0.0015786 * t * t + t * t * t / 538841 - Math.pow(t, 4) / 65194000);
+  const moonElongation = normalizeDegree(297.8501921 + 445267.1114034 * t - 0.0018819 * t * t + t * t * t / 545868 - Math.pow(t, 4) / 113065000);
+  const sunAnomaly = normalizeDegree(357.5291092 + 35999.0502909 * t - 0.0001536 * t * t + t * t * t / 24490000);
+  const moonAnomaly = normalizeDegree(134.9633964 + 477198.8675055 * t + 0.0087414 * t * t + t * t * t / 69699 - Math.pow(t, 4) / 14712000);
+  const moonArgument = normalizeDegree(93.2720950 + 483202.0175233 * t - 0.0036539 * t * t - t * t * t / 3526000 + Math.pow(t, 4) / 863310000);
+  const correction = 6.288774 * sinDeg(moonAnomaly)
+    + 1.274027 * sinDeg(2 * moonElongation - moonAnomaly)
+    + 0.658314 * sinDeg(2 * moonElongation)
+    + 0.213618 * sinDeg(2 * moonAnomaly)
+    - 0.185116 * sinDeg(sunAnomaly)
+    - 0.114332 * sinDeg(2 * moonArgument)
+    + 0.058793 * sinDeg(2 * moonElongation - 2 * moonAnomaly)
+    + 0.057066 * sinDeg(2 * moonElongation - sunAnomaly - moonAnomaly)
+    + 0.053322 * sinDeg(2 * moonElongation + moonAnomaly)
+    + 0.045758 * sinDeg(2 * moonElongation - sunAnomaly)
+    - 0.040923 * sinDeg(sunAnomaly - moonAnomaly)
+    - 0.034720 * sinDeg(moonElongation)
+    - 0.030383 * sinDeg(sunAnomaly + moonAnomaly)
+    + 0.015327 * sinDeg(2 * moonElongation - 2 * moonArgument)
+    - 0.012528 * sinDeg(moonAnomaly + 2 * moonArgument)
+    + 0.010980 * sinDeg(moonAnomaly - 2 * moonArgument)
+    + 0.010675 * sinDeg(4 * moonElongation - moonAnomaly)
+    + 0.010034 * sinDeg(3 * moonAnomaly);
+  return normalizeDegree(moonMean + correction + nutationLongitudeDegree(t));
+}
+function meanNorthNodeLongitude(days = 0) {
+  const t = julianCenturiesFromDays(days);
+  return normalizeDegree(125.04455501 - 1934.1361849 * t + 0.0020762 * t * t + t * t * t / 467410 - Math.pow(t, 4) / 60616000);
 }
 function angularDistance(a = 0, b = 0) {
   const diff = Math.abs(normalizeDegree(a) - normalizeDegree(b));
@@ -3342,10 +3427,12 @@ function planetPositions(date = '', time = '12:00', place = null) {
   const { days } = dateInfo;
   const sunLongitude = sunLongitudeFromDays(days);
   const moonLongitude = moonLongitudeFromDays(days);
+  const nodeLongitude = meanNorthNodeLongitude(days);
   return ASTRO_PLANETS.map(planet => {
     let degree = normalizeDegree(planet.offset + days * 360 / planet.cycle);
     if (planet.id === 'sun') degree = sunLongitude;
     if (planet.id === 'moon') degree = moonLongitude;
+    if (planet.id === 'node') degree = nodeLongitude;
     let pointOverride = null;
     const orbitalPosition = geocentricPlanetLongitude(planet.id, dateInfo);
     if (orbitalPosition) pointOverride = orbitalPosition;
@@ -3353,9 +3440,9 @@ function planetPositions(date = '', time = '12:00', place = null) {
     if (planet.id === 'lilith') pointOverride = { degree:meanBlackMoonLilithLongitude(days), retrograde:false };
     if (pointOverride) degree = pointOverride.degree;
     const retroPhase = planet.retroCycle ? normalizeDegree(days * 360 / planet.retroCycle + planet.offset) : 0;
-    const retrograde = pointOverride ? Boolean(pointOverride.retrograde) : Boolean(planet.retroCycle && cosDeg(retroPhase) < -0.58);
+    const retrograde = planet.id === 'node' ? true : (pointOverride ? Boolean(pointOverride.retrograde) : Boolean(planet.retroCycle && cosDeg(retroPhase) < -0.58));
     const sign = zodiacFromDegree(degree);
-    return { ...planet, degree, retrograde, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, element:sign.element, keywords:sign.keywords };
+    return { ...planet, degree, retrograde, sign:sign.name, signSymbol:sign.symbol, signDegree:sign.degree, signMinute:sign.minute, degreeLabel:sign.degreeLabel, element:sign.element, keywords:sign.keywords };
   });
 }
 function astroHash(value = '') {
@@ -3370,13 +3457,15 @@ function localSiderealDegree(date = '', time = '12:00', place = null) {
   const dateInfo = astroDayCount(date, time, place);
   if (!dateInfo) return 0;
   const longitude = Number.isFinite(Number(place?.lon)) ? Number(place.lon) : 0;
-  const t = (dateInfo.jd - 2451545.0) / 36525;
-  return normalizeDegree(280.46061837 + 360.98564736629 * (dateInfo.jd - 2451545.0) + 0.000387933 * t * t - (t * t * t) / 38710000 + longitude);
+  const t = dateInfo.t;
+  const mean = 280.46061837 + 360.98564736629 * (dateInfo.jd - 2451545.0) + 0.000387933 * t * t - (t * t * t) / 38710000;
+  const apparent = mean + nutationLongitudeDegree(t) * cosDeg(trueObliquityDegree(t));
+  return normalizeDegree(apparent + longitude);
 }
 function fallbackAscendant(date = '', time = '12:00', name = '', place = null) {
   const lst = localSiderealDegree(date, time, place);
   const lat = Number.isFinite(Number(place?.lat)) ? Math.max(-66, Math.min(66, Number(place.lat))) : 0;
-  const eps = 23.439291;
+  const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
   let degree = normalizeDegree(180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
   if (!Number.isFinite(degree)) degree = normalizeDegree(lst + (astroHash(name) % 18));
   if (!place?.lat) degree = normalizeDegree(degree + (astroHash(name) % 18));
@@ -3386,14 +3475,14 @@ function astronomicalAscendant(date = '', time = '12:00', place = null) {
   if (!hasAstroCoordinates(place)) return null;
   const lst = localSiderealDegree(date, time, place);
   const lat = Math.max(-66, Math.min(66, Number(place.lat)));
-  const eps = 23.439291;
+  const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
   const raw = 180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps)));
   return Number.isFinite(raw) ? zodiacFromDegree(normalizeDegree(raw)) : null;
 }
 function astronomicalMc(date = '', time = '12:00', place = null) {
   if (!hasAstroCoordinates(place)) return null;
   const lst = localSiderealDegree(date, time, place);
-  const eps = 23.439291;
+  const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
   return zodiacFromDegree(normalizeDegree(radToDeg(Math.atan2(sinDeg(lst) * cosDeg(eps), cosDeg(lst)))));
 }
 function directedArc(start = 0, end = 0) {
@@ -3444,7 +3533,7 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
   const houses = ASTRO_HOUSES.map((label, index) => {
     const cusp = houseCusps[index] ?? normalizeDegree(asc.absolute + index * 30);
     const sign = zodiacFromDegree(cusp);
-    return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element, cusp, degree:sign.degree };
+    return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element, cusp, degree:sign.degree, minute:sign.minute, degreeLabel:sign.degreeLabel };
   });
   const aspects = [];
   planets.forEach((a, i) => planets.slice(i + 1).forEach(b => {
@@ -3584,10 +3673,10 @@ function astroWheelHTML(chart) {
   return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
-  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${planet.signDegree}°</small></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${planet.symbol}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}</small></article>`).join('')}</div>`;
 }
 function astroHousesHTML(chart) {
-  return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${house.degree}°</small></span></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${house.symbol}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${escapeHTML(house.degreeLabel || `${house.degree}°`)}</small></span></article>`).join('')}</div>`;
 }
 function astroAspectsHTML(chart) {
   if (!chart.aspects.length) return `<p class="subtle">${escapeHTML(t('stLaRuedaNoMarcaAspectosMayores'))}</p>`;
@@ -3623,13 +3712,13 @@ Medio Cielo en ${chart.mc.symbol} ${chart.mc.name}: el propósito visible toma e
 Elemento dominante: ${element}. Consejo: ${astroAdviceForElement(element)}.
 
 Posiciones:
-${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.signDegree}° ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
 
 Aspectos principales:
 ${aspects}
 
 Casas:
-${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degree}° ${h.symbol} ${h.sign}`).join('\n')}
+${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degreeLabel || `${h.degree}°`} ${h.symbol} ${h.sign}`).join('\n')}
 
 Nota: lectura simbólica local con motor abierto propio. Con ciudad seleccionada usa zona horaria, coordenadas, ascendente, Medio Cielo y casas por cuadrantes; no sustituye un cálculo astrológico profesional con efemérides completas.`;
 }
@@ -3661,13 +3750,13 @@ Medio Cielo de revolución en ${chart.mc.name}; la zona visible del año se tiñ
 Elemento dominante del año: ${element}. Consejo: ${astroAdviceForElement(element)}.
 
 Posiciones de la revolución:
-${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.signDegree}° ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
 
 Aspectos principales:
 ${aspects}
 
 Casas de revolución:
-${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degree}° ${h.symbol} ${h.sign}`).join('\n')}
+${chart.houses.map(h => `Casa ${h.number} · ${h.label}: ${h.degreeLabel || `${h.degree}°`} ${h.symbol} ${h.sign}`).join('\n')}
 
 Nota: esta revolución solar usa el motor abierto del Oráculo, coordenadas locales y una aproximación al momento en que el Sol vuelve al grado natal. No sustituye una carta profesional con efemérides astronómicas completas.`;
 }
