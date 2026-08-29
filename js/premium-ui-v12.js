@@ -796,6 +796,7 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
   function showSplash() {
     const s = $('#premiumNativeSplash');
     if (!s) return;
+    s.style.display = '';
     s.hidden = false;
     s.setAttribute('aria-hidden', 'false');
     document.body.classList.add('premium-splash-open');

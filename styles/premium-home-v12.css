@@ -430,6 +430,7 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  pointer-events: none;
   display: grid;
   place-items: center;
   background:
@@ -1905,6 +1906,11 @@ body.premium-rich-cards .premium-stat-card {
   position: fixed;
   inset: 0;
   z-index: 120;
+}
+
+.premium-native-splash {
+  z-index: 10020;
+  pointer-events: auto;
 }
 
 .premium-native-splash[hidden],
