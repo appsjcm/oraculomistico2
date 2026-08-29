@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astro-engine-wheel-84';
+const CACHE_NAME = 'oraculo-v1-0-public-i18n-carcasa-86';
 const APP_SHELL = [
   './',
   './index.html',
