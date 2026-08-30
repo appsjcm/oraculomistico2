@@ -96,9 +96,9 @@
 
 .astro-grid {
   display: grid;
-  grid-template-columns: minmax(230px, .9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(520px, .95fr) minmax(320px, 1.05fr);
   gap: clamp(14px, 3vw, 24px);
-  align-items: center;
+  align-items: start;
 }
 
 .astro-wheel-wrap {
@@ -167,10 +167,16 @@
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: 50%;
+  overflow: visible;
+  border-radius: 8px;
   touch-action: none;
   cursor: zoom-in;
+}
+
+.astro-wheel-zoomed .astro-wheel-viewport,
+.astro-wheel-modal-root .astro-wheel-zoomed .astro-wheel-viewport {
+  overflow: hidden;
+  border-radius: 50%;
 }
 
 .astro-wheel-viewport:focus-visible {
@@ -318,7 +324,7 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
 .astro-wheel-modal-panel {
   position: relative;
   z-index: 1;
-  width: min(96vw, 760px);
+  width: min(96vw, 820px);
   max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
   display: grid;
   align-items: center;
@@ -326,7 +332,7 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
 }
 
 .astro-wheel-modal-root .astro-wheel-modal-copy {
-  --wheel-size: min(88vw, 66svh, 650px);
+  --wheel-size: min(88vw, 66svh, 620px);
   width: auto;
   max-width: none;
   margin: 0;
@@ -412,6 +418,18 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
     radial-gradient(circle, transparent 0 34.7%, rgba(78, 78, 82, .18) 34.85% 35.05%, transparent 35.2%),
     #fffdf9;
   box-shadow: 0 10px 28px rgba(31, 26, 20, .10);
+}
+
+.modal-root.open:has(.astro-grid) .modal-panel {
+  width: min(1180px, calc(100vw - 22px));
+}
+
+.modal-root.open:has(.astro-grid) .modal-body {
+  overflow-x: hidden;
+}
+
+.modal-root.open:has(.astro-grid) .astro-wheel-wrap {
+  --wheel-size: clamp(400px, 38vw, 490px);
 }
 
 .astro-aspect-web {
@@ -934,6 +952,22 @@ html[data-appearance-mode="light"] .astro-aspect p {
 html[data-appearance-mode="light"] .astro-aspect-glyph {
   background: rgba(156, 116, 32, .12);
   color: #9c7420;
+}
+
+@media (max-width: 1180px) {
+  .modal-root.open:has(.astro-grid) .astro-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-root.open:has(.astro-grid) .astro-wheel-wrap {
+    --wheel-size: min(72vw, 430px);
+  }
+}
+
+@media (max-width: 960px) {
+  .astro-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {

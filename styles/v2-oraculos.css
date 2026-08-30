@@ -208,6 +208,56 @@ html[data-appearance-mode="light"] .numerology-card {
 
 
 /* ============================================================
+   AVATAR DE LECTURA · visible sobre la navegacion
+   ============================================================ */
+.oracle-avatar-host {
+  bottom: calc(104px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom)));
+  z-index: 460;
+}
+
+.oracle-avatar-host.visible {
+  transform: translateY(0) scale(1);
+}
+
+.oracle-avatar-host .oracle-avatar-window {
+  max-height: min(300px, calc(100svh - 150px));
+}
+
+.oracle-avatar-host .oracle-avatar-copy {
+  min-width: 0;
+}
+
+.oracle-avatar-copy .oracle-reading-visuals {
+  max-height: 150px;
+  overflow: hidden;
+}
+
+@media (min-width: 900px) {
+  .oracle-avatar-host {
+    bottom: calc(118px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom)));
+  }
+}
+
+@media (max-width: 620px) {
+  .oracle-avatar-host.pos-right,
+  .oracle-avatar-host.pos-left {
+    right: 8px;
+    left: 8px;
+    bottom: calc(86px + max(var(--safe-bottom, 0px), env(safe-area-inset-bottom)));
+  }
+
+  .oracle-avatar-host .oracle-avatar-window {
+    max-height: min(250px, calc(100svh - 132px));
+    grid-template-columns: minmax(82px, 100px) minmax(0, 1fr);
+  }
+
+  .oracle-avatar-copy .oracle-reading-visuals {
+    max-height: 118px;
+  }
+}
+
+
+/* ============================================================
    SINASTRÍA · dos círculos y lo que los une
    ============================================================ */
 .om-syn-astro {
