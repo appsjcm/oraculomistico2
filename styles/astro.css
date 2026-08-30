@@ -438,17 +438,28 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 
 .astro-aspect-web {
   position: absolute;
-  inset: 18%;
+  inset: 0;
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
   border-radius: 50%;
 }
 
-.astro-aspect-line {
-  stroke-width: .5;
+.astro-house-ray {
+  stroke: rgba(58, 55, 66, .32);
+  stroke-width: .32;
   vector-effect: non-scaling-stroke;
-  opacity: .78;
+}
+
+.astro-house-ray-main {
+  stroke: rgba(44, 41, 52, .72);
+  stroke-width: .55;
+}
+
+.astro-aspect-line {
+  stroke-width: .55;
+  vector-effect: non-scaling-stroke;
+  opacity: .82;
 }
 
 .astro-aspect-conjunction,
@@ -543,6 +554,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   position: absolute;
   left: 50%;
   top: 50%;
+  z-index: 3;
   transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.395)) rotate(calc(var(--angle) * -1));
   width: clamp(28px, 7.6vw, 46px);
   height: clamp(28px, 7.6vw, 46px);
@@ -557,21 +569,14 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .astro-house-line {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1px;
-  height: 50%;
-  transform-origin: 50% 0;
-  transform: rotate(var(--angle));
-  background: linear-gradient(rgba(45, 43, 51, .72), rgba(45, 43, 51, .10), transparent 76%);
-  opacity: .72;
+  display: none;
 }
 
 .astro-house-number {
   position: absolute;
   left: 50%;
   top: 50%;
+  z-index: 3;
   transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.447)) rotate(calc(var(--angle) * -1));
   width: 20px;
   height: 20px;
@@ -600,7 +605,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   font-size: clamp(.92rem, 3.8vw, 1.38rem);
   line-height: 1;
   text-shadow: 0 1px 0 rgba(255,255,255,.88);
-  z-index: 3;
+  z-index: 4;
 }
 
 .astro-planet-dot small {
@@ -1061,7 +1066,7 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   }
 
   .astro-aspect-web {
-    inset: 20%;
+    inset: 0;
   }
 
   .astro-asc-line {

@@ -4497,23 +4497,28 @@ function astroAspectLegendHTML() {
   return `<div class="astro-aspect-legend" aria-label="Leyenda de aspectos">${ASTRO_ASPECTS.map(aspect => `<span class="astro-aspect-key astro-aspect-key-${astroAspectClass(aspect.name)}"><b aria-hidden="true">${astroGlyph(aspect.symbol)}</b><small>${escapeHTML(aspect.name)} · ${aspect.angle}°</small></span>`).join('')}</div>`;
 }
 function astroAspectWebHTML(chart) {
-  if (!chart?.aspects?.length) return '';
   const clipId = `astro-aspect-clip-${astroHash(`${chart.name || ''}|${chart.date || ''}|${chart.time || ''}`)}`;
   const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
-  const point = planet => {
-    const angle = degToRad(astroWheelAngle(chart, planet.degree) - 90);
-    const radius = 33;
+  const point = (degree, radius) => {
+    const angle = degToRad(astroWheelAngle(chart, degree) - 90);
     return { x:50 + Math.cos(angle) * radius, y:50 + Math.sin(angle) * radius };
   };
-  const lines = chart.aspects.map(aspect => {
+  const houseLines = (chart.houses || []).map(house => {
+    const inner = point(house.cusp, house.number === 1 || house.number === 4 || house.number === 7 || house.number === 10 ? 6.6 : 9);
+    const outer = point(house.cusp, 44.5);
+    const main = house.number === 1 || house.number === 4 || house.number === 7 || house.number === 10;
+    return `<line class="astro-house-ray${main ? ' astro-house-ray-main' : ''}" x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}"></line>`;
+  }).join('');
+  const lines = (chart.aspects || []).map(aspect => {
     const a = byName[aspect.a];
     const b = byName[aspect.b];
     if (!a || !b) return '';
-    const p1 = point(a);
-    const p2 = point(b);
+    const p1 = point(a.degree, 28.8);
+    const p2 = point(b.degree, 28.8);
     return `<line class="astro-aspect-line astro-aspect-${astroAspectClass(aspect.name)}" x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}"></line>`;
   }).join('');
-  return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="50" cy="50" r="40"></circle></clipPath></defs><g clip-path="url(#${clipId})">${lines}</g></svg>`;
+  if (!houseLines && !lines) return '';
+  return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="50" cy="50" r="39"></circle></clipPath></defs><g class="astro-house-rays" clip-path="url(#${clipId})">${houseLines}</g><g class="astro-aspect-rays" clip-path="url(#${clipId})">${lines}</g></svg>`;
 }
 const ASTRO_WHEEL_ZOOM_MIN = 1;
 const ASTRO_WHEEL_ZOOM_MAX = 2.8;
@@ -4712,7 +4717,7 @@ function astroWheelPointerEnd(e) {
 }
 function astroWheelHTML(chart) {
   const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${astroWheelAngle(chart, index * 30 + 15)}deg;--sign-color:${ASTRO_SIGN_COLORS[index] || '#bd3b75'}" aria-hidden="true">${astroGlyph(sign.symbol)}</span>`).join('');
-  const houses = chart.houses.map(house => `<span class="astro-house-line" style="--angle:${astroWheelAngle(chart, house.cusp)}deg" aria-hidden="true"></span><span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
+  const houses = chart.houses.map(house => `<span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
   const planets = chart.planets.map((planet, index) => {
     const radius = [-.315, -.275, -.235, -.195][index % 4];
     const planetLabel = `${planet.name} en ${planet.sign} ${planet.degreeLabel || ''}${planet.retrograde ? ' retrógrado' : ''}`.trim();
