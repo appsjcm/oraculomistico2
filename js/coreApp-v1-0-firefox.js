@@ -151,8 +151,19 @@ function modalClickHandler(e) {
   if (e.target.closest('[data-close-modal]')) closeModal();
   else $('#modalRoot')?.addEventListener('click', modalClickHandler, { once: true });
 }
-function escHandler(e) { if (e.key === 'Escape') closeModal(); else document.addEventListener('keydown', escHandler, { once: true }); }
+function escHandler(e) {
+  if (e.key === 'Escape') {
+    if (closeAstroWheelFullscreen()) {
+      document.addEventListener('keydown', escHandler, { once: true });
+      return;
+    }
+    closeModal();
+  } else {
+    document.addEventListener('keydown', escHandler, { once: true });
+  }
+}
 function closeModal() {
+  document.body.classList.remove('astro-wheel-fullscreen-open');
   $('#modalRoot').className = 'modal-root';
   $('#modalRoot').innerHTML = '';
   if (HAY_INERT) aislarFondo(false);
@@ -4132,9 +4143,30 @@ function handleAstroWheelZoomControl(button) {
   if (!viewport) return;
   const state = astroWheelState(viewport);
   const action = button.dataset.astroZoom;
+  if (action === 'full') return toggleAstroWheelFullscreen(viewport.closest('.astro-wheel-wrap'));
   if (action === 'reset') return setAstroWheelZoom(viewport, { scale:1, x:0, y:0 });
   const direction = action === 'out' ? -1 : 1;
   setAstroWheelZoom(viewport, { ...state, scale:state.scale + direction * ASTRO_WHEEL_ZOOM_STEP });
+}
+function setAstroWheelFullscreen(wrap, active) {
+  if (!wrap) return;
+  wrap.classList.toggle('astro-wheel-fullscreen', active);
+  document.body.classList.toggle('astro-wheel-fullscreen-open', Boolean(document.querySelector('.astro-wheel-wrap.astro-wheel-fullscreen')));
+  const button = wrap.querySelector('[data-astro-zoom="full"]');
+  if (button) {
+    button.textContent = active ? '×' : '⛶';
+    button.setAttribute('aria-label', active ? 'Cerrar rueda astral grande' : 'Ver rueda astral grande');
+  }
+  if (active) wrap.querySelector('[data-astro-wheel-viewport]')?.focus?.({ preventScroll:true });
+}
+function toggleAstroWheelFullscreen(wrap) {
+  setAstroWheelFullscreen(wrap, !wrap?.classList?.contains('astro-wheel-fullscreen'));
+}
+function closeAstroWheelFullscreen() {
+  const wrap = document.querySelector('.astro-wheel-wrap.astro-wheel-fullscreen');
+  if (!wrap) return false;
+  setAstroWheelFullscreen(wrap, false);
+  return true;
 }
 function astroWheelPointerList() {
   return Array.from(astroWheelGesture.pointers.values());
@@ -4157,6 +4189,7 @@ function resetAstroWheelGesture(viewport) {
   astroWheelGesture.startMid = astroWheelMidpoint(points);
 }
 function astroWheelPointerDown(e) {
+  if (e.target.closest?.('[data-astro-zoom]')) return;
   const viewport = astroWheelViewportFrom(e.target);
   if (!viewport) return;
   e.preventDefault();
@@ -4220,7 +4253,7 @@ function astroWheelHTML(chart) {
     return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${astroGlyph(planet.symbol)}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
   }).join('');
   const caption = `${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`;
-  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
+  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="full" aria-label="Ver rueda astral grande">⛶</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(planet.symbol)}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;

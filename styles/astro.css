@@ -204,6 +204,88 @@
   transition: none;
 }
 
+body.astro-wheel-fullscreen-open {
+  overflow: hidden;
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen {
+  --wheel-size: min(88vw, 64svh, 620px);
+  position: fixed;
+  inset:
+    calc(env(safe-area-inset-top) + 10px)
+    10px
+    calc(env(safe-area-inset-bottom) + 10px)
+    10px;
+  z-index: 10020;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: clamp(12px, 3vw, 18px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  justify-items: center;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(244, 207, 117, .16), transparent 22rem),
+    linear-gradient(180deg, rgba(14, 12, 27, .98), rgba(5, 4, 12, .99));
+  box-shadow:
+    0 0 0 999px rgba(0, 0, 0, .66),
+    0 24px 80px rgba(0, 0, 0, .46);
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-tools {
+  width: min(100%, 420px);
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-tools button {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, .10);
+  color: rgb(255, 250, 239);
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-tools [data-astro-zoom-status] {
+  color: rgba(255, 250, 239, .78);
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-viewport {
+  width: var(--wheel-size);
+  max-width: 100%;
+  align-self: center;
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-caption {
+  max-width: min(92vw, 640px);
+  color: rgba(255, 250, 239, .78);
+}
+
+.astro-wheel-wrap.astro-wheel-fullscreen .astro-aspect-legend {
+  max-width: min(92vw, 640px);
+  max-height: 18svh;
+  overflow: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(141, 102, 255, .12), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 253, 248, .99), rgba(246, 239, 227, .99));
+  box-shadow:
+    0 0 0 999px rgba(48, 34, 56, .38),
+    0 24px 80px rgba(76, 54, 32, .24);
+}
+
+html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-tools button {
+  background: rgba(255, 255, 255, .88);
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-caption {
+  color: rgba(36, 27, 46, .72);
+}
+
 .astro-wheel {
   position: relative;
   width: var(--wheel-size);
@@ -844,6 +926,21 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   .astro-axis-dc {
     right: 12px;
   }
+
+  .astro-wheel-wrap.astro-wheel-fullscreen {
+    --wheel-size: min(92vw, 58svh, 540px);
+    inset:
+      calc(env(safe-area-inset-top) + 6px)
+      6px
+      calc(env(safe-area-inset-bottom) + 6px)
+      6px;
+    padding: 10px;
+  }
+
+  .astro-wheel-wrap.astro-wheel-fullscreen .astro-wheel-tools button {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 @media (max-width: 390px) {
@@ -855,6 +952,10 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   .astro-axis-label {
     min-width: 24px;
     font-size: .76rem;
+  }
+
+  .astro-wheel-wrap.astro-wheel-fullscreen {
+    --wheel-size: min(92vw, 54svh, 480px);
   }
 }
 
