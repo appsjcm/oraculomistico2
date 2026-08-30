@@ -34,6 +34,20 @@ body::before {
   --om-line-1: rgba(60, 45, 73, .13);
   --om-line-2: rgba(60, 45, 73, .19);
   --om-line-gold: color-mix(in srgb, var(--om-gold) 52%, rgba(60, 45, 73, .26));
+  /* El oro brillante nacio para fondo oscuro. Sobre el claro daba 1,4:1
+     contra un minimo de 4,5, y son 69 los selectores que lo usan como
+     color de texto: rotulos de seccion, etiquetas de campo, titulos de
+     resultado, cifras de numerologia... todos ilegibles.
+
+     Se oscurece el token en modo dia. Este ambar conserva casi toda la
+     saturacion (sigue leyendose como oro, no como oliva) y da 5,4:1
+     sobre el fondo claro. Los once sitios que lo usan como fondo se
+     devuelven al oro brillante mas abajo. */
+  --om-gold: #8a5a0a;
+  --om-gold-warm: #9a6a12;
+  --om-gold-superficie: #f2cc65;
+  --gold: #8a5a0a;
+  --premium-gold: #8a5a0a;
   --om-ivory: #241b2e;
   --om-ivory-2: rgba(36, 27, 46, .72);
   --om-ivory-3: rgba(36, 27, 46, .50);
@@ -536,3 +550,43 @@ body.performance-mode .result-card {
     grid-column: span 2;
   }
 }
+
+
+/* ------------------------------------------------------------------
+   Modo dia: el oro de los fondos sigue siendo el brillante
+   Oscurecer el token arregla los textos, pero un boton principal de
+   ambar oscuro con letra oscura encima no se leeria. Estos son los
+   pocos sitios donde el oro es superficie y no tinta.
+   ------------------------------------------------------------------ */
+html[data-appearance-mode="light"] .btn.primary {
+  background: linear-gradient(135deg, var(--om-gold-superficie), #d19b35);
+  color: #241b2e;
+}
+html[data-appearance-mode="light"] .om-btn-primary {
+  background: linear-gradient(135deg, var(--om-gold-superficie), #e0b552);
+  color: #241b2e;
+}
+html[data-appearance-mode="light"] .skip-link {
+  background: var(--om-gold-superficie);
+  color: #241b2e;
+}
+
+
+/* ------------------------------------------------------------------
+   Modo dia: el acento de cada tema
+   Cada uno de los seis temas redefine --gold sobre body con un tono
+   pastel pensado para fondo oscuro. Sobre el claro ninguno llegaba al
+   minimo de 4,5:1 y todos daban entre 1,37 y 3,65, asi que en modo dia
+   los rotulos, las etiquetas de campo y las cifras eran ilegibles en
+   cualquier tema, no solo en el dorado.
+
+   Se oscurecen conservando el tono y buena parte de la saturacion, y
+   se comprueban contra los tres fondos claros que hay: el degradado
+   calido, el blanco de las tarjetas y el panel violeta.
+   ------------------------------------------------------------------ */
+html[data-appearance-mode="light"] body.theme-gold    { --gold: #8a5a0a; }
+html[data-appearance-mode="light"] body.theme-violet  { --gold: #5b3a8f; }
+html[data-appearance-mode="light"] body.theme-forest  { --gold: #3f6b1e; }
+html[data-appearance-mode="light"] body.theme-blue    { --gold: #1f5f8a; }
+html[data-appearance-mode="light"] body.theme-classic { --gold: #7f5a14; }
+html[data-appearance-mode="light"] body.theme-light   { --gold: #8a5f10; }
