@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astro-wheel-modal-115';
+const CACHE_NAME = 'oraculo-v1-0-public-num-pc-mic-117';
 const APP_SHELL = [
   './',
   './index.html',

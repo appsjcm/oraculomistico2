@@ -198,9 +198,6 @@ function faseTraducida(phase) {
 }
 
 function readingActions(text, type = 'Lectura') {
-  const grabovoiPdfButton = /Numerolog[ií]a/i.test(type)
-    ? `<button class="btn compact" data-act="numerology-grabovoi-pdf" type="button">📜 ${escapeHTML(t('raGrabovoi'))}</button>`
-    : '';
   const b = (act, icono, clave) => `<button class="btn compact" data-act="${act}" type="button">${icono} ${escapeHTML(t(clave))}</button>`;
   return `
     <div class="actions mt reading-actions">
@@ -211,7 +208,6 @@ function readingActions(text, type = 'Lectura') {
       ${b('speak-reading', '🔊', 'raListen')}
       ${b('download-reading-mp3', '🎧', 'raMp3')}
       ${b('pdf-options', '📄', 'raPdf')}
-      ${grabovoiPdfButton}
       ${b('share-visual', '🖼️', 'raCard')}
     </div>
     <div id="aiReadingPanel" class="ai-reading-panel hidden" aria-live="polite"></div>`;
@@ -275,6 +271,9 @@ function getReadingSubjectName(reading = lastReading) {
 }
 function isNumerologyReading(reading = lastReading) {
   return /Numerolog[ií]a/i.test(reading?.type || '');
+}
+function isPersonalNumerologyReading(reading = lastReading) {
+  return /^Numerolog[ií]a$/i.test(reading?.type || '') && Boolean(reading?.meta?.numbers);
 }
 function aiLanguageName(language = getAppLanguage()) {
   const languageNames = {
@@ -619,7 +618,167 @@ function getPdfReadingHighlight(reading = lastReading) {
   return null;
 }
 
+async function exportNumerologyPDF(reading = lastReading) {
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!jsPDF) throw new Error('jsPDF no cargado');
+  const meta = reading?.meta || {};
+  const numbers = meta.numbers || {};
+  const name = meta.name || numbers.name || getReadingSubjectName(reading) || 'Consulta';
+  const birthDate = meta.birthDate || numbers.date || '';
+  const birthTime = meta.birthTime || numbers.time || '';
+  const fields = Array.isArray(meta.numerologyFields) && meta.numerologyFields.length
+    ? meta.numerologyFields
+    : numerologyFields(numbers);
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const margin = 18;
+  const ink = [35, 31, 44];
+  const muted = [104, 96, 118];
+  const gold = [174, 124, 42];
+  const line = [214, 188, 112];
+  const soft = [252, 249, 241];
+  const violet = [55, 42, 86];
+  const today = new Date(reading?.date || Date.now()).toLocaleDateString('es-ES');
+  let y = 0;
+
+  const text = (value, x, yy, options = {}) => doc.text(pdfAscii(value), x, yy, options);
+  const addFooter = () => {
+    doc.setDrawColor(232, 222, 195);
+    doc.line(margin, H - 17, W - margin, H - 17);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    text('Lectura numerologica simbolica. Uso orientativo y de entretenimiento.', margin, H - 10);
+    text(String(doc.internal.getNumberOfPages()), W - margin, H - 10, { align:'right' });
+  };
+  const addPageHeader = () => {
+    doc.setFillColor(...soft);
+    doc.rect(0, 0, W, H, 'F');
+    doc.setDrawColor(...line);
+    doc.setLineWidth(.45);
+    doc.roundedRect(margin, 16, W - margin * 2, 32, 6, 6, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(...violet);
+    text('INFORME NUMEROLOGICO', margin + 7, 28);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...muted);
+    text('Perfil personal · Oraculo Mistico', margin + 7, 36);
+    text(today, W - margin - 7, 28, { align:'right' });
+    y = 58;
+  };
+  const ensure = (needed = 28) => {
+    if (y + needed <= H - 24) return;
+    addFooter();
+    doc.addPage();
+    addPageHeader();
+  };
+  const wrapped = (value, width) => doc.splitTextToSize(cleanPdfText(value), width).map(pdfAscii);
+
+  addPageHeader();
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...line);
+  doc.roundedRect(margin, y, W - margin * 2, 28, 5, 5, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...violet);
+  text(name, margin + 7, y + 9);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...muted);
+  text(`Nacimiento: ${birthDate || 'sin fecha'}${birthTime ? ` · ${birthTime}` : ''}`, margin + 7, y + 17);
+  text(`Numeros calculados: ${fields.length}`, W - margin - 7, y + 17, { align:'right' });
+  y += 38;
+
+  const keyNumbers = [
+    ['Camino', numbers.life],
+    ['Expresion', numbers.expression],
+    ['Ano personal', numbers.personalYear]
+  ].filter(([, value]) => value);
+  const cardGap = 5;
+  const cardW = (W - margin * 2 - cardGap * (keyNumbers.length - 1 || 1)) / Math.max(1, keyNumbers.length);
+  keyNumbers.forEach(([label, number], index) => {
+    const x = margin + index * (cardW + cardGap);
+    const meaning = numerologyMeaning(number);
+    doc.setFillColor(246, 239, 219);
+    doc.setDrawColor(...line);
+    doc.roundedRect(x, y, cardW, 30, 5, 5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...gold);
+    text(String(number), x + 7, y + 15);
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    text(label.toUpperCase(), x + 7, y + 23);
+    doc.setFontSize(9);
+    doc.setTextColor(...violet);
+    text(meaning.title, x + cardW - 7, y + 15, { align:'right' });
+  });
+  y += 40;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...violet);
+  text('Lectura profesional', margin, y);
+  y += 6;
+
+  fields.forEach(([label, number, description]) => {
+    const meaning = numerologyMeaning(number);
+    const bodyLines = [
+      ...wrapped(description, W - margin * 2 - 36).slice(0, 2),
+      ...wrapped(`${t('nuStrength')}: ${meaning.gift}.`, W - margin * 2 - 36).slice(0, 2),
+      ...wrapped(`${t('nuChallenge')}: ${meaning.challenge}.`, W - margin * 2 - 36).slice(0, 2),
+      ...wrapped(`${t('nuAdvice')}: ${meaning.advice}.`, W - margin * 2 - 36).slice(0, 2)
+    ];
+    const boxH = Math.max(25, 12 + bodyLines.length * 4.4);
+    ensure(boxH + 6);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(225, 211, 174);
+    doc.roundedRect(margin, y, W - margin * 2, boxH, 4, 4, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(...gold);
+    text(String(number), margin + 8, y + 15);
+    doc.setFontSize(10);
+    doc.setTextColor(...violet);
+    text(`${label} · ${meaning.title}`, margin + 25, y + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.4);
+    doc.setTextColor(...ink);
+    doc.text(bodyLines, margin + 25, y + 15);
+    y += boxH + 6;
+  });
+
+  ensure(34);
+  doc.setFillColor(246, 243, 252);
+  doc.setDrawColor(183, 167, 216);
+  doc.roundedRect(margin, y, W - margin * 2, 30, 5, 5, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(...violet);
+  text(t('nuSynthesis'), margin + 7, y + 8);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.7);
+  doc.setTextColor(...ink);
+  doc.text(wrapped(t('nuSynthesisText'), W - margin * 2 - 14).slice(0, 4), margin + 7, y + 16);
+  addFooter();
+  doc.save(`${safeFileName(`numerologia-${name}`)}.pdf`);
+  unlockAchievement('first_pdf');
+}
+
 async function exportPDF(title, text, reading = lastReading) {
+  if (isPersonalNumerologyReading(reading)) {
+    try {
+      toast(t('tsMakingPdf'));
+      await exportNumerologyPDF(reading);
+      return;
+    } catch (error) {
+      console.warn('PDF de numerologia no disponible:', error);
+    }
+  }
   const filename = safeFileName(title);
   try {
     const jsPDF = window.jspdf?.jsPDF;
@@ -1862,6 +2021,16 @@ function speechRecognitionSupport() {
 let activeDictation = null;
 const DICTATION_MAX_MS = 11000;
 
+async function waitForPuterSpeechToText(timeout = 1400) {
+  if (window.puter?.ai?.speech2txt) return true;
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 120));
+    if (window.puter?.ai?.speech2txt) return true;
+  }
+  return false;
+}
+
 function isIosLikeDevice() {
   const ua = navigator.userAgent || '';
   return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1929,6 +2098,19 @@ function micNativeDictationHintText() {
   return texts[lang] || texts.es;
 }
 
+function micAiDictationHintText() {
+  const lang = (getAppLanguage() || 'es').slice(0, 2);
+  const texts = {
+    es: 'Para dictar desde este botón en este navegador, conecta Puter IA o usa Chrome/Edge con permiso de micrófono.',
+    ca: 'Per dictar des d’aquest botó en aquest navegador, connecta Puter IA o fes servir Chrome/Edge amb permís de micròfon.',
+    en: 'To dictate from this button in this browser, connect Puter AI or use Chrome/Edge with microphone permission.',
+    fr: 'Pour dicter depuis ce bouton dans ce navigateur, connecte Puter IA ou utilise Chrome/Edge avec l’autorisation du micro.',
+    de: 'Zum Diktieren über diese Taste verbinde Puter KI oder nutze Chrome/Edge mit Mikrofonberechtigung.',
+    zh: '要在此浏览器中使用这个按钮听写，请连接 Puter AI，或使用已授权麦克风的 Chrome/Edge。'
+  };
+  return texts[lang] || texts.es;
+}
+
 function clearMicInlineHint(target) {
   const wrap = target?.closest?.('.input-mic-wrap');
   wrap?.parentElement?.querySelector?.(`[data-mic-help-for="${cssAttrEscape(target.id)}"]`)?.remove();
@@ -1975,7 +2157,7 @@ function stopActiveDictation() {
 
 async function transcribeRecordedDictation(target, original, blob) {
   if (!blob?.size) return toast(t('tsMicNoAudio'));
-  if (!window.puter?.ai?.speech2txt) return showMicInlineHint(target, isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicConnectAi'));
+  if (!window.puter?.ai?.speech2txt) return showMicInlineHint(target, isIosLikeDevice() ? micNativeDictationHintText() : micAiDictationHintText());
   toast(t('tsMicTranscribing'));
   try {
     const language = (getAppLanguage() || 'es').slice(0, 2);
@@ -2101,7 +2283,7 @@ async function startDictation(targetId) {
   if (activeDictation) stopActiveDictation();
 
   if (isIosLikeDevice()) {
-    const canUseAiTranscription = Boolean(window.puter?.ai?.speech2txt);
+    const canUseAiTranscription = await waitForPuterSpeechToText();
     if (!canUseAiTranscription) {
       showMicInlineHint(target, micNativeDictationHintText());
       return;
@@ -2112,9 +2294,10 @@ async function startDictation(targetId) {
     return;
   }
 
+  if (await waitForPuterSpeechToText() && await startRecordedDictation(target)) return;
   if (startBrowserSpeechDictation(target)) return;
   if (await startRecordedDictation(target)) return;
-  toast(t('tsMicNoBrowser'));
+  showMicInlineHint(target, micAiDictationHintText());
 }
 function inputWithMic(id, attrs = '') {
   return `<div class="input-mic-wrap"><input id="${escapeHTML(id)}" class="input" ${attrs}>${micButton(id)}</div>`;
@@ -2364,10 +2547,10 @@ function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stri
 
 function showPdfOptions() {
   if (!lastReading) return toast(t('tsNeedReading'));
-  const combined = isNumerologyReading()
-    ? `<button class="choice" data-act="numerology-grabovoi-pdf"><strong>${escapeHTML(t('stNumerologiaGrabovoi'))}</strong><small>${escapeHTML(t('stElegirVariasSecuenciasYCrearUn'))}</small></button>`
-    : '';
-  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>${escapeHTML(t('stPremiumMistico'))}</strong></button><button class="choice" data-act="pdf-style-light"><strong>${escapeHTML(t('stClaroElegante'))}</strong></button><button class="choice" data-act="pdf-style-summary"><strong>${escapeHTML(t('stResumen'))}</strong></button>${combined}</div>` });
+  if (isPersonalNumerologyReading()) {
+    return openModal({ icon:'📄', title:'PDF de numerología', subtitle:'Genera un informe numerológico profesional.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe profesional</strong><small>Diseño claro, tabla de números y síntesis breve.</small></button></div>` });
+  }
+  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>${escapeHTML(t('stPremiumMistico'))}</strong></button><button class="choice" data-act="pdf-style-light"><strong>${escapeHTML(t('stClaroElegante'))}</strong></button><button class="choice" data-act="pdf-style-summary"><strong>${escapeHTML(t('stResumen'))}</strong></button></div>` });
 }
 function exportDiaryPDF() {
   const diary = storeGet(LS.diary, []);
@@ -3109,11 +3292,24 @@ function calculateNumerologyProfile(name, date) {
   const maturity = reduceNum(life + expression);
   return { name, date, life, expression, soul, personality, birthday, attitude, maturity, personalYear };
 }
+function numerologyFields(profile) {
+  const year = new Date().getFullYear();
+  return [
+    [t('nuLife'), profile.life, t('nuLifeD')],
+    [t('nuExpr'), profile.expression, t('nuExprD')],
+    [t('nuSoul'), profile.soul, t('nuSoulD')],
+    [t('nuPers'), profile.personality, t('nuPersD')],
+    [t('nuBday'), profile.birthday, t('nuBdayD')],
+    [t('nuAtt'), profile.attitude, t('nuAttD')],
+    [t('nuMat'), profile.maturity, t('nuMatD')],
+    [t('nuYear'), profile.personalYear, t('nuYearD', { year })]
+  ].filter(([, number]) => number);
+}
 function numerologyCard(label, number, description) {
   const meaning = numerologyMeaning(number);
   return `<article class="result-card numerology-card">
     <div class="numerology-number">${number}</div>
-    <div><h3>${escapeHTML(label)} · ${escapeHTML(meaning.title)}</h3><p>${escapeHTML(description)}</p><p><strong>${escapeHTML(t('nuStrength'))}:</strong> ${escapeHTML(meaning.gift)}.</p><p><strong>${escapeHTML(t('nuChallenge'))}:</strong> ${escapeHTML(meaning.challenge)}.</p></div>
+    <div><h3>${escapeHTML(label)} · ${escapeHTML(meaning.title)}</h3><p>${escapeHTML(description)}</p><p><strong>${escapeHTML(t('nuStrength'))}:</strong> ${escapeHTML(meaning.gift)}.</p><p><strong>${escapeHTML(t('nuChallenge'))}:</strong> ${escapeHTML(meaning.challenge)}.</p><p><strong>${escapeHTML(t('nuAdvice'))}:</strong> ${escapeHTML(meaning.advice)}.</p></div>
   </article>`;
 }
 /* La fecha de nacimiento no se guardaba en ninguna parte: habia
@@ -3271,22 +3467,12 @@ function calcNumerologia() {
   localStorage.setItem(LS.name, name);
   setBirthDate(date);
   setBirthTime(time);
-  const year = new Date().getFullYear();
-  const fields = [
-    [t('nuLife'), profile.life, t('nuLifeD')],
-    [t('nuExpr'), profile.expression, t('nuExprD')],
-    [t('nuSoul'), profile.soul, t('nuSoulD')],
-    [t('nuPers'), profile.personality, t('nuPersD')],
-    [t('nuBday'), profile.birthday, t('nuBdayD')],
-    [t('nuAtt'), profile.attitude, t('nuAttD')],
-    [t('nuMat'), profile.maturity, t('nuMatD')],
-    [t('nuYear'), profile.personalYear, t('nuYearD', { year })]
-  ];
+  const fields = numerologyFields(profile);
   const text = `${t('nuReading').toUpperCase()} · ${name}\n${date}${time ? ` · ${t('nuBirthTime')}: ${time}` : ''}\n\n${fields.map(([label, number, description]) => {
     const meaning = numerologyMeaning(number);
-    return `${label}: ${number} · ${meaning.title}\n${description}\n${t('nuStrength')}: ${meaning.gift}.\n${t('nuChallenge')}: ${meaning.challenge}.\n${t('nuAdvice')}: ${meaning.advice}.`;
-  }).join('\n\n')}\n\n${t('nuSynthesisText')}`;
-  setLastReading({ type:'Numerología', title:`${t('nuTitle')} · ${name}`, text, items:[], meta:{ numbers:{ ...profile, time }, name, birthDate:date, birthTime:time } });
+    return `${label}: ${number} · ${meaning.title}. ${description} ${t('nuStrength')}: ${meaning.gift}. ${t('nuChallenge')}: ${meaning.challenge}. ${t('nuAdvice')}: ${meaning.advice}.`;
+  }).join('\n')}\n\n${t('nuSynthesisText')}`;
+  setLastReading({ type:'Numerología', title:`${t('nuTitle')} · ${name}`, text, items:[], meta:{ numbers:{ ...profile, time }, numerologyFields:fields, name, birthDate:date, birthTime:time } });
   openModal({ icon:'🔢', title:t('nuReading'), subtitle:`${name} · ${date}`, body:`
     <div class="numerology-results">${fields.map(([label, number, description]) => numerologyCard(label, number, description)).join('')}</div>
     <div class="result-card mt"><h3>${escapeHTML(t('nuSynthesis'))}</h3><p>${escapeHTML(t('nuSynthesisText'))}</p>${readingActions(text,'Numerología')}</div>` });
@@ -5505,8 +5691,6 @@ function handleAction(action) {
     'share-reading': () => shareText(getReadingText(), lastReading?.title),
     'pdf-reading': () => exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()),
     'pdf-options': showPdfOptions,
-    'numerology-grabovoi-pdf': showNumerologyGrabovoiPdfPicker,
-    'export-numerology-grabovoi-pdf': exportNumerologyGrabovoiPDFFromSelection,
     'pdf-style-premium': () => { setPdfStyle('premium'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
     'pdf-style-light': () => { setPdfStyle('light'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
     'pdf-style-summary': () => { setPdfStyle('summary'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
