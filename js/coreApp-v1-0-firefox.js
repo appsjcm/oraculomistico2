@@ -4087,6 +4087,130 @@ function astroAspectWebHTML(chart) {
   }).join('');
   return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="50" cy="50" r="37"></circle></clipPath></defs><g clip-path="url(#${clipId})">${lines}</g></svg>`;
 }
+const ASTRO_WHEEL_ZOOM_MIN = 1;
+const ASTRO_WHEEL_ZOOM_MAX = 2.8;
+const ASTRO_WHEEL_ZOOM_STEP = .35;
+let astroWheelGesture = { viewport:null, pointers:new Map(), startScale:1, startDistance:0, startMid:null, startX:0, startY:0, baseX:0, baseY:0 };
+function astroWheelViewportFrom(node) {
+  const wrap = node?.closest?.('.astro-wheel-wrap');
+  return node?.closest?.('[data-astro-wheel-viewport]') || wrap?.querySelector?.('[data-astro-wheel-viewport]') || null;
+}
+function astroWheelState(viewport) {
+  return {
+    scale: Number(viewport?.dataset?.astroScale || 1) || 1,
+    x: Number(viewport?.dataset?.astroPanX || 0) || 0,
+    y: Number(viewport?.dataset?.astroPanY || 0) || 0
+  };
+}
+function astroWheelClampPan(viewport, x, y, scale) {
+  const width = viewport?.clientWidth || 300;
+  const height = viewport?.clientHeight || width;
+  const maxX = Math.max(0, (scale - 1) * width * .46);
+  const maxY = Math.max(0, (scale - 1) * height * .46);
+  return {
+    x: Math.max(-maxX, Math.min(maxX, x)),
+    y: Math.max(-maxY, Math.min(maxY, y))
+  };
+}
+function setAstroWheelZoom(viewport, next) {
+  if (!viewport) return;
+  const scale = Math.max(ASTRO_WHEEL_ZOOM_MIN, Math.min(ASTRO_WHEEL_ZOOM_MAX, Number(next.scale) || 1));
+  const pan = scale <= 1.01 ? { x:0, y:0 } : astroWheelClampPan(viewport, Number(next.x) || 0, Number(next.y) || 0, scale);
+  viewport.dataset.astroScale = scale.toFixed(2);
+  viewport.dataset.astroPanX = pan.x.toFixed(1);
+  viewport.dataset.astroPanY = pan.y.toFixed(1);
+  const target = viewport.querySelector('.astro-wheel-zoom-target');
+  target?.style.setProperty('--astro-scale', scale.toFixed(2));
+  target?.style.setProperty('--astro-pan-x', `${pan.x.toFixed(1)}px`);
+  target?.style.setProperty('--astro-pan-y', `${pan.y.toFixed(1)}px`);
+  viewport.closest('.astro-wheel-wrap')?.classList.toggle('astro-wheel-zoomed', scale > 1.01);
+  const status = viewport.closest('.astro-wheel-wrap')?.querySelector('[data-astro-zoom-status]');
+  if (status) status.textContent = `${Math.round(scale * 100)}%`;
+}
+function handleAstroWheelZoomControl(button) {
+  const viewport = astroWheelViewportFrom(button);
+  if (!viewport) return;
+  const state = astroWheelState(viewport);
+  const action = button.dataset.astroZoom;
+  if (action === 'reset') return setAstroWheelZoom(viewport, { scale:1, x:0, y:0 });
+  const direction = action === 'out' ? -1 : 1;
+  setAstroWheelZoom(viewport, { ...state, scale:state.scale + direction * ASTRO_WHEEL_ZOOM_STEP });
+}
+function astroWheelPointerList() {
+  return Array.from(astroWheelGesture.pointers.values());
+}
+function astroWheelDistance(points) {
+  if (points.length < 2) return 0;
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+function astroWheelMidpoint(points) {
+  if (points.length < 2) return { x:points[0]?.x || 0, y:points[0]?.y || 0 };
+  return { x:(points[0].x + points[1].x) / 2, y:(points[0].y + points[1].y) / 2 };
+}
+function resetAstroWheelGesture(viewport) {
+  const state = astroWheelState(viewport);
+  const points = astroWheelPointerList();
+  astroWheelGesture.startScale = state.scale;
+  astroWheelGesture.startX = state.x;
+  astroWheelGesture.startY = state.y;
+  astroWheelGesture.startDistance = astroWheelDistance(points);
+  astroWheelGesture.startMid = astroWheelMidpoint(points);
+}
+function astroWheelPointerDown(e) {
+  const viewport = astroWheelViewportFrom(e.target);
+  if (!viewport) return;
+  e.preventDefault();
+  if (astroWheelGesture.viewport && astroWheelGesture.viewport !== viewport) astroWheelGesture.pointers.clear();
+  astroWheelGesture.viewport = viewport;
+  viewport.classList.add('astro-wheel-dragging');
+  viewport.setPointerCapture?.(e.pointerId);
+  const now = Date.now();
+  const lastTap = Number(viewport.dataset.astroLastTap || 0);
+  if (now - lastTap < 320 && astroWheelGesture.pointers.size === 0) {
+    const state = astroWheelState(viewport);
+    setAstroWheelZoom(viewport, { ...state, scale:state.scale > 1.05 ? 1 : 1.8 });
+    viewport.dataset.astroLastTap = '0';
+    return;
+  }
+  viewport.dataset.astroLastTap = String(now);
+  astroWheelGesture.pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  resetAstroWheelGesture(viewport);
+}
+function astroWheelPointerMove(e) {
+  const viewport = astroWheelGesture.viewport;
+  if (!viewport || !astroWheelGesture.pointers.has(e.pointerId)) return;
+  e.preventDefault();
+  astroWheelGesture.pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  const points = astroWheelPointerList();
+  if (points.length >= 2 && astroWheelGesture.startDistance > 0) {
+    const distance = astroWheelDistance(points);
+    const mid = astroWheelMidpoint(points);
+    const scale = astroWheelGesture.startScale * (distance / astroWheelGesture.startDistance);
+    setAstroWheelZoom(viewport, {
+      scale,
+      x:astroWheelGesture.startX + (mid.x - astroWheelGesture.startMid.x),
+      y:astroWheelGesture.startY + (mid.y - astroWheelGesture.startMid.y)
+    });
+    return;
+  }
+  const state = astroWheelState(viewport);
+  if (state.scale <= 1.01) return;
+  const point = points[0];
+  setAstroWheelZoom(viewport, {
+    scale:state.scale,
+    x:astroWheelGesture.startX + point.x - astroWheelGesture.startMid.x,
+    y:astroWheelGesture.startY + point.y - astroWheelGesture.startMid.y
+  });
+}
+function astroWheelPointerEnd(e) {
+  if (!astroWheelGesture.viewport) return;
+  astroWheelGesture.pointers.delete(e.pointerId);
+  if (astroWheelGesture.pointers.size) resetAstroWheelGesture(astroWheelGesture.viewport);
+  else {
+    astroWheelGesture.viewport.classList.remove('astro-wheel-dragging');
+    astroWheelGesture.viewport = null;
+  }
+}
 function astroWheelHTML(chart) {
   const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${astroWheelAngle(chart, index * 30 + 15)}deg;--sign-color:${ASTRO_SIGN_COLORS[index] || '#bd3b75'}" aria-hidden="true">${astroGlyph(sign.symbol)}</span>`).join('');
   const houses = chart.houses.map(house => `<span class="astro-house-line" style="--angle:${astroWheelAngle(chart, house.cusp)}deg" aria-hidden="true"></span><span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
@@ -4096,7 +4220,7 @@ function astroWheelHTML(chart) {
     return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${astroGlyph(planet.symbol)}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
   }).join('');
   const caption = `${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`;
-  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
+  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(planet.symbol)}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;
@@ -5339,6 +5463,11 @@ function openModule(module) {
 
 function attachGlobalEvents() {
   document.addEventListener('click', async e => {
+    const astroZoom = e.target.closest('[data-astro-zoom]');
+    if (astroZoom) {
+      e.preventDefault();
+      return handleAstroWheelZoomControl(astroZoom);
+    }
     const micTarget = e.target.closest('[data-mic-target]')?.dataset.micTarget;
     if (micTarget) {
       e.preventDefault();
@@ -5430,6 +5559,10 @@ function attachGlobalEvents() {
   document.addEventListener('change', e => {
     if (e.target?.id === 'voiceLanguage' || e.target?.id === 'voiceFilter') refreshDeviceVoiceSelect();
   });
+  document.addEventListener('pointerdown', astroWheelPointerDown, { passive:false });
+  document.addEventListener('pointermove', astroWheelPointerMove, { passive:false });
+  document.addEventListener('pointerup', astroWheelPointerEnd);
+  document.addEventListener('pointercancel', astroWheelPointerEnd);
   document.addEventListener('keydown', e => {
     if (e.target?.id === 'guidedNextBtn') { return guidedNext(Number(e.target.dataset.guidedIndex || 0)); }
     if (e.target?.id === 'chatInput' && e.key === 'Enter' && !e.shiftKey) {
