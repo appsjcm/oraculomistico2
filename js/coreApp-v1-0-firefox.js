@@ -1879,6 +1879,18 @@ function supportedAudioMimeType() {
   ].find(type => MediaRecorder.isTypeSupported(type)) || '';
 }
 
+function createAudioRecorder(stream) {
+  const mimeType = supportedAudioMimeType();
+  if (mimeType) {
+    try {
+      return { recorder:new MediaRecorder(stream, { mimeType }), mimeType };
+    } catch (error) {
+      pushErrorLog('mic-recorder-mime', `${mimeType}: ${error?.message || 'formato no disponible'}`, 'microphone');
+    }
+  }
+  return { recorder:new MediaRecorder(stream), mimeType:'' };
+}
+
 function cssAttrEscape(value = '') {
   if (window.CSS?.escape) return CSS.escape(value);
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -2006,8 +2018,7 @@ async function startRecordedDictation(target) {
         autoGainControl: { ideal: true }
       }
     });
-    const mimeType = supportedAudioMimeType();
-    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    const { recorder, mimeType } = createAudioRecorder(stream);
     const chunks = [];
     const original = target.value || '';
 
@@ -2089,8 +2100,13 @@ async function startDictation(targetId) {
   if (activeDictation) stopActiveDictation();
 
   if (isIosLikeDevice()) {
-    if (startBrowserSpeechDictation(target)) return;
+    const canUseAiTranscription = Boolean(window.puter?.ai?.speech2txt);
+    if (!canUseAiTranscription) {
+      showMicInlineHint(target, micNativeDictationHintText());
+      return;
+    }
     if (await startRecordedDictation(target)) return;
+    if (startBrowserSpeechDictation(target)) return;
     showMicInlineHint(target, micNativeDictationHintText());
     return;
   }
