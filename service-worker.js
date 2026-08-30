@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astro-svg-lines-124';
+const CACHE_NAME = 'oraculo-v1-0-public-library-arcana-125';
 const APP_SHELL = [
   './',
   './index.html',
