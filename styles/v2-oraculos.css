@@ -170,6 +170,42 @@
 }
 .om-num-desc { position: relative; font-size: var(--om-t-sm); color: var(--om-ivory-2); line-height: 1.45; }
 
+.numerology-results {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.numerology-card {
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.045)),
+    rgba(13, 12, 22, .78);
+}
+
+.numerology-card .numerology-number {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  font-size: 1.75rem;
+}
+
+.numerology-card h3 {
+  margin: 0 0 6px;
+  font-size: .98rem;
+}
+
+.numerology-card p {
+  margin: 4px 0;
+  font-size: .86rem;
+  line-height: 1.38;
+}
+
+html[data-appearance-mode="light"] .numerology-card {
+  background: rgba(255, 252, 246, .92);
+}
+
 
 /* ============================================================
    SINASTRÍA · dos círculos y lo que los une
