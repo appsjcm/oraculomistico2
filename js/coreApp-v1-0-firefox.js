@@ -5146,8 +5146,8 @@ async function handleChatGrabovoi(query = '') {
    buscar o cambiar de categoria no borra lo ya marcado.
    ============================================================ */
 const GRAB_MAX = 12;
-const GRAB_INITIAL_LIMIT = 160;
-const GRAB_INCREMENT = 160;
+const GRAB_INITIAL_LIMIT = 60;
+const GRAB_INCREMENT = 120;
 /* La clave es el indice en el catalogo, no el codigo: 23 codigos
    estan repetidos en hasta 4 entradas distintas (varias formas de
    nombrar el mismo numero), y marcando una se arrastraban todas. */
@@ -5258,14 +5258,10 @@ function refrescarGrabList() {
   if (chips) chips.outerHTML = renderGrabChips();
 }
 
-async function showGrabovoi() {
-  await loadGrabovoi();
-  grabConsulta = '';
-  grabCategoria = '';
-  grabVisibleLimit = GRAB_INITIAL_LIMIT;
+function grabovoiPanelHTML() {
   const inicial = grabFiltradas();
   const visibles = grabVisibles(inicial);
-  openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`
+  return `
     <p class="notice">${escapeHTML(t('gbNotice'))}</p>
     <div class="field mt"><label>${escapeHTML(t('gbSearch'))}</label>${inputWithMic('grabSearch', `placeholder="${escapeHTML(t('gbSearchPh'))}"`)}</div>
     ${renderGrabChips()}
@@ -5281,7 +5277,23 @@ async function showGrabovoi() {
     <div id="grabMoreBar" class="grabovoi-more actions mt" ${visibles.length >= inicial.length ? 'hidden' : ''}>
       <button class="btn compact" data-act="grab-more" type="button">${escapeHTML(t('gbShowMore'))}</button>
       <button class="btn compact" data-act="grab-all" type="button">${escapeHTML(t('gbShowAll'))}</button>
-    </div>` });
+    </div>`;
+}
+
+async function showGrabovoi() {
+  grabConsulta = '';
+  grabCategoria = '';
+  grabVisibleLimit = GRAB_INITIAL_LIMIT;
+  openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`<p class="notice">${escapeHTML(t('bLoading'))}</p>` });
+  try {
+    await loadGrabovoi();
+    const body = $('#modalRoot .modal-body');
+    if (body) body.innerHTML = grabovoiPanelHTML();
+  } catch (error) {
+    pushErrorLog('grabovoi-open', error?.message || error, 'open module');
+    const body = $('#modalRoot .modal-body');
+    if (body) body.innerHTML = `<p class="notice">No se pudo abrir Grabovoi. Prueba a recargar la app desde Ajustes.</p><div class="actions mt"><button class="btn compact" data-close-modal type="button">${escapeHTML(t('closed'))}</button></div>`;
+  }
 }
 
 /** Las secuencias marcadas, en el orden del catalogo. */
@@ -5997,7 +6009,18 @@ ${base}`;
 }
 function openModule(module) {
   const map = { map: showMap, tarot: showTarot, runas: showRunas, luna: showLuna, astros: showAstros, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
-  map[module]?.();
+  const run = map[module];
+  if (!run) return;
+  try {
+    const result = run();
+    if (result?.catch) result.catch(error => {
+      pushErrorLog('module-open', error?.message || error, module);
+      toast('No se pudo abrir este módulo. Prueba a recargar la app.');
+    });
+  } catch (error) {
+    pushErrorLog('module-open', error?.message || error, module);
+    toast('No se pudo abrir este módulo. Prueba a recargar la app.');
+  }
 }
 
 function attachGlobalEvents() {
