@@ -566,6 +566,37 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
 .om-biblioteca .om-grim-buscar { display: flex; gap: var(--om-s-2); align-items: center; }
 .om-biblioteca .om-grim-buscar input { flex: 1; }
 
+.om-bib-resumen {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--om-s-3);
+  margin: 0 0 var(--om-s-3);
+  padding: var(--om-s-3) var(--om-s-4);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
+  background: linear-gradient(135deg, var(--om-surface-1), var(--om-surface-2));
+}
+.om-bib-resumen strong { display: block; color: var(--om-ivory); font-size: var(--om-t-lg); }
+.om-bib-resumen span, .om-bib-resumen p { color: var(--om-ivory-3); font-size: var(--om-t-xs); }
+.om-bib-resumen p { margin: 0; text-align: right; }
+
+.om-bib-filtros {
+  display: flex; gap: 6px; overflow-x: auto;
+  margin: 0 0 var(--om-s-3);
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.om-bib-filtros::-webkit-scrollbar { display: none; }
+.om-bib-filtro {
+  flex: 0 0 auto;
+  min-height: 36px; padding: 0 var(--om-s-3);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: rgba(255,255,255,.05); color: var(--om-ivory-3);
+  font-size: var(--om-t-xs); font-weight: 700; cursor: pointer;
+}
+.om-bib-filtro.activo {
+  border-color: var(--om-gold);
+  background: var(--om-gold-veil);
+  color: var(--om-gold);
+}
+
 .om-bib-rejilla {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
@@ -586,6 +617,14 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   width: 100%; aspect-ratio: 3/4; object-fit: contain;
   border-radius: var(--om-r-sm); background: var(--om-surface-ink);
 }
+.om-bib-chip {
+  max-width: 100%;
+  min-height: 22px; padding: 4px 8px;
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  color: var(--om-gold); background: rgba(242,204,101,.08);
+  font-size: .68rem; line-height: 1; font-weight: 800;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .om-bib-simbolo {
   width: 100%; aspect-ratio: 3/4;
   display: grid; place-items: center;
@@ -593,8 +632,13 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   border-radius: var(--om-r-sm);
   background: var(--om-surface-2); color: var(--om-gold);
 }
-.om-bib-ficha strong { font-size: var(--om-t-sm); line-height: 1.25; }
-.om-bib-ficha small { font-size: var(--om-t-xs); color: var(--om-ivory-3); line-height: 1.3; }
+.om-bib-ficha strong { font-size: var(--om-t-sm); line-height: 1.25; min-height: 2.5em; display: grid; place-items: center; }
+.om-bib-ficha small {
+  min-height: 2.55em;
+  font-size: var(--om-t-xs); color: var(--om-ivory-3); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .om-bib-estrella {
   position: absolute; top: 6px; right: 8px;
   font-style: normal; font-size: .8rem; color: var(--om-gold);
@@ -602,7 +646,7 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
 }
 
 /* Ficha abierta · lectura cómoda */
-.om-bib-detalle { display: flex; flex-direction: column; align-items: center; gap: var(--om-s-3); text-align: center; }
+.om-bib-detalle { display: flex; flex-direction: column; align-items: stretch; gap: var(--om-s-3); text-align: left; }
 .om-bib-volver {
   align-self: flex-start;
   min-height: 40px; padding: 0 var(--om-s-3);
@@ -611,8 +655,16 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   font-size: var(--om-t-sm); cursor: pointer;
 }
 .om-bib-volver:hover { border-color: var(--om-gold); color: var(--om-gold); }
+.om-bib-hero {
+  display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: var(--om-s-5);
+  align-items: center;
+  padding: var(--om-s-4);
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-lg);
+  background: radial-gradient(circle at 20% 20%, rgba(242,204,101,.12), transparent 34%), var(--om-surface-1);
+}
+.om-bib-media { display: grid; place-items: center; }
 .om-bib-lamina {
-  width: min(220px, 62%); aspect-ratio: 3/4; object-fit: contain;
+  width: 100%; max-width: 220px; aspect-ratio: 3/4; object-fit: contain;
   border-radius: var(--om-r-md);
   border: 1px solid var(--om-line-gold);
   background: var(--om-surface-ink);
@@ -634,9 +686,23 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   margin: 0; font-family: var(--om-font-display); font-weight: 400;
   font-size: var(--om-t-2xl); color: var(--om-ivory); text-wrap: balance;
 }
-.om-bib-sub { margin: 0; font-size: var(--om-t-sm); color: var(--om-ivory-3); }
+.om-bib-info { display: flex; flex-direction: column; align-items: flex-start; gap: var(--om-s-2); }
+.om-bib-info .om-btn { margin-top: var(--om-s-2); }
+.om-bib-sub { margin: 0; font-size: var(--om-t-sm); color: var(--om-ivory-3); line-height: 1.45; }
+.om-bib-conceptos {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.om-bib-conceptos span {
+  border: 1px solid var(--om-line-1); border-radius: var(--om-r-full);
+  background: rgba(255,255,255,.06); color: var(--om-ivory-2);
+  padding: 6px 9px; font-size: var(--om-t-xs); font-weight: 700;
+}
+.om-bib-secciones {
+  width: 100%;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--om-s-3);
+}
 .om-bib-seccion {
-  width: 100%; max-width: 62ch;
+  width: 100%;
   text-align: left;
   padding: var(--om-s-4);
   border: 1px solid var(--om-line-1); border-radius: var(--om-r-md);
@@ -652,12 +718,18 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
 @media (max-width: 480px) {
   .om-bib-cats { padding-left: var(--om-s-4); padding-right: var(--om-s-4); }
   .om-bib-rejilla { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: var(--om-s-2); }
-  .om-bib-lamina { width: 72%; }
+  .om-bib-resumen { align-items: flex-start; flex-direction: column; }
+  .om-bib-resumen p { text-align: left; }
+  .om-bib-hero { grid-template-columns: 1fr; gap: var(--om-s-3); }
+  .om-bib-lamina { width: min(70%, 190px); }
+  .om-bib-info { align-items: center; text-align: center; }
+  .om-bib-conceptos { justify-content: center; }
+  .om-bib-secciones { grid-template-columns: 1fr; }
 }
 
 /* Fase 12 · Ficha de carta: lo esencial arriba, el resto plegable. */
 .om-bib-clave {
-  width: 100%; max-width: 62ch; text-align: left;
+  width: 100%; text-align: left;
   padding: var(--om-s-4);
   border: 1px solid var(--om-line-gold); border-radius: var(--om-r-md);
   background: var(--om-gold-veil);

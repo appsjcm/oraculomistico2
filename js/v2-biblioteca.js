@@ -26,7 +26,7 @@
   const leerFav = () => { try { return new Set(JSON.parse(localStorage.getItem(LS_FAV) || '[]')); } catch { return new Set(); } };
   const guardarFav = (s) => { try { localStorage.setItem(LS_FAV, JSON.stringify([...s])); } catch {} };
 
-  let categoria = 'tarot', consulta = '', soloFavoritos = false, abierto = null, grabovoi = null;
+  let categoria = 'tarot', consulta = '', soloFavoritos = false, abierto = null, grabovoi = null, filtro = 'all';
 
   const CATEGORIAS = [
     { id: 'tarot',    clave: 'bCatTarot',    icono: '🃏' },
@@ -35,6 +35,46 @@
     { id: 'suenos',   clave: 'bCatDreams',   icono: '💭' },
     { id: 'grabovoi', clave: 'bCatGrabovoi', icono: '📜' }
   ];
+
+  const FILTROS_TAROT = [
+    { id: 'all', clave: 'bFilterAll' },
+    { id: 'major', clave: 'bTarotMajors' },
+    { id: 'wands', clave: 'bTarotWands' },
+    { id: 'cups', clave: 'bTarotCups' },
+    { id: 'swords', clave: 'bTarotSwords' },
+    { id: 'pents', clave: 'bTarotPentacles' }
+  ];
+
+  const FILTROS_RUNAS = [
+    { id: 'all', clave: 'bFilterAll' },
+    { id: 'aett-freyja', clave: 'bRunesAett1' },
+    { id: 'aett-heimdall', clave: 'bRunesAett2' },
+    { id: 'aett-tyr', clave: 'bRunesAett3' }
+  ];
+
+  const PALO_TAROT = {
+    wands: 'bTarotWands',
+    cups: 'bTarotCups',
+    swords: 'bTarotSwords',
+    pents: 'bTarotPentacles'
+  };
+
+  function filtrosActivos() {
+    if (categoria === 'tarot') return FILTROS_TAROT;
+    if (categoria === 'runas') return FILTROS_RUNAS;
+    return [];
+  }
+
+  function grupoRuna(i) {
+    if (i < 8) return { id: 'aett-freyja', clave: 'bRunesAett1' };
+    if (i < 16) return { id: 'aett-heimdall', clave: 'bRunesAett2' };
+    return { id: 'aett-tyr', clave: 'bRunesAett3' };
+  }
+
+  function partirConceptos(v) {
+    if (Array.isArray(v)) return v.filter(Boolean).slice(0, 3);
+    return String(v || '').split(/[,·]/).map(x => x.trim()).filter(Boolean).slice(0, 3);
+  }
 
   /* ---------- Fuentes ----------
      Cada entrada se traduce a una forma común: id, título,
@@ -47,9 +87,13 @@
       return (S.tarot || []).map((c, i) => ({
         id: `tarot-${i}`,
         titulo: c.name,
-        etiqueta: c.num ? `${tr('bMajor')} ${c.num}` : (c.key || ''),
+        grupo: c.suitId || 'major',
+        etiqueta: c.suitId ? tr(PALO_TAROT[c.suitId] || 'bTarotMinor') : `${tr('bMajor')} ${c.num || ''}`.trim(),
         subtitulo: (c.keywords || []).join(' · ') || [c.key, c.el].filter(Boolean).join(' · '),
         imagen: c.img || '',
+        tipo: 'tarot',
+        simbolo: c.emoji || '🃏',
+        conceptos: partirConceptos(c.keywords || c.key),
         /* Lo esencial arriba; el resto se despliega bajo demanda. */
         destacado: c.energy ? [[tr('cEnergy'), c.energy], [tr('cAdvice'), c.advice]] : [],
         secciones: [
@@ -70,9 +114,13 @@
       return (S.runas || []).map((r, i) => ({
         id: `runa-${i}`,
         titulo: r.name,
+        grupo: grupoRuna(i).id,
         etiqueta: r.sym,
-        subtitulo: tr('bFuthark'),
+        subtitulo: `${tr('bFuthark')} · ${tr(grupoRuna(i).clave)}`,
         imagen: r.img || '',
+        tipo: 'runa',
+        simbolo: r.sym || 'ᚱ',
+        conceptos: partirConceptos((r.up || '').replace(`${r.name}:`, '')),
         secciones: [[tr('bMeaning'), r.up], [tr('bReversed'), r.rv]].filter(x => x[1]),
         busca: `${r.name} ${r.sym} ${r.up || ''} ${r.rv || ''}`
       }));
@@ -152,36 +200,48 @@
     }
     const fav = leerFav();
     let vista = lista;
+    if (filtro !== 'all') vista = vista.filter(e => e.grupo === filtro);
     if (soloFavoritos) vista = vista.filter(e => fav.has(e.id));
     if (consulta) {
       const q = consulta.toLowerCase();
       vista = vista.filter(e => e.busca.toLowerCase().includes(q));
     }
 
-    if (!vista.length) {
-      cuerpo.innerHTML = soloFavoritos
-        ? `<div class="om-vacio"><span aria-hidden="true">✦</span>
-             <h3>${esc(tr('bEmptyFavTitle'))}</h3>
-             <p>${esc(tr('bEmptyFavText'))}</p></div>`
-        : `<div class="om-vacio"><span aria-hidden="true">🔍</span>
-             <h3>${esc(tr('bEmptySearchTitle'))}</h3>
-             <p>${esc(tr('bEmptySearchText'))}</p></div>`;
-      return;
-    }
-
+    const filtros = filtrosActivos();
+    const nombreCategoria = CATEGORIAS.find(c => c.id === categoria);
     cuerpo.innerHTML = `
-      <p class="om-grim-cuenta">${vista.length} ${esc(vista.length > 1 ? tr('bCards') : tr('bCard'))}</p>
+      <section class="om-bib-resumen" aria-live="polite">
+        <div>
+          <strong>${esc(vista.length)} ${esc(vista.length > 1 ? tr('bCards') : tr('bCard'))}</strong>
+          <span>${esc(nombreCategoria ? tr(nombreCategoria.clave) : tr('bTitle'))}</span>
+        </div>
+        <p>${esc(soloFavoritos ? tr('bShowingFavs') : tr('bShowingAll'))}</p>
+      </section>
+      ${filtros.length ? `
+        <div class="om-bib-filtros" role="toolbar" aria-label="${esc(tr('bFilters'))}">
+          ${filtros.map(f => `<button class="om-bib-filtro${filtro === f.id ? ' activo' : ''}" data-bib="filtro" data-valor="${esc(f.id)}" type="button" aria-pressed="${filtro === f.id}">${esc(tr(f.clave))}</button>`).join('')}
+        </div>` : ''}
+      ${!vista.length
+        ? (soloFavoritos
+          ? `<div class="om-vacio"><span aria-hidden="true">✦</span>
+               <h3>${esc(tr('bEmptyFavTitle'))}</h3>
+               <p>${esc(tr('bEmptyFavText'))}</p></div>`
+          : `<div class="om-vacio"><span aria-hidden="true">🔍</span>
+               <h3>${esc(tr('bEmptySearchTitle'))}</h3>
+               <p>${esc(tr('bEmptySearchText'))}</p></div>`)
+        : `
       <div class="om-bib-rejilla">
         ${vista.map(e => `
           <button class="om-bib-ficha" data-bib="abrir" data-id="${esc(e.id)}" type="button">
             ${e.imagen
               ? `<img src="${esc(e.imagen.replace('img/deck/', 'img/deck/thumb/').replace('img/runes/', 'img/runes/thumb/'))}" alt="" loading="lazy" decoding="async">`
-              : `<span class="om-bib-simbolo" aria-hidden="true">${esc(e.etiqueta || '✦')}</span>`}
+              : `<span class="om-bib-simbolo" aria-hidden="true">${esc(e.simbolo || e.etiqueta || '✦')}</span>`}
+            <span class="om-bib-chip">${esc(e.etiqueta || '')}</span>
             <strong>${esc(e.titulo)}</strong>
-            <small>${esc(e.subtitulo || '')}</small>
+            <small>${esc(e.conceptos?.length ? e.conceptos.join(' · ') : e.subtitulo || '')}</small>
             ${fav.has(e.id) ? `<i class="om-bib-estrella" aria-label="${esc(tr('gFavorite'))}">★</i>` : ''}
           </button>`).join('')}
-      </div>`;
+      </div>`}`;
   }
 
   function pintarDetalle(e) {
@@ -190,20 +250,29 @@
     return `
       <article class="om-bib-detalle">
         <button class="om-bib-volver" data-bib="volver" type="button">‹ ${esc(tr('bBack'))}</button>
-        ${e.imagen ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy">`
-                   : `<div class="om-bib-simbolo-grande" aria-hidden="true">${esc(e.etiqueta || '✦')}</div>`}
-        ${e.etiqueta && e.imagen ? `<p class="om-bib-etiqueta">${esc(e.etiqueta)}</p>` : ''}
-        <h3>${esc(e.titulo)}</h3>
-        ${e.subtitulo ? `<p class="om-bib-sub">${esc(e.subtitulo)}</p>` : ''}
+        <div class="om-bib-hero">
+          <div class="om-bib-media">
+            ${e.imagen ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy" decoding="async">`
+                       : `<div class="om-bib-simbolo-grande" aria-hidden="true">${esc(e.simbolo || e.etiqueta || '✦')}</div>`}
+          </div>
+          <div class="om-bib-info">
+            ${e.etiqueta ? `<p class="om-bib-etiqueta">${esc(e.etiqueta)}</p>` : ''}
+            <h3>${esc(e.titulo)}</h3>
+            ${e.subtitulo ? `<p class="om-bib-sub">${esc(e.subtitulo)}</p>` : ''}
+            ${e.conceptos?.length ? `<div class="om-bib-conceptos">${e.conceptos.map(c => `<span>${esc(c)}</span>`).join('')}</div>` : ''}
+            <button class="om-btn ${esFav ? 'om-btn-primary' : 'om-btn-quiet'}" data-bib="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${esFav}">
+              ${esFav ? '★ ' + esc(tr('bInFav')) : '☆ ' + esc(tr('bSaveFav'))}
+            </button>
+          </div>
+        </div>
         ${(e.destacado || []).map(([t, c]) => `<section class="om-bib-clave"><h4>${esc(t)}</h4><p>${esc(c)}</p></section>`).join('')}
-        ${e.secciones.map(([t, c], i) => `
-          <details class="om-bib-seccion om-bib-plegable"${i < 2 ? ' open' : ''}>
-            <summary><h4>${esc(t)}</h4><span aria-hidden="true">+</span></summary>
-            <p>${esc(c)}</p>
-          </details>`).join('')}
-        <button class="om-btn ${esFav ? 'om-btn-primary' : 'om-btn-quiet'}" data-bib="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${esFav}">
-          ${esFav ? '★ ' + esc(tr('bInFav')) : '☆ ' + esc(tr('bSaveFav'))}
-        </button>
+        <div class="om-bib-secciones">
+          ${e.secciones.map(([t, c], i) => `
+            <details class="om-bib-seccion om-bib-plegable"${i < 2 ? ' open' : ''}>
+              <summary><h4>${esc(t)}</h4><span aria-hidden="true">+</span></summary>
+              <p>${esc(c)}</p>
+            </details>`).join('')}
+        </div>
       </article>`;
   }
 
@@ -261,10 +330,11 @@
       ev.preventDefault();
       if (q === 'cerrar') return cerrar();
       if (q === 'categoria') {
-        categoria = t.dataset.valor; abierto = null; soloFavoritos = false;
+        categoria = t.dataset.valor; abierto = null; soloFavoritos = false; filtro = 'all';
         if (categoria === 'grabovoi') cargarGrabovoi();
         abrir(); return;
       }
+      if (q === 'filtro') { filtro = t.dataset.valor || 'all'; abierto = null; pintar(); return; }
       if (q === 'favoritos') { soloFavoritos = !soloFavoritos; abierto = null; abrir(); return; }
       if (q === 'abrir') {
         const lista = entradas(categoria) || [];
