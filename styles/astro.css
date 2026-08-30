@@ -120,6 +120,7 @@
     linear-gradient(180deg, rgba(255,255,255,.98), rgba(250, 247, 240, .98));
   color: #302f37;
   box-shadow: 0 20px 48px rgba(0, 0, 0, .24);
+  overflow: hidden;
 }
 
 .astro-wheel-tools {
@@ -167,16 +168,18 @@
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 8px;
+  background: #fffdf9;
   touch-action: none;
   cursor: zoom-in;
+  contain: paint;
 }
 
 .astro-wheel-zoomed .astro-wheel-viewport,
 .astro-wheel-modal-root .astro-wheel-zoomed .astro-wheel-viewport {
   overflow: hidden;
-  border-radius: 50%;
+  border-radius: 8px;
 }
 
 .astro-wheel-viewport:focus-visible {
@@ -412,6 +415,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   border-radius: 50%;
   border: 0;
   isolation: isolate;
+  overflow: hidden;
   background:
     radial-gradient(circle, transparent 0 7.2%, rgba(187, 187, 190, .62) 7.35% 7.7%, transparent 7.85%),
     radial-gradient(circle, transparent 0 25%, rgba(78, 78, 82, .22) 25.1% 25.3%, transparent 25.45%),
@@ -453,7 +457,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .astro-aspect-sextile {
-  stroke: rgba(241, 200, 51, .92);
+  stroke: rgba(34, 139, 96, .92);
 }
 
 .astro-aspect-square,
@@ -498,7 +502,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .astro-aspect-key-sextile b {
-  color: rgb(205, 157, 24);
+  color: rgb(34, 139, 96);
 }
 
 .astro-aspect-key-square b,
@@ -610,8 +614,8 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 
 .astro-asc-line {
   position: absolute;
-  left: -5.5%;
-  right: -5.5%;
+  left: 0;
+  right: 0;
   top: 50%;
   z-index: 2;
   height: 1px;
@@ -651,22 +655,22 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .astro-axis-ac {
-  left: 3px;
+  left: 18px;
   top: 50%;
-  transform: translate(-55%, -50%);
+  transform: translate(-50%, -50%);
 }
 
 .astro-axis-dc {
-  right: 3px;
+  right: 18px;
   top: 50%;
-  transform: translate(55%, -50%);
+  transform: translate(50%, -50%);
 }
 
 .astro-axis-mc,
 .astro-axis-ic {
   left: 50%;
   top: 50%;
-  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.53)) rotate(calc(var(--angle) * -1));
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.47)) rotate(calc(var(--angle) * -1));
   margin: -12px -15px;
 }
 

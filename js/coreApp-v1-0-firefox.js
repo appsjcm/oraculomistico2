@@ -4502,7 +4502,7 @@ function astroAspectWebHTML(chart) {
   const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
   const point = planet => {
     const angle = degToRad(astroWheelAngle(chart, planet.degree) - 90);
-    const radius = 31;
+    const radius = 33;
     return { x:50 + Math.cos(angle) * radius, y:50 + Math.sin(angle) * radius };
   };
   const lines = chart.aspects.map(aspect => {
@@ -4513,7 +4513,7 @@ function astroAspectWebHTML(chart) {
     const p2 = point(b);
     return `<line class="astro-aspect-line astro-aspect-${astroAspectClass(aspect.name)}" x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}"></line>`;
   }).join('');
-  return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="50" cy="50" r="37"></circle></clipPath></defs><g clip-path="url(#${clipId})">${lines}</g></svg>`;
+  return `<svg class="astro-aspect-web" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="50" cy="50" r="40"></circle></clipPath></defs><g clip-path="url(#${clipId})">${lines}</g></svg>`;
 }
 const ASTRO_WHEEL_ZOOM_MIN = 1;
 const ASTRO_WHEEL_ZOOM_MAX = 2.8;
