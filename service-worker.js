@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-library-arcana-125';
+const CACHE_NAME = 'oraculo-v1-0-public-library-modal-126';
 const APP_SHELL = [
   './',
   './index.html',
