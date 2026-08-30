@@ -133,7 +133,7 @@
         }
       };
       recorrer(d);
-      grabovoi = bruto.slice(0, 400);
+      grabovoi = bruto;
     } catch { grabovoi = []; }
     pintar();
   }

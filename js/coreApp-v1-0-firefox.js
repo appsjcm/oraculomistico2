@@ -5012,16 +5012,29 @@ async function loadGrabovoi() {
       methods:(data.metodos_concentracion || []).map(method => ({ name:method.nombre, description:method.descripcion }))
     };
     const entries = [];
-    for (const key of ['enfermedades','situaciones_personales','codigos_adicionales']) {
-      (data[key] || []).forEach(item => entries.push({
-        nombre: item.nombre || item.name || 'Código', codigo: item.codigo || item.code || '', categoria: item.categoria || item.sistema || key, uso: item.uso || item.descripcion || item.subcategoria || 'Uso simbólico de concentración.',
+    const pushGrabEntry = (item, key, nestedCode = '') => {
+      const codigo = nestedCode || item.codigo || item.code || '';
+      if (!codigo) return;
+      entries.push({
+        nombre: item.nombre || item.name || 'Código',
+        codigo,
+        categoria: item.categoria || item.sistema || key,
+        uso: item.uso || item.descripcion || item.texto_completo || item.subcategoria || 'Uso simbólico de concentración.',
         /* De que lista viene. El filtro sanitario miraba solo palabras
            clave en el texto y se le colaban entradas como VIH o ebola,
            que traen su propio nombre clinico sin ninguna de esas voces. */
         origen: key
-      }));
+      });
+    };
+    for (const key of ['enfermedades','situaciones_personales','codigos_adicionales']) {
+      (data[key] || []).forEach(item => pushGrabEntry(item, key));
     }
-    grabovoiEntries = entries.filter(e => e.codigo).slice(0, 1200);
+    for (const key of ['protocolos','pilotajes_especificos']) {
+      (data[key] || []).forEach(item => {
+        (item.codigos || []).forEach(code => pushGrabEntry(item, key, code));
+      });
+    }
+    grabovoiEntries = entries.filter(e => e.codigo);
   } catch { grabovoiEntries = []; }
   return grabovoiEntries;
 }
@@ -5133,7 +5146,7 @@ const grabSeleccion = new Set();
 let grabCategoria = '';
 let grabConsulta = '';
 
-/* El catalogo completo, 1.200 entradas. Las sanitarias se muestran
+/* El catalogo completo del JSON. Las sanitarias se muestran
    marcadas y con aviso reforzado, pero no se ocultan: ya eran
    visibles en el navegador general del modulo. */
 /* Etiqueta visible de una categoria Grabovoi. El valor original de la
@@ -5147,7 +5160,8 @@ function grabCatLabel(cat) {
     .replace(/\b\w/g, c => c.toUpperCase())
     .replace(/ /g, '');
   const v = t(clave);
-  return v && v !== clave ? v : cat;
+  if (v && v !== clave) return v;
+  return String(cat).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function grabDisponibles() {
@@ -5166,7 +5180,7 @@ function grabFiltradas() {
     if (!terminos.length) return true;
     const heno = normalizeGrabovoiSearch(`${e.codigo} ${e.nombre} ${e.categoria} ${e.uso}`);
     return terminos.every(t => heno.includes(t));
-  }).slice(0, 80);
+  });
 }
 
 /* ¿Hay alguna secuencia sanitaria entre las marcadas? */
@@ -5178,6 +5192,10 @@ function grabTextoContador() {
   const n = grabSeleccion.size;
   if (!n) return t('gbNone');
   return n === 1 ? t('gbCountOne') : t('gbCount', { n });
+}
+
+function grabTextoResultados() {
+  return t('gbShownAll', { shown: grabFiltradas().length, total: grabDisponibles().length });
 }
 
 function renderGrabChips() {
@@ -5209,6 +5227,8 @@ function renderGrabList(list) {
 function refrescarGrabList() {
   const caja = $('#grabList');
   if (caja) caja.innerHTML = renderGrabList(grabFiltradas());
+  const resultados = $('#grabResultsCount');
+  if (resultados) resultados.textContent = grabTextoResultados();
   const cont = $('#grabCount');
   if (cont) cont.textContent = grabTextoContador();
   const boton = $('#grabPdfBtn');
@@ -5233,6 +5253,7 @@ async function showGrabovoi() {
       <button class="btn compact" data-act="grab-clear" type="button">${escapeHTML(t('gbClear'))}</button>
       <button class="btn primary compact" id="grabPdfBtn" data-act="grab-pdf" type="button" ${grabSeleccion.size ? '' : 'disabled'}>📄 ${escapeHTML(t('gbMakePdf'))}</button>
     </div>
+    <p id="grabResultsCount" class="subtle">${escapeHTML(grabTextoResultados())}</p>
     <p class="subtle">${escapeHTML(t('gbMax', { n: GRAB_MAX }))}</p>
     <div id="grabList" class="diary-list mt">${renderGrabList(grabFiltradas())}</div>` });
 }
@@ -5349,7 +5370,7 @@ function grabovoiPdfCandidates(reading = lastReading, query = '') {
     return grabovoiEntries.filter(entry => {
       const haystack = normalizeGrabovoiSearch(`${entry.codigo} ${entry.nombre} ${entry.categoria} ${entry.uso}`);
       return terms.every(term => haystack.includes(term));
-    }).slice(0, 80);
+    });
   }
   const meta = reading?.meta || {};
   const numbers = meta.numbers || {};
