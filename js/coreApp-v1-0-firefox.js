@@ -163,6 +163,7 @@ function escHandler(e) {
   }
 }
 function closeModal() {
+  closeAstroWheelFullscreen();
   document.body.classList.remove('astro-wheel-fullscreen-open');
   $('#modalRoot').className = 'modal-root';
   $('#modalRoot').innerHTML = '';
@@ -4118,6 +4119,7 @@ const ASTRO_WHEEL_ZOOM_MIN = 1;
 const ASTRO_WHEEL_ZOOM_MAX = 2.8;
 const ASTRO_WHEEL_ZOOM_STEP = .35;
 let astroWheelGesture = { viewport:null, pointers:new Map(), startScale:1, startDistance:0, startMid:null, startX:0, startY:0, baseX:0, baseY:0 };
+let astroWheelModalFocus = null;
 function astroWheelViewportFrom(node) {
   const wrap = node?.closest?.('.astro-wheel-wrap');
   return node?.closest?.('[data-astro-wheel-viewport]') || wrap?.querySelector?.('[data-astro-wheel-viewport]') || null;
@@ -4164,24 +4166,72 @@ function handleAstroWheelZoomControl(button) {
   const direction = action === 'out' ? -1 : 1;
   setAstroWheelZoom(viewport, { ...state, scale:state.scale + direction * ASTRO_WHEEL_ZOOM_STEP });
 }
-function setAstroWheelFullscreen(wrap, active) {
+function repairAstroWheelCloneIds(clone) {
+  const idMap = new Map();
+  clone.querySelectorAll('[id]').forEach(node => {
+    const oldId = node.id;
+    if (!oldId) return;
+    const nextId = `${oldId}-modal`;
+    node.id = nextId;
+    idMap.set(oldId, nextId);
+  });
+  clone.querySelectorAll('[clip-path]').forEach(node => {
+    const value = node.getAttribute('clip-path') || '';
+    idMap.forEach((nextId, oldId) => {
+      if (value.includes(`#${oldId}`)) node.setAttribute('clip-path', value.replace(`#${oldId}`, `#${nextId}`));
+    });
+  });
+}
+function openAstroWheelModal(wrap) {
   if (!wrap) return;
-  wrap.classList.toggle('astro-wheel-fullscreen', active);
-  document.body.classList.toggle('astro-wheel-fullscreen-open', Boolean(document.querySelector('.astro-wheel-wrap.astro-wheel-fullscreen')));
-  const button = wrap.querySelector('[data-astro-zoom="full"]');
-  if (button) {
-    button.textContent = active ? '×' : '⛶';
-    button.setAttribute('aria-label', active ? 'Cerrar rueda astral grande' : 'Ver rueda astral grande');
+  closeAstroWheelFullscreen();
+  astroWheelModalFocus = document.activeElement;
+  const clone = wrap.cloneNode(true);
+  clone.classList.remove('astro-wheel-fullscreen', 'astro-wheel-zoomed');
+  clone.classList.add('astro-wheel-modal-copy');
+  repairAstroWheelCloneIds(clone);
+  const fullButton = clone.querySelector('[data-astro-zoom="full"]');
+  if (fullButton) {
+    fullButton.textContent = '×';
+    fullButton.setAttribute('aria-label', 'Cerrar rueda astral grande');
   }
-  if (active) wrap.querySelector('[data-astro-wheel-viewport]')?.focus?.({ preventScroll:true });
+  const root = document.createElement('div');
+  root.id = 'astroWheelModal';
+  root.className = 'astro-wheel-modal-root';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', 'Rueda astral ampliada');
+  root.innerHTML = '<div class="astro-wheel-modal-backdrop" data-astro-wheel-modal-close></div><section class="astro-wheel-modal-panel"></section>';
+  root.querySelector('.astro-wheel-modal-panel')?.appendChild(clone);
+  document.body.appendChild(root);
+  document.body.classList.add('astro-wheel-fullscreen-open');
+  setAstroWheelZoom(clone.querySelector('[data-astro-wheel-viewport]'), { scale:1, x:0, y:0 });
+  requestAnimationFrame(() => {
+    root.classList.add('open');
+    clone.querySelector('[data-astro-wheel-viewport]')?.focus?.({ preventScroll:true });
+  });
 }
 function toggleAstroWheelFullscreen(wrap) {
-  setAstroWheelFullscreen(wrap, !wrap?.classList?.contains('astro-wheel-fullscreen'));
+  const modal = document.getElementById('astroWheelModal');
+  if (modal && (!wrap || modal.contains(wrap))) {
+    closeAstroWheelFullscreen();
+    return;
+  }
+  openAstroWheelModal(wrap);
 }
 function closeAstroWheelFullscreen() {
-  const wrap = document.querySelector('.astro-wheel-wrap.astro-wheel-fullscreen');
-  if (!wrap) return false;
-  setAstroWheelFullscreen(wrap, false);
+  const modal = document.getElementById('astroWheelModal');
+  if (!modal) return false;
+  if (astroWheelGesture.viewport && modal.contains(astroWheelGesture.viewport)) {
+    astroWheelGesture.pointers.clear();
+    astroWheelGesture.viewport = null;
+  }
+  modal.remove();
+  document.body.classList.remove('astro-wheel-fullscreen-open');
+  if (astroWheelModalFocus && document.contains(astroWheelModalFocus)) {
+    try { astroWheelModalFocus.focus({ preventScroll:true }); } catch {}
+  }
+  astroWheelModalFocus = null;
   return true;
 }
 function astroWheelPointerList() {
@@ -5512,6 +5562,10 @@ function openModule(module) {
 
 function attachGlobalEvents() {
   document.addEventListener('click', async e => {
+    if (e.target.closest('[data-astro-wheel-modal-close]')) {
+      e.preventDefault();
+      return closeAstroWheelFullscreen();
+    }
     const astroZoom = e.target.closest('[data-astro-zoom]');
     if (astroZoom) {
       e.preventDefault();
