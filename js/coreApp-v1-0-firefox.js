@@ -1769,9 +1769,9 @@ function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está ca
   const isMale = style === 'male';
   const title = isMale ? 'Oráculo guardián' : 'Oráculo guía';
   const speechLabel = speechMode === 'whisper' ? 'Susurrando' : 'Canalizando';
-  const portrait = isMale ? 'img/avatars/oracle-male-realistic.png' : 'img/avatars/oracle-female-realistic.png';
-  const portraitMedium = isMale ? 'img/avatars/oracle-male-mouth-medium.png' : 'img/avatars/oracle-female-mouth-medium.png';
-  const portraitOpen = isMale ? 'img/avatars/oracle-male-mouth-open.png' : 'img/avatars/oracle-female-mouth-open.png';
+  const portrait = isMale ? 'img/avatars/oracle-male-realistic.webp' : 'img/avatars/oracle-female-realistic.webp';
+  const portraitMedium = isMale ? 'img/avatars/oracle-male-mouth-medium.webp' : 'img/avatars/oracle-female-mouth-medium.webp';
+  const portraitOpen = isMale ? 'img/avatars/oracle-male-mouth-open.webp' : 'img/avatars/oracle-female-mouth-open.webp';
   const readingVisuals = getOracleReadingVisuals();
   return `
     <div class="oracle-avatar-window ${isMale ? 'male' : 'female'} theme-${theme} mood-${mood} mode-${speechMode} ${readingVisuals.length ? 'has-reading-visuals' : ''}">

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-3d-ligero-130';
+const CACHE_NAME = 'oraculo-v1-0-public-avatares-webp-131';
 const APP_SHELL = [
   './',
   './index.html',
@@ -70,12 +70,12 @@ const APP_SHELL = [
   './assets/premium/ritual-mat.svg',
   './assets/premium/tarot-frame.svg',
   './assets/premium/tarot-table.svg',
-  './img/avatars/oracle-female-realistic.png',
-  './img/avatars/oracle-female-mouth-medium.png',
-  './img/avatars/oracle-female-mouth-open.png',
-  './img/avatars/oracle-male-realistic.png',
-  './img/avatars/oracle-male-mouth-medium.png',
-  './img/avatars/oracle-male-mouth-open.png'
+  './img/avatars/oracle-female-realistic.webp',
+  './img/avatars/oracle-female-mouth-medium.webp',
+  './img/avatars/oracle-female-mouth-open.webp',
+  './img/avatars/oracle-male-realistic.webp',
+  './img/avatars/oracle-male-mouth-medium.webp',
+  './img/avatars/oracle-male-mouth-open.webp'
 ];
 
 self.addEventListener('install', event => {
