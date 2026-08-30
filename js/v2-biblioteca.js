@@ -191,8 +191,6 @@
     const cuerpo = $('#omBibBody');
     if (!cuerpo) return;
 
-    if (abierto) { cuerpo.innerHTML = pintarDetalle(abierto); cuerpo.scrollTop = 0; return; }
-
     const lista = entradas(categoria);
     if (lista === null) {
       cuerpo.innerHTML = `<p class="om-grim-cuenta">${esc(tr('bLoading'))}</p>`;
@@ -244,12 +242,12 @@
       </div>`}`;
   }
 
-  function pintarDetalle(e) {
+  function pintarDetalle(e, enModal = false) {
     const fav = leerFav();
     const esFav = fav.has(e.id);
     return `
       <article class="om-bib-detalle">
-        <button class="om-bib-volver" data-bib="volver" type="button">‹ ${esc(tr('bBack'))}</button>
+        ${enModal ? '' : `<button class="om-bib-volver" data-bib="volver" type="button">‹ ${esc(tr('bBack'))}</button>`}
         <div class="om-bib-hero">
           <div class="om-bib-media">
             ${e.imagen ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy" decoding="async">`
@@ -274,6 +272,43 @@
             </details>`).join('')}
         </div>
       </article>`;
+  }
+
+  function abrirDetalle(e) {
+    const raiz = $('#omBiblioteca');
+    if (!raiz || !e) return;
+    abierto = e;
+    let modal = $('#omBibDetalleModal', raiz);
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'omBibDetalleModal';
+      modal.className = 'om-bib-card-modal';
+      raiz.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div class="om-bib-card-backdrop" data-bib="cerrar-detalle"></div>
+      <section class="om-bib-card-panel" role="dialog" aria-modal="true" aria-labelledby="omBibDetalleTitulo">
+        <header class="om-bib-card-head">
+          <div>
+            <span>${esc(e.etiqueta || e.subtitulo || '')}</span>
+            <h3 id="omBibDetalleTitulo">${esc(e.titulo)}</h3>
+          </div>
+          <button class="om-sheet-close" data-bib="cerrar-detalle" type="button" aria-label="${esc(tr('close'))}">✕</button>
+        </header>
+        <div class="om-bib-card-body">${pintarDetalle(e, true)}</div>
+      </section>`;
+    modal.hidden = false;
+    requestAnimationFrame(() => modal.classList.add('abierto'));
+    setTimeout(() => $('.om-sheet-close', modal)?.focus?.(), 60);
+  }
+
+  function cerrarDetalle(repintar = true) {
+    const modal = $('#omBibDetalleModal');
+    if (!modal) { abierto = null; return; }
+    modal.classList.remove('abierto');
+    setTimeout(() => { modal.hidden = true; modal.innerHTML = ''; }, 180);
+    abierto = null;
+    if (repintar) pintar();
   }
 
   /* ---------- Abrir ---------- */
@@ -309,7 +344,7 @@
     if (categoria === 'grabovoi') cargarGrabovoi();
     pintar();
     const b = $('#omBibBuscar');
-    if (b) b.addEventListener('input', () => { consulta = b.value.trim(); abierto = null; pintar(); });
+    if (b) b.addEventListener('input', () => { consulta = b.value.trim(); cerrarDetalle(false); pintar(); });
   }
 
   function cerrar() {
@@ -319,7 +354,7 @@
     if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
     else document.body.classList.remove('om-sheet-lock');
     setTimeout(() => { raiz.hidden = true; }, 240);
-    abierto = null;
+    cerrarDetalle(false);
   }
 
   /* ---------- Enlazado ---------- */
@@ -329,23 +364,29 @@
       const q = t.dataset.bib;
       ev.preventDefault();
       if (q === 'cerrar') return cerrar();
+      if (q === 'cerrar-detalle') return cerrarDetalle();
       if (q === 'categoria') {
-        categoria = t.dataset.valor; abierto = null; soloFavoritos = false; filtro = 'all';
+        cerrarDetalle(false);
+        categoria = t.dataset.valor; soloFavoritos = false; filtro = 'all';
         if (categoria === 'grabovoi') cargarGrabovoi();
         abrir(); return;
       }
-      if (q === 'filtro') { filtro = t.dataset.valor || 'all'; abierto = null; pintar(); return; }
-      if (q === 'favoritos') { soloFavoritos = !soloFavoritos; abierto = null; abrir(); return; }
+      if (q === 'filtro') { cerrarDetalle(false); filtro = t.dataset.valor || 'all'; pintar(); return; }
+      if (q === 'favoritos') { cerrarDetalle(false); soloFavoritos = !soloFavoritos; abrir(); return; }
       if (q === 'abrir') {
         const lista = entradas(categoria) || [];
         abierto = lista.find(e => e.id === t.dataset.id) || null;
-        pintar(); return;
+        abrirDetalle(abierto); return;
       }
-      if (q === 'volver') { abierto = null; pintar(); return; }
+      if (q === 'volver') { cerrarDetalle(); return; }
       if (q === 'favorito') {
         const f = leerFav();
         f.has(t.dataset.id) ? f.delete(t.dataset.id) : f.add(t.dataset.id);
         guardarFav(f);
+        if (abierto) {
+          const actual = (entradas(categoria) || []).find(e => e.id === abierto.id) || abierto;
+          abrirDetalle(actual);
+        }
         pintar(); return;
       }
       return;
@@ -355,7 +396,7 @@
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Escape' || $('#omBiblioteca')?.hidden !== false) return;
-    if (abierto) { abierto = null; pintar(); } else cerrar();
+    if (abierto) cerrarDetalle(); else cerrar();
   });
 })();
 
