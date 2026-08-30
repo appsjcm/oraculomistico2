@@ -593,3 +593,24 @@ html[data-appearance-mode="light"] body.theme-forest  { --gold: #3f6b1e; }
 html[data-appearance-mode="light"] body.theme-blue    { --gold: #1f5f8a; }
 html[data-appearance-mode="light"] body.theme-classic { --gold: #7f5a14; }
 html[data-appearance-mode="light"] body.theme-light   { --gold: #8a5f10; }
+
+/* ------------------------------------------------------------------
+   Acciones bajo la lectura
+   Los ocho botones iban a ancho completo, uno por fila: 410 px de
+   scroll en un contenedor de 284, cuando caben dos por fila con de
+   sobra para el dedo. La accion principal se queda entera; las siete
+   secundarias se reparten. La altura baja a la mitad.
+   ------------------------------------------------------------------ */
+@media (max-width: 520px) {
+  .reading-actions .btn {
+    flex: 1 1 calc(50% - 5px);
+    min-width: 0;
+    /* Mismo minimo tactil que se fijo para el resto de la app. */
+    min-height: 44px;
+  }
+  /* Ampliar con IA es la accion principal: conserva el ancho completo,
+     y ademas su etiqueta no cabria a media fila. */
+  .reading-actions .btn[data-act="ai-reading"] {
+    flex: 1 1 100%;
+  }
+}
