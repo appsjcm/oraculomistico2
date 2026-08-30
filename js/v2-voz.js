@@ -200,6 +200,7 @@
     const accion = ev.target?.closest?.('[data-act]');
     if (accion?.closest?.('#omVozPanel') && ['voice-library', 'preview-avatar'].includes(accion.dataset.act)) {
       cerrarPanel({ inmediato: true });
+      window.OraculoSheets?.closeProfile?.({ inmediato: true });
     }
   }, true);
 

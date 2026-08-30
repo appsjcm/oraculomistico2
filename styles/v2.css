@@ -380,6 +380,10 @@ body.om-sheet-lock {
   overscroll-behavior: none;
 }
 
+.modal-root.open {
+  z-index: 180;
+}
+
 .om-group-label {
   margin: var(--om-s-5) 0 var(--om-s-3);
   font-size: var(--om-t-xs);
