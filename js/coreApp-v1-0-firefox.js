@@ -385,6 +385,9 @@ function getAstroPdfChart(reading = lastReading) {
 }
 function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rueda astral') {
   if (!chart?.planets?.length || !chart?.houses?.length) return y;
+  const includeLegend = palette.includeLegend !== false;
+  const includeAspectList = palette.includeAspectList !== false;
+  const extraH = includeLegend || includeAspectList ? 68 : 30;
   const gold = palette.gold || [218, 184, 72];
   const violet = palette.violet || [38, 28, 72];
   const ink = palette.ink || [38, 36, 48];
@@ -406,7 +409,7 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   doc.text(pdfAscii(heading), x, y - 1);
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(232, 226, 214);
-  doc.roundedRect(x - 6, y + 2, size + 12, size + 68, 3, 3, 'FD');
+  doc.roundedRect(x - 6, y + 2, size + 12, size + extraH, 3, 3, 'FD');
   doc.circle(cx, cy, outer, 'FD');
   doc.setDrawColor(210, 205, 196);
   doc.setLineWidth(.18);
@@ -509,12 +512,14 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   doc.setTextColor(142, 139, 143);
   doc.text(pdfAscii(`${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}`).toUpperCase(), cx, y + size + 14, { align:'center' });
   if (chart.place?.label) doc.text(pdfAscii(chart.place.label).toUpperCase(), cx, y + size + 21, { align:'center' });
-  doc.setFontSize(6.1);
-  doc.setTextColor(...ink);
-  doc.text(doc.splitTextToSize(pdfAscii(signLegend), size - 8).slice(0, 2), cx, y + size + 31, { align:'center' });
-  doc.text(doc.splitTextToSize(pdfAscii(aspectLegend), size - 8).slice(0, 2), cx, y + size + 39, { align:'center' });
-  let aspectY = y + size + 50;
-  if (chart.aspects?.length) {
+  if (includeLegend) {
+    doc.setFontSize(6.1);
+    doc.setTextColor(...ink);
+    doc.text(doc.splitTextToSize(pdfAscii(signLegend), size - 8).slice(0, 2), cx, y + size + 31, { align:'center' });
+    doc.text(doc.splitTextToSize(pdfAscii(aspectLegend), size - 8).slice(0, 2), cx, y + size + 39, { align:'center' });
+  }
+  let aspectY = y + size + (includeLegend ? 50 : 30);
+  if (includeAspectList && chart.aspects?.length) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
     doc.setTextColor(...violet);
@@ -769,7 +774,206 @@ async function exportNumerologyPDF(reading = lastReading) {
   unlockAchievement('first_pdf');
 }
 
+async function exportAstroPDF(reading = lastReading) {
+  const chart = getAstroPdfChart(reading);
+  if (!chart) return false;
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!jsPDF) throw new Error('jsPDF no cargado');
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const gold = [218, 184, 72];
+  const goldInk = [146, 104, 37];
+  const violet = [38, 28, 72];
+  const ink = [38, 36, 48];
+  const muted = [116, 111, 122];
+  const line = [196, 170, 83];
+  const soft = [246, 242, 232];
+  const solar = reading?.meta?.solarReturn || null;
+  const reportTitle = solar?.chart ? `Revolucion solar ${solar.year}` : reading?.meta?.astroToday ? 'Tirada astral del dia' : 'Carta astral';
+  const subject = getReadingSubjectName(reading) || chart.name || 'Consulta';
+  const fileName = safeFileName(`${reportTitle}-${subject}`);
+  let y = 0;
+  const wrapped = (value, width) => doc.splitTextToSize(cleanPdfText(value), width);
+  const addHeader = (section = reportTitle) => {
+    doc.setFillColor(...violet);
+    doc.rect(0, 0, W, 24, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(...gold);
+    doc.text('ORACULO MISTICO', margin, 10);
+    doc.setFontSize(8.5);
+    doc.setTextColor(244, 238, 222);
+    doc.text('INFORME ASTRAL', margin, 16);
+    doc.setFontSize(8);
+    doc.text(new Date(reading?.date || Date.now()).toLocaleString('es-ES'), W - margin, 10, { align:'right' });
+    doc.text(pdfAscii(section), W - margin, 16, { align:'right' });
+    doc.setDrawColor(...line);
+    doc.setLineWidth(.35);
+    doc.line(margin, 24, W - margin, 24);
+    y = 34;
+  };
+  const addFooter = () => {
+    const page = doc.internal.getNumberOfPages();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...muted);
+    doc.text('Lectura simbolica. Calculada en el dispositivo con motor abierto y sin marcas externas.', margin, H - 8);
+    doc.text(String(page), W - margin, H - 8, { align:'right' });
+  };
+  const newPage = (section = reportTitle) => {
+    addFooter();
+    doc.addPage();
+    addHeader(section);
+  };
+  const ensureRoom = (needed = 24, section = reportTitle) => {
+    if (y + needed <= H - 18) return;
+    newPage(section);
+  };
+  const sectionTitle = (label) => {
+    ensureRoom(12, label);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...violet);
+    doc.text(pdfAscii(label).toUpperCase(), margin, y);
+    doc.setDrawColor(...line);
+    doc.setLineWidth(.25);
+    doc.line(margin, y + 2.5, W - margin, y + 2.5);
+    y += 8;
+  };
+  const addInfoBox = (lines, options = {}) => {
+    const cleanLines = lines.map(cleanPdfText).filter(Boolean);
+    if (!cleanLines.length) return;
+    const width = W - margin * 2 - 12;
+    const textLines = cleanLines.flatMap(line => wrapped(line, width).slice(0, options.maxLinesPerItem || 2));
+    const h = Math.min(options.maxH || 44, 12 + textLines.length * 4.6);
+    ensureRoom(h + 5, options.section || reportTitle);
+    doc.setFillColor(...(options.accent ? [248, 239, 214] : soft));
+    doc.setDrawColor(...(options.accent ? gold : line));
+    doc.roundedRect(margin, y, W - margin * 2, h, 4, 4, 'FD');
+    doc.setFont('helvetica', options.title ? 'bold' : 'normal');
+    doc.setFontSize(8.8);
+    doc.setTextColor(...ink);
+    doc.text(textLines.slice(0, Math.floor((h - 9) / 4.6)), margin + 6, y + 8);
+    y += h + 7;
+  };
+  const addTable = (heading, headers, rows, widths) => {
+    const cleanRows = rows.map(row => row.map(cell => cleanPdfText(cell))).filter(row => row.some(Boolean));
+    if (!cleanRows.length) return;
+    sectionTitle(heading);
+    const usable = W - margin * 2;
+    const colW = widths || headers.map(() => usable / headers.length);
+    const drawHead = () => {
+      doc.setFillColor(...violet);
+      doc.setDrawColor(...violet);
+      doc.roundedRect(margin, y, usable, 8, 2.5, 2.5, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.2);
+      doc.setTextColor(255, 250, 239);
+      let tx = margin + 3;
+      headers.forEach((head, i) => {
+        doc.text(pdfAscii(head), tx, y + 5.3);
+        tx += colW[i];
+      });
+      y += 9;
+    };
+    drawHead();
+    cleanRows.forEach((row, index) => {
+      const cellLines = row.map((cell, i) => wrapped(cell, colW[i] - 5).slice(0, 2));
+      const rowH = Math.max(8.5, 4.2 * Math.max(...cellLines.map(lines => lines.length)) + 4);
+      if (y + rowH > H - 18) {
+        newPage(heading);
+        sectionTitle(heading);
+        drawHead();
+      }
+      doc.setFillColor(...(index % 2 ? [255, 253, 248] : [249, 246, 238]));
+      doc.setDrawColor(226, 218, 204);
+      doc.roundedRect(margin, y, usable, rowH, 2, 2, 'FD');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.45);
+      doc.setTextColor(...ink);
+      let tx = margin + 3;
+      cellLines.forEach((lines, i) => {
+        doc.text(lines, tx, y + 5.4);
+        tx += colW[i];
+      });
+      y += rowH + 1.2;
+    });
+    y += 4;
+  };
+  const addSynthesis = () => {
+    const stats = astroAspectStats(chart);
+    const tight = stats.tightest;
+    const summary = [
+      `${subject}: Sol en ${chart.sun?.name || ''}, Luna en ${chart.moon?.sign || ''}, Ascendente en ${chart.asc?.name || ''} y Medio Cielo en ${chart.mc?.name || ''}.`,
+      `La carta muestra ${chart.aspects?.length || 0} aspectos mayores: ${stats.counts.flow} fluidos, ${stats.counts.tension} de ajuste y ${stats.counts.focus} de foco.`,
+      tight ? `El aspecto mas exacto es ${tight.name} entre ${tight.a} y ${tight.b}, con orbe ${tight.orb} grados.` : '',
+      solar?.localLabel ? `Retorno solar aproximado: ${solar.localLabel}.` : '',
+      reading?.meta?.intention ? `Intencion: ${reading.meta.intention}.` : ''
+    ];
+    sectionTitle('Sintesis profesional');
+    addInfoBox(summary, { accent:true, maxH:48, section:'Sintesis profesional' });
+    const body = cleanPdfText(reading?.ai || cleanInterpretation(reading?.text || '')).replace(/Posiciones:[\s\S]*$/i, '').trim();
+    if (body) addInfoBox(wrapped(body, W - margin * 2 - 12).slice(0, 12), { maxH:64, maxLinesPerItem:1, section:'Sintesis profesional' });
+  };
+  toast(t('tsMakingPdf'));
+  addHeader(reportTitle);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(...violet);
+  doc.text(pdfAscii(reportTitle).toUpperCase(), margin, y);
+  doc.setFontSize(10);
+  doc.setTextColor(...muted);
+  doc.text(wrapped(`${subject} · ${chart.date || ''} · ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, W - margin * 2), margin, y + 7);
+  y += 20;
+  addInfoBox([
+    `Motor: ${chart.engine || 'Astronomy Engine'} · Casas: ${astroHouseSystemLabel(chart.houseSystem)}`,
+    chart.utcLabel ? `Hora universal: ${chart.utcLabel}` : '',
+    chart.siderealTimeLabel ? `Tiempo sideral: ${chart.siderealTimeLabel}` : '',
+    chart.place?.timezone ? `Zona horaria: ${chart.place.timezone}` : ''
+  ], { accent:true, maxH:32 });
+  const wheelSize = Math.min(166, W - margin * 2 - 12);
+  const wheelX = margin + (W - margin * 2 - wheelSize) / 2;
+  y = drawAstroPdfWheel(doc, chart, wheelX, y + 1, wheelSize, { gold, goldInk, violet, ink, line, includeLegend:false, includeAspectList:false }, 'Rueda astral');
+  newPage('Tablas astrales');
+  addTable('Claves', ['Punto', 'Posicion', 'Lectura'], [
+    ['Sol', `${chart.sun?.name || ''} ${chart.sun?.degreeLabel || ''}`, chart.sun?.keywords?.join(', ') || 'Identidad'],
+    ['Luna', `${chart.moon?.sign || ''} ${chart.moon?.degreeLabel || ''}`, chart.moon?.keywords?.join(', ') || 'Emocion'],
+    ['Ascendente', `${chart.asc?.name || ''} ${chart.asc?.degreeLabel || ''}`, chart.asc?.keywords?.join(', ') || 'Entrada'],
+    ['Medio Cielo', `${chart.mc?.name || ''} ${chart.mc?.degreeLabel || ''}`, chart.mc?.keywords?.join(', ') || 'Direccion visible']
+  ], [34, 58, 88]);
+  addTable('Posiciones planetarias', ['Astro', 'Grado', 'Funcion'], chart.planets.map(planet => [
+    ASTRO_PDF_PLANETS[planet.id] || planet.name,
+    `${planet.sign} ${planet.degreeLabel || `${planet.signDegree} grados`}${planet.retrograde ? ' Rx' : ''}`,
+    planet.role || planet.element || ''
+  ]), [25, 62, 93]);
+  addTable('Casas', ['Casa', 'Cuspide', 'Area'], chart.houses.map(house => [
+    `Casa ${house.number}`,
+    `${house.sign} ${house.degreeLabel || `${house.degree} grados`}`,
+    house.label || house.element || ''
+  ]), [25, 65, 90]);
+  addTable('Aspectos principales', ['Aspecto', 'Astros', 'Orbe'], (chart.aspects || []).map(aspect => [
+    `${aspect.name} ${aspect.angle} grados`,
+    `${aspect.a} / ${aspect.b}`,
+    `${aspect.orb} grados · ${astroAspectOrbLabel(aspect.orb)}`
+  ]), [54, 82, 44]);
+  addSynthesis();
+  addFooter();
+  doc.save(`${fileName}-profesional.pdf`);
+  unlockAchievement('first_pdf');
+  return true;
+}
+
 async function exportPDF(title, text, reading = lastReading) {
+  if (getAstroPdfChart(reading)) {
+    try {
+      await exportAstroPDF(reading);
+      return;
+    } catch (error) {
+      console.warn('PDF astral no disponible:', error);
+    }
+  }
   if (isPersonalNumerologyReading(reading)) {
     try {
       toast(t('tsMakingPdf'));
@@ -2547,6 +2751,9 @@ function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stri
 
 function showPdfOptions() {
   if (!lastReading) return toast(t('tsNeedReading'));
+  if (getAstroPdfChart(lastReading)) {
+    return openModal({ icon:'☉', title:'PDF astral', subtitle:'Genera un informe astral profesional.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe astral profesional</strong><small>Rueda grande, posiciones, casas, aspectos y síntesis.</small></button></div>` });
+  }
   if (isPersonalNumerologyReading()) {
     return openModal({ icon:'📄', title:'PDF de numerología', subtitle:'Genera un informe numerológico profesional.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe profesional</strong><small>Diseño claro, tabla de números y síntesis breve.</small></button></div>` });
   }
