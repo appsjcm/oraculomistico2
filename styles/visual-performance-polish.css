@@ -488,3 +488,51 @@ body.performance-mode .result-card {
 .numerology-card {
   contain: layout paint style;
 }
+
+/* ==================================================================
+   Revision grafica
+   Cuatro defectos medidos, no retoques de gusto. Cada uno lleva el
+   numero que lo delataba.
+   ================================================================== */
+
+/* 1. El nombre de la app partia en dos lineas en la barra superior.
+      Necesitaba 119 px en una linea y solo disponia de 104. Se ajusta
+      el cuerpo al ancho y se quita el espaciado entre letras, que en
+      pantallas estrechas solo estorbaba. */
+.brand { min-width: 0; }
+.brand strong {
+  white-space: nowrap;
+  font-size: clamp(.82rem, 3.4vw, 1rem);
+  letter-spacing: 0;
+}
+@media (min-width: 480px) {
+  .brand strong { letter-spacing: .04em; }
+}
+
+/* 2. El boton de cerrar los modales esta declarado a 44x44, pero como
+      es un elemento flexible el contenedor lo comprimia a 31 px de
+      ancho: por debajo del minimo tactil. No se cambia su tamano, se
+      impide que lo encojan. */
+.modal-close { flex: 0 0 44px; }
+
+/* 3. El boton de dictado se quedaba en 40x40 y el conmutador de dia y
+      noche en 44x42: por debajo del minimo comodo para el dedo. */
+.mic-btn,
+.om-appearance-toggle {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* 4. El Santuario tiene nueve accesos y en dos columnas el ultimo
+      quedaba solo, con un hueco a su lado. Cuando el numero es impar,
+      ocupa las dos columnas y la rejilla cierra.
+
+      Se acota al tramo de dos columnas a proposito: por encima de
+      1060 px la rejilla pasa a cuatro y el Grimorio ya tiene su sitio
+      asignado (2 / span 2); por debajo de 360 px hay una sola columna
+      y no hay hueco que cerrar. */
+@media (min-width: 361px) and (max-width: 1059px) {
+  .om-altars > .om-altar:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+}
