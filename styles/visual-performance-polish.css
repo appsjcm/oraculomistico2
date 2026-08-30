@@ -43,14 +43,17 @@ body::before {
      saturacion (sigue leyendose como oro, no como oliva) y da 5,4:1
      sobre el fondo claro. Los once sitios que lo usan como fondo se
      devuelven al oro brillante mas abajo. */
-  --om-gold: #8a5a0a;
+  --om-gold: #7d5109;
   --om-gold-warm: #9a6a12;
   --om-gold-superficie: #f2cc65;
-  --gold: #8a5a0a;
-  --premium-gold: #8a5a0a;
+  --gold: #7d5109;
+  --premium-gold: #7d5109;
   --om-ivory: #241b2e;
   --om-ivory-2: rgba(36, 27, 46, .72);
-  --om-ivory-3: rgba(36, 27, 46, .50);
+  /* Al 50% el texto secundario daba 3,23:1 sobre las tarjetas claras.
+     Es el que describe cada acceso del Santuario, asi que no es texto
+     accesorio: se sube hasta que pasa el minimo. */
+  --om-ivory-3: rgba(36, 27, 46, .64);
   --om-on-gold: #241b2e;
   --om-polish-panel: rgba(255, 255, 255, .72);
   --om-polish-panel-deep: rgba(255, 250, 242, .84);
@@ -584,7 +587,7 @@ html[data-appearance-mode="light"] .skip-link {
    se comprueban contra los tres fondos claros que hay: el degradado
    calido, el blanco de las tarjetas y el panel violeta.
    ------------------------------------------------------------------ */
-html[data-appearance-mode="light"] body.theme-gold    { --gold: #8a5a0a; }
+html[data-appearance-mode="light"] body.theme-gold    { --gold: #7d5109; }
 html[data-appearance-mode="light"] body.theme-violet  { --gold: #5b3a8f; }
 html[data-appearance-mode="light"] body.theme-forest  { --gold: #3f6b1e; }
 html[data-appearance-mode="light"] body.theme-blue    { --gold: #1f5f8a; }
