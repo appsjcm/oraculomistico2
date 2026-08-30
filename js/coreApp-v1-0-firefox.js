@@ -1581,7 +1581,7 @@ function showVoiceLibrary(statusMessage = '') {
       <p class="subtle">Chrome Android puede usar Google TTS sin mostrar cada voz descargada. En ese caso selecciona “Automática: Google TTS del sistema”; Android aplicará el motor, idioma y voz predeterminados.</p>
       <p><a href="https://support.google.com/accessibility/android/answer/6006983" target="_blank" rel="noopener">Guía oficial de Android</a></p>
     </div>`;
-  openModal({ icon:'🎙️', title:'Mejorar voces', subtitle:`${inventory.spanish.length} voces españolas detectadas.`, body:`
+  openModal({ icon:'🎙️', title:t('mdVoces'), subtitle:`${inventory.spanish.length} voces españolas detectadas.`, body:`
     <div class="status-grid">
       <div class="status-card"><strong>${escapeHTML(t('stVocesTotales'))}</strong><span>${inventory.all.length}</span></div>
       <div class="status-card"><strong>${escapeHTML(t('stEspanolas'))}</strong><span>${inventory.spanish.length}</span></div>
@@ -2565,7 +2565,7 @@ function showGuide(force = false) {
 }
 
 function showFirstReading() {
-  openModal({ icon: '✨', title: 'Primeras tiradas', subtitle: 'Elige una entrada sencilla.', body: `
+  openModal({ icon: '✨', title: t('mdPrimeras'), subtitle: t('mdPrimerasS'), body: `
     <div class="panel-grid">
       <button class="choice" data-act="tarot-one"><strong>${escapeHTML(t('stCartaRapida2'))}</strong><small>${escapeHTML(t('stUnaCartaParaOrientarTuPregunta'))}</small></button>
       <button class="choice" data-act="rune-one"><strong>${escapeHTML(t('stRunaRapida'))}</strong><small>${escapeHTML(t('stUnSimboloBreveParaEmpezar'))}</small></button>
@@ -2580,7 +2580,7 @@ function showMap() {
     ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
-  openModal({ icon:'🗺️', title:'Mapa de la app', subtitle:'Todos los apartados en un solo lugar.', body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🗺️', title:t('mdMapa'), subtitle:t('mdMapaS'), body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
 }
 
 const TAROT_SPREADS = {
@@ -2727,7 +2727,7 @@ function openDiaryItem(id) {
 }
 
 function showControlCenter() {
-  openModal({ icon:'🧭', title:'Centro de control', subtitle:getAppVersionLabel(), body:`<div class="status-grid"><div class="status-card"><strong>${escapeHTML(t('stLecturas'))}</strong><span>${storeGet(LS.diary, []).length}</span></div><div class="status-card"><strong>${escapeHTML(t('stModoPrivado'))}</strong><span>${isPrivateMode()?'Activo':'Inactivo'}</span></div><div class="status-card"><strong>IA</strong><span>${localStorage.getItem(LS.puter)==='true'?'Conectada':'Simbólica'}</span></div><div class="status-card"><strong>${escapeHTML(t('stInstalacion'))}</strong><span>${'serviceWorker' in navigator?'Disponible':'Solo navegador'}</span></div></div><div class="panel-grid mt"><button class="choice" data-act="global-search"><strong>${escapeHTML(t('stBuscar'))}</strong></button><button class="choice" data-act="privacy-center"><strong>${escapeHTML(t('stPrivacidad'))}</strong></button><button class="choice" data-act="backup-data"><strong>${escapeHTML(t('stBackup'))}</strong></button><button class="choice" data-act="install-help"><strong>${escapeHTML(t('stInstalar'))}</strong></button></div>` });
+  openModal({ icon:'🧭', title:t('mdControl'), subtitle:getAppVersionLabel(), body:`<div class="status-grid"><div class="status-card"><strong>${escapeHTML(t('stLecturas'))}</strong><span>${storeGet(LS.diary, []).length}</span></div><div class="status-card"><strong>${escapeHTML(t('stModoPrivado'))}</strong><span>${isPrivateMode()?'Activo':'Inactivo'}</span></div><div class="status-card"><strong>IA</strong><span>${localStorage.getItem(LS.puter)==='true'?'Conectada':'Simbólica'}</span></div><div class="status-card"><strong>${escapeHTML(t('stInstalacion'))}</strong><span>${'serviceWorker' in navigator?'Disponible':'Solo navegador'}</span></div></div><div class="panel-grid mt"><button class="choice" data-act="global-search"><strong>${escapeHTML(t('stBuscar'))}</strong></button><button class="choice" data-act="privacy-center"><strong>${escapeHTML(t('stPrivacidad'))}</strong></button><button class="choice" data-act="backup-data"><strong>${escapeHTML(t('stBackup'))}</strong></button><button class="choice" data-act="install-help"><strong>${escapeHTML(t('stInstalar'))}</strong></button></div>` });
 }
 function appSummary() {
   return {
@@ -2751,7 +2751,7 @@ async function repairCacheAndReload() {
 }
 function showErrorLog() {
   const errors = storeGet(LS.errorLog, []);
-  openModal({ icon:'🧾', title:'Registro de errores', subtitle:`${errors.length} entradas locales.`, body:`<div class="diary-list">${errors.map(error=>`<article class="diary-item"><strong>${escapeHTML(error.source)}</strong><small>${escapeHTML(error.date || '')}</small><p>${escapeHTML(error.message)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stNoHayErroresRegistrados'))}</p>`}</div><div class="actions mt"><button class="btn" data-act="download-error-log">Descargar</button><button class="btn danger" data-act="clear-error-log">Vaciar</button></div>` });
+  openModal({ icon:'🧾', title:t('mdErrores'), subtitle:`${errors.length} entradas locales.`, body:`<div class="diary-list">${errors.map(error=>`<article class="diary-item"><strong>${escapeHTML(error.source)}</strong><small>${escapeHTML(error.date || '')}</small><p>${escapeHTML(error.message)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stNoHayErroresRegistrados'))}</p>`}</div><div class="actions mt"><button class="btn" data-act="download-error-log">Descargar</button><button class="btn danger" data-act="clear-error-log">Vaciar</button></div>` });
 }
 function clearErrorLog() { storeSet(LS.errorLog, []); showErrorLog(); }
 function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stringify(storeGet(LS.errorLog, []), null, 2)); }
@@ -2759,12 +2759,12 @@ function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stri
 function showPdfOptions() {
   if (!lastReading) return toast(t('tsNeedReading'));
   if (getAstroPdfChart(lastReading)) {
-    return openModal({ icon:'☉', title:'PDF astral', subtitle:'Genera un informe astral profesional.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe astral profesional</strong><small>Rueda grande, posiciones, casas, aspectos y síntesis.</small></button></div>` });
+    return openModal({ icon:'☉', title:t('mdPdfAstral'), subtitle:t('mdPdfAstralS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe astral profesional</strong><small>Rueda grande, posiciones, casas, aspectos y síntesis.</small></button></div>` });
   }
   if (isPersonalNumerologyReading()) {
-    return openModal({ icon:'📄', title:'PDF de numerología', subtitle:'Genera un informe numerológico profesional.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe profesional</strong><small>Diseño claro, tabla de números y síntesis breve.</small></button></div>` });
+    return openModal({ icon:'📄', title:t('mdPdfNum'), subtitle:t('mdPdfNumS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe profesional</strong><small>Diseño claro, tabla de números y síntesis breve.</small></button></div>` });
   }
-  openModal({ icon:'📄', title:'Estilo del PDF', subtitle:'Elige el formato de exportación.', body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>${escapeHTML(t('stPremiumMistico'))}</strong></button><button class="choice" data-act="pdf-style-light"><strong>${escapeHTML(t('stClaroElegante'))}</strong></button><button class="choice" data-act="pdf-style-summary"><strong>${escapeHTML(t('stResumen'))}</strong></button></div>` });
+  openModal({ icon:'📄', title:t('mdPdfEstilo'), subtitle:t('mdPdfEstiloS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>${escapeHTML(t('stPremiumMistico'))}</strong></button><button class="choice" data-act="pdf-style-light"><strong>${escapeHTML(t('stClaroElegante'))}</strong></button><button class="choice" data-act="pdf-style-summary"><strong>${escapeHTML(t('stResumen'))}</strong></button></div>` });
 }
 function exportDiaryPDF() {
   const diary = storeGet(LS.diary, []);
@@ -2772,10 +2772,10 @@ function exportDiaryPDF() {
   exportPDF('Biblioteca Mística', text || 'Sin lecturas guardadas.', null);
 }
 function showPublicLaunch() {
-  openModal({ icon:'📣', title:'Publicación', subtitle:'Recursos para presentar la app.', body:`<div class="result-card"><h3>${escapeHTML(t('stTextoBreve'))}</h3><p>${escapeHTML(t('stOraculoMisticoReuneTarotRunasLuna'))}</p></div><div class="actions mt"><button class="btn" data-act="copy-short-public-text">Copiar texto breve</button><button class="btn" data-act="share-app">Compartir app</button><button class="btn" data-act="public-package">Paquete público</button></div>` });
+  openModal({ icon:'📣', title:t('mdPublicacion'), subtitle:t('mdPublicacionS'), body:`<div class="result-card"><h3>${escapeHTML(t('stTextoBreve'))}</h3><p>${escapeHTML(t('stOraculoMisticoReuneTarotRunasLuna'))}</p></div><div class="actions mt"><button class="btn" data-act="copy-short-public-text">Copiar texto breve</button><button class="btn" data-act="share-app">Compartir app</button><button class="btn" data-act="public-package">Paquete público</button></div>` });
 }
 function showPublicPackage() {
-  openModal({ icon:'📦', title:'Paquete público', subtitle:'Elementos mínimos para publicar.', body:`<div class="result-card"><p>${escapeHTML(t('stIncluyeLaAppCompletaManualPolitica'))}</p></div><div class="actions"><button class="btn" data-act="download-readme">Descargar README</button><button class="btn" data-act="copy-public-text">Copiar presentación</button></div>` });
+  openModal({ icon:'📦', title:t('mdPaquete'), subtitle:t('mdPaqueteS'), body:`<div class="result-card"><p>${escapeHTML(t('stIncluyeLaAppCompletaManualPolitica'))}</p></div><div class="actions"><button class="btn" data-act="download-readme">Descargar README</button><button class="btn" data-act="copy-public-text">Copiar presentación</button></div>` });
 }
 function publicText(short = false) {
   return short ? 'Descubre Oráculo Místico: tarot, runas, luna, sueños y diario en una PWA simbólica.'
@@ -2785,11 +2785,11 @@ function copyShortPublicText() { copyText(publicText(true)); }
 function copyPublicText() { copyText(publicText(false)); }
 function shareApp() { shareText(`${publicText(true)}\n${location.href}`, 'Oráculo Místico'); }
 function downloadReadme() { downloadTextFile('README-Oraculo-Mistico.txt', `${publicText(false)}\n\n${location.href}`); }
-function showShareVisual() { openModal({ icon:'🖼️', title:'Tarjeta para compartir', body:`<div class="result-card center"><h3>${escapeHTML(lastReading?.title || 'Oráculo Místico')}</h3><p>${escapeHTML(clampText(getReadingText() || publicText(true), 320))}</p></div><div class="actions"><button class="btn" data-act="download-share-card">Descargar texto</button></div>` }); }
+function showShareVisual() { openModal({ icon:'🖼️', title:t('mdTarjeta'), body:`<div class="result-card center"><h3>${escapeHTML(lastReading?.title || 'Oráculo Místico')}</h3><p>${escapeHTML(clampText(getReadingText() || publicText(true), 320))}</p></div><div class="actions"><button class="btn" data-act="download-share-card">Descargar texto</button></div>` }); }
 function downloadShareCard() { downloadTextFile('tarjeta-oraculo.txt', getReadingText() || publicText(true)); }
 
 function showInstallHelp() {
-  openModal({ icon:'📲', title:'Instalar la app', subtitle:'Añádela a tu pantalla de inicio.', body:`<div class="result-card"><h3>${escapeHTML(t('stChromeYEdge'))}</h3><p>${escapeHTML(t('stUsaElBotonInstalarDeLa'))}</p><h3>${escapeHTML(t('stSafariEnIphoneOIpad'))}</h3><p>${escapeHTML(t('stCompartirAnadirAPantallaDeInicio'))}</p><h3>${escapeHTML(t('stFirefox'))}</h3><p>${escapeHTML(t('stLaInstalacionDependeDelSistemaTambien'))}</p></div><div class="actions"><button class="btn primary" data-act="try-install-pwa">Intentar instalar</button></div>` });
+  openModal({ icon:'📲', title:t('mdInstalar'), subtitle:t('mdInstalarS'), body:`<div class="result-card"><h3>${escapeHTML(t('stChromeYEdge'))}</h3><p>${escapeHTML(t('stUsaElBotonInstalarDeLa'))}</p><h3>${escapeHTML(t('stSafariEnIphoneOIpad'))}</h3><p>${escapeHTML(t('stCompartirAnadirAPantallaDeInicio'))}</p><h3>${escapeHTML(t('stFirefox'))}</h3><p>${escapeHTML(t('stLaInstalacionDependeDelSistemaTambien'))}</p></div><div class="actions"><button class="btn primary" data-act="try-install-pwa">Intentar instalar</button></div>` });
 }
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; });
@@ -2800,15 +2800,15 @@ async function tryInstallPWA() {
   deferredInstallPrompt = null;
 }
 function showAppTutorial() {
-  openModal({ icon:'🎓', title:'Tutorial', subtitle:'Empieza en menos de un minuto.', body:`<div class="panel-grid"><div class="result-card"><h3>${escapeHTML(t('st1EligeUnModulo'))}</h3><p>${escapeHTML(t('stPruebaTarotRunasOElMensaje'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st2Guarda'))}</h3><p>${escapeHTML(t('stConservaTusLecturasEnLaBiblioteca'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st3Personaliza'))}</h3><p>${escapeHTML(t('stAjustaVozTemaYPrivacidad'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st4IaOpcional'))}</h3><p>${escapeHTML(t('stConectaPuterSoloSiQuieresAmpliar'))}</p></div></div>` });
+  openModal({ icon:'🎓', title:t('mdTutorial'), subtitle:t('mdTutorialS'), body:`<div class="panel-grid"><div class="result-card"><h3>${escapeHTML(t('st1EligeUnModulo'))}</h3><p>${escapeHTML(t('stPruebaTarotRunasOElMensaje'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st2Guarda'))}</h3><p>${escapeHTML(t('stConservaTusLecturasEnLaBiblioteca'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st3Personaliza'))}</h3><p>${escapeHTML(t('stAjustaVozTemaYPrivacidad'))}</p></div><div class="result-card"><h3>${escapeHTML(t('st4IaOpcional'))}</h3><p>${escapeHTML(t('stConectaPuterSoloSiQuieresAmpliar'))}</p></div></div>` });
 }
-function showSuggestedQuestions() { openModal({ icon:'💡', title:'Preguntas sugeridas', body:`<div class="diary-list">${['¿Qué necesito observar hoy?','¿Qué bloquea mi siguiente paso?','¿Qué energía acompaña mi relación?','¿Qué puedo aprender de este sueño?'].map(q=>`<button class="choice" data-copy-question="${escapeHTML(q)}">${escapeHTML(q)}</button>`).join('')}</div>` }); }
+function showSuggestedQuestions() { openModal({ icon:'💡', title:t('mdPreguntas'), body:`<div class="diary-list">${['¿Qué necesito observar hoy?','¿Qué bloquea mi siguiente paso?','¿Qué energía acompaña mi relación?','¿Qué puedo aprender de este sueño?'].map(q=>`<button class="choice" data-copy-question="${escapeHTML(q)}">${escapeHTML(q)}</button>`).join('')}</div>` }); }
 function showHelpCenter() { showAppTutorial(); }
-function showWhatsNew() { openModal({ icon:'✨', title:'Novedades', subtitle:getAppVersionLabel(), body:`<div class="result-card"><p>${escapeHTML(t('stCorreccionesDeFirefoxArranqueMigracionEstabilidad'))}</p></div>` }); }
-function showReportTemplate() { openModal({ icon:'🐞', title:'Informar de un problema', body:`<div class="result-card"><p>Navegador y versión:<br>Dispositivo:<br>Acción realizada:<br>Resultado esperado:<br>Error visible:</p></div><button class="btn" data-act="copy-bug-template">Copiar plantilla</button>` }); }
+function showWhatsNew() { openModal({ icon:'✨', title:t('mdNovedades'), subtitle:getAppVersionLabel(), body:`<div class="result-card"><p>${escapeHTML(t('stCorreccionesDeFirefoxArranqueMigracionEstabilidad'))}</p></div>` }); }
+function showReportTemplate() { openModal({ icon:'🐞', title:t('mdProblema'), body:`<div class="result-card"><p>Navegador y versión:<br>Dispositivo:<br>Acción realizada:<br>Resultado esperado:<br>Error visible:</p></div><button class="btn" data-act="copy-bug-template">Copiar plantilla</button>` }); }
 function copyBugTemplate() { copyText('Navegador y versión:\\nDispositivo:\\nAcción realizada:\\nResultado esperado:\\nError visible:'); }
 function diagnosticsText() { return JSON.stringify({ ...appSummary(), url:location.href, userAgent:navigator.userAgent, errors:storeGet(LS.errorLog, []) }, null, 2); }
-function showDiagnostics() { openModal({ icon:'🩺', title:'Diagnóstico', body:`<pre class="result-card">${escapeHTML(diagnosticsText())}</pre><div class="actions"><button class="btn" data-act="copy-diagnostics">Copiar</button><button class="btn" data-act="download-diagnostics">Descargar</button></div>` }); }
+function showDiagnostics() { openModal({ icon:'🩺', title:t('mdDiagnostico'), body:`<pre class="result-card">${escapeHTML(diagnosticsText())}</pre><div class="actions"><button class="btn" data-act="copy-diagnostics">Copiar</button><button class="btn" data-act="download-diagnostics">Descargar</button></div>` }); }
 function copyDiagnostics() { copyText(diagnosticsText()); }
 function downloadDiagnostics() { downloadTextFile('oraculo-diagnostico.json', diagnosticsText()); }
 
@@ -2821,9 +2821,9 @@ function renderGlobalSearchResults(query = '') {
   const items = SEARCH_ITEMS.filter(([label]) => !q || label.toLowerCase().includes(q));
   return items.map(([label,module])=>`<button class="choice" data-module="${module}"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(t('stAbrirModulo'))}</small></button>`).join('') || `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
 }
-function showGlobalSearch() { openModal({ icon:'🔎', title:'Buscar', body:`<div class="field"><label>${escapeHTML(t('stBuscarModulo'))}</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
+function showGlobalSearch() { openModal({ icon:'🔎', title:t('mdBuscar'), body:`<div class="field"><label>${escapeHTML(t('stBuscarModulo'))}</label><input id="globalSearchInput" class="input" placeholder="Tarot, luna, astros, biblioteca..."></div><div id="globalSearchResults" class="diary-list mt">${renderGlobalSearchResults()}</div>` }); }
 function showPrivacyCenter() {
-  openModal({ icon:'🔒', title:'Privacidad y datos', subtitle:'Tus datos se guardan localmente.', body:`<div class="result-card"><p>${escapeHTML(t('stLasLecturasElPerfilYEl'))}</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
+  openModal({ icon:'🔒', title:t('mdPrivacidad'), subtitle:t('mdPrivacidadS'), body:`<div class="result-card"><p>${escapeHTML(t('stLasLecturasElPerfilYEl'))}</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
 function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast(t('tsChatCleared')); } }
 function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast(t('tsProfileCleared')); } }
@@ -2841,9 +2841,9 @@ const ACHIEVEMENT_LABELS = {
 };
 function showAchievements() {
   const unlocked = storeGet(LS.achievements, {});
-  openModal({ icon:'🏆', title:'Logros', body:`<div class="diary-list">${Object.entries(ACHIEVEMENT_LABELS).map(([id,label])=>`<div class="result-card"><strong>${unlocked[id]?'🏆':'🔒'} ${label}</strong></div>`).join('')}</div>` });
+  openModal({ icon:'🏆', title:t('mdLogros'), body:`<div class="diary-list">${Object.entries(ACHIEVEMENT_LABELS).map(([id,label])=>`<div class="result-card"><strong>${unlocked[id]?'🏆':'🔒'} ${label}</strong></div>`).join('')}</div>` });
 }
-function showGuidedReveal() { openModal({ icon:'🕯️', title:'Tirada guiada', subtitle:'Respira y revela tres cartas.', body:`<div class="result-card"><p>${escapeHTML(t('stFormulaTuPreguntaYPulsaComenzar'))}</p></div><button class="btn primary" data-act="start-guided-three">${escapeHTML(t('stComenzar'))}</button>` }); }
+function showGuidedReveal() { openModal({ icon:'🕯️', title:t('mdGuiada'), subtitle:t('mdGuiadaS'), body:`<div class="result-card"><p>${escapeHTML(t('stFormulaTuPreguntaYPulsaComenzar'))}</p></div><button class="btn primary" data-act="start-guided-three">${escapeHTML(t('stComenzar'))}</button>` }); }
 function startGuidedThree() { drawTarotSpread('three'); }
 function guidedNext() { return; }
 function saveDailyReflection() {
@@ -2854,7 +2854,7 @@ function saveDailyReflection() {
 }
 function showDailyHistory() {
   const entries = storeGet(LS.dailyJournal, []);
-  openModal({ icon:'📅', title:'Historial diario', subtitle:`${entries.length} entradas.`, body:`<div class="diary-list">${entries.map(entry=>`<article class="diary-item"><strong>${new Date(entry.date).toLocaleDateString()}</strong><p>${escapeHTML(entry.mood)} · ${escapeHTML(entry.intention)}</p><p>${escapeHTML(entry.reflection)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayReflexiones'))}</p>`}</div>` });
+  openModal({ icon:'📅', title:t('mdHistorial'), subtitle:`${entries.length} entradas.`, body:`<div class="diary-list">${entries.map(entry=>`<article class="diary-item"><strong>${new Date(entry.date).toLocaleDateString()}</strong><p>${escapeHTML(entry.mood)} · ${escapeHTML(entry.intention)}</p><p>${escapeHTML(entry.reflection)}</p></article>`).join('') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayReflexiones'))}</p>`}</div>` });
 }
 function toggleDiaryFavorite(id) {
   const diary = storeGet(LS.diary, []);
@@ -2882,7 +2882,7 @@ function showMiOraculo() {
   const favs = diary.filter(d => d.favorite).slice(0, 3);
   const last = diary.slice(0, 3);
   const name = escapeHTML(getUserName() || 'Sin nombre');
-  openModal({ icon:'🪬', title:'Mi Oráculo', subtitle:'Tu espacio personal dentro de la app.', body:`
+  openModal({ icon:'🪬', title:t('mdMiOraculo'), subtitle:t('mdMiOraculoS'), body:`
     <div class="profile-hero">
       <div class="profile-orb">🪬</div>
       <div><h3>${name}</h3><p>${escapeHTML(t('ixIntencionActiva'))}: <strong>${escapeHTML(intencionVisible(profile.intention || 'Claridad'))}</strong> · Signo: <strong>${escapeHTML(profile.sign || 'No indicado')}</strong></p><p>Modo privado: <strong>${isPrivateMode()?'Activado':'Desactivado'}</strong></p></div>
@@ -3015,7 +3015,7 @@ window.OraculoSonido = {
 };
 function openCeremonyIntro(kind = 'tarot') {
   const isTarot = kind === 'tarot';
-  openModal({ icon:isTarot?'🃏':'ᚱ', title:isTarot?'Ritual de Tarot':'Ritual de Runas', subtitle:'Antes de empezar, respira y formula tu intención.', body:`
+  openModal({ icon:isTarot?'🃏':'ᚱ', title:isTarot?'Ritual de Tarot':'Ritual de Runas', subtitle:t('mdAntesS'), body:`
     <div class="ceremony-intro">
       <div class="ceremony-orb">${isTarot?'🔮':'ᚱ'}</div>
       <h3>${isTarot?'El mazo está preparado':'El saquito está preparado'}</h3>
@@ -3033,7 +3033,7 @@ function set3dPreference(value = 'auto') {
 }
 function appHealthCheck() {
   const voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices().length : 0;
-  openModal({ icon:'🧪', title:'Estado de la app', subtitle:getAppVersionLabel(), body:`
+  openModal({ icon:'🧪', title:t('mdEstado'), subtitle:getAppVersionLabel(), body:`
     <div class="status-grid">
       <div class="status-card"><strong>${escapeHTML(t('stVersion'))}</strong><span>${getAppVersionLabel()}</span></div>
       <div class="status-card"><strong>${escapeHTML(t('stVocesDetectadas'))}</strong><span>${voices}</span></div>
@@ -3257,7 +3257,7 @@ function showTarot() {
 function showTarotLibrary(filter = 'all') {
   const tabs = `<div class="tabs"><button class="tab ${filter==='all'?'active':''}" data-act="tarot-lib-all">Todas</button><button class="tab ${filter==='major'?'active':''}" data-act="tarot-lib-major">Mayores</button><button class="tab ${filter==='minor'?'active':''}" data-act="tarot-lib-minor">Menores</button></div>`;
   const cards = filter === 'major' ? MAJOR_ARCANA : filter === 'minor' ? MINOR_ARCANA : ALL_TAROT;
-  openModal({ icon:'🃏', title:'Biblioteca de Tarot', subtitle:`${cards.length} cartas visibles en galería.`, body:`${tabs}<div class="library-grid">${cards.map(c=>`<button class="mini-card" data-open-card="${escapeHTML(c.name)}">${c.img ? `<img src="${escapeHTML(thumbFor(c.img))}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async">` : ''}<strong>${escapeHTML(c.name)}</strong><small>${escapeHTML(c.key || c.el || '')}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🃏', title:t('mdBibTarot'), subtitle:`${cards.length} cartas visibles en galería.`, body:`${tabs}<div class="library-grid">${cards.map(c=>`<button class="mini-card" data-open-card="${escapeHTML(c.name)}">${c.img ? `<img src="${escapeHTML(thumbFor(c.img))}" alt="${escapeHTML(c.name)}" loading="lazy" decoding="async">` : ''}<strong>${escapeHTML(c.name)}</strong><small>${escapeHTML(c.key || c.el || '')}</small></button>`).join('\n\n')}</div>` });
 }
 function showCardDetail(card) {
   setLastReading({ type: 'Tarot', title: card.name, text: `${card.up}\n\nInvertida: ${card.rv}`, items: [card.name] });
@@ -3272,7 +3272,7 @@ function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.
   setLastReading({ type: 'Runas', title, text: lines, items: runes.map(r => ({ kind:'runa', name:r.rune.name, subtitle:r.rune.up || '', image:r.rune.img || '', symbol:r.rune.sym || 'ᚱ', reversed:!!r.rev })), meta:subjectMeta(subject, { reversedRate, intention }) });
   ceremonyTone('shuffle');
   ceremonyVibrate([14, 35, 14]);
-  openModal({ icon:'ᚱ', title, subtitle:'Ritual rúnico inmersivo con aparición una a una.', body:`
+  openModal({ icon:'ᚱ', title, subtitle:t('mdRitualRunasS'), body:`
     <div class="draw-experience spectacular-stage rune-stage">
       <div class="ritual-particles rune-particles">${Array.from({length:10}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
       <div class="channeling card-glow ritual-banner"><span class="orb-pulse">✨</span><div><h3>${escapeHTML(t('stElSaquitoRunicoDespierta'))}</h3><p>${escapeHTML(t('stLasPiedrasSagradasSeAgitanY'))}</p></div></div>
@@ -3309,11 +3309,11 @@ function showRunas() {
   openModal({ icon:'ᚱ', title:t('runes'), subtitle:t('runesSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="runes" aria-label="${escapeHTML(t('a3dRunes'))}"></div><div class="form-grid">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('runeIntent'))}</label><input id="runeIntention" class="input" placeholder="${escapeHTML(t('runeIntentPh'))}"></div></div><div class="actions mb mt"><button class="btn primary" data-act="ceremony-runes" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ ${escapeHTML(t('runeOne'))}</strong><small>${escapeHTML(t('runeOneSub'))}</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ ${escapeHTML(t('runeThree'))}</strong><small>${escapeHTML(t('runeThreeSub'))}</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ ${escapeHTML(t('runeFive'))}</strong><small>${escapeHTML(t('runeFiveSub'))}</small></button><button class="choice" data-act="runes-library"><strong>📚 ${escapeHTML(t('runeLib'))}</strong><small>${escapeHTML(t('runeLibSub'))}</small></button></div>` });
 }
 function showRunesLibrary() {
-  openModal({ icon:'ᚱ', title:'Biblioteca de Runas', subtitle:'24 runas del Futhark Antiguo.', body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'ᚱ', title:t('mdBibRunas'), subtitle:t('mdBibRunasS'), body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
 }
 function showRuneDetail(r) {
   setLastReading({ type:'Runas', title:r.name, text:`${r.up}\n\nInvertida: ${r.rv || 'Sin posición invertida específica.'}`, items:[{ kind:'runa', name:r.name, subtitle:r.up || '', image:r.img || '', symbol:r.sym || 'ᚱ' }] });
-  openModal({ icon:'ᚱ', title:r.name, subtitle:'Runa del Futhark', body:`<div class="reading-layout"><div class="rune-big">${r.sym}</div><div class="result-card"><h3>${escapeHTML(t('stMensaje'))}</h3><p>${escapeHTML(r.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(r.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${r.name}\n${r.up}`,'Runas')}</div></div>` });
+  openModal({ icon:'ᚱ', title:r.name, subtitle:t('mdRunaFuthark'), body:`<div class="reading-layout"><div class="rune-big">${r.sym}</div><div class="result-card"><h3>${escapeHTML(t('stMensaje'))}</h3><p>${escapeHTML(r.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(r.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${r.name}\n${r.up}`,'Runas')}</div></div>` });
 }
 
 /* La fase se calculaba como el día del mes entre ocho, así que casi nunca
@@ -3378,7 +3378,7 @@ function showLuna() {
       </div>
     </div>
     <div class="result-card"><p>${escapeHTML(phase.meaning)}</p><p><strong>${escapeHTML(t('moonRitual'))}:</strong> ${escapeHTML(phase.ritual)}</p><p><strong>${escapeHTML(t('moonAffirm'))}:</strong> ${escapeHTML(phase.affirmation)}</p></div><div class="form-grid mt">${readingSubjectField()}<div class="field"><label>${escapeHTML(t('moonFocus'))}</label><select id="moonFocus">${[['focusClarity','Claridad'],['focusLove','Amor'],['focusWork','Trabajo / estudios'],['focusRest','Descanso'],['focusRelease','Soltar']].map(([k,v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select></div><div class="field"><label>${escapeHTML(t('moonQ'))}</label>${inputWithMic('moonQuestion', `placeholder="${escapeHTML(t('moonQPh'))}"`)}</div></div><div class="actions mt"><button class="btn primary" data-act="moon-reading">${escapeHTML(t('moonGo'))}</button></div>`;
-  openModal({ icon:'🌙', title:'Luna', subtitle:'Lectura lunar guiada.', body });
+  openModal({ icon:'🌙', title:t('mdLuna'), subtitle:t('mdLunaS'), body });
 }
 function moonReading() {
   const cruda = faseLunar().fase;
@@ -5551,7 +5551,7 @@ function showBiblioteca(filter = 'all') {
   if (filter === 'favorites') list = list.filter(d => d.favorite);
   else if (filter !== 'all') list = list.filter(d => String(d.type || '').toLowerCase().includes(filter.toLowerCase()));
   if (q) list = list.filter(d => `${d.title} ${d.type} ${d.text} ${d.note || ''}`.toLowerCase().includes(q));
-  openModal({ icon:'📚', title:'Biblioteca Mística', subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
+  openModal({ icon:'📚', title:t('mdBibMistica'), subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
     <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="library" aria-label="Biblioteca Arcana"></div>
     <div class="form-grid"><div class="field"><label>${escapeHTML(t('stBuscarEnElDiario'))}</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label>${escapeHTML(t('stFiltrarTipo'))}</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
     <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar texto</button><button class="btn" data-act="export-diary-pdf">Crear PDF</button><button class="btn" data-act="backup-data">Copia de seguridad</button><button class="btn danger" data-act="clear-diary">Vaciar biblioteca</button></div>
@@ -5564,7 +5564,7 @@ function showSettings() {
   const voice = getVoicePrefs();
   const ceremony = getCeremonyPrefs();
   const effects3d = get3dPreference();
-  openModal({ icon:'⚙️', title:'Ajustes', subtitle:'Personaliza la experiencia por apartados.', body:`
+  openModal({ icon:'⚙️', title:t('mdAjustes'), subtitle:t('mdAjustesS'), body:`
     <div class="settings-stack">
     <details class="settings-section" open>
     <summary>${escapeHTML(t('stPerfilEIa'))}</summary>

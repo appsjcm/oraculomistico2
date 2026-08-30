@@ -126,26 +126,71 @@
     });
   }
 
+  const PANELES_BLOQUEANTES = [
+    '#omProfile.om-sheet-open:not([hidden])',
+    '#omVozPanel.om-sheet-open:not([hidden])',
+    '#omGrimorio.om-sheet-open:not([hidden])',
+    '#omBiblioteca.om-sheet-open:not([hidden])',
+    '#omRitual.om-ritual-abierto:not([hidden])'
+  ].join(',');
+
   function hayPanelBloqueanteAbierto() {
-    return Boolean($([
-      '#omProfile.om-sheet-open:not([hidden])',
-      '#omVozPanel.om-sheet-open:not([hidden])',
-      '#omGrimorio.om-sheet-open:not([hidden])',
-      '#omBiblioteca.om-sheet-open:not([hidden])',
-      '#omRitual.om-ritual-abierto:not([hidden])'
-    ].join(',')));
+    return Boolean($(PANELES_BLOQUEANTES));
   }
 
   function bloquearPantalla() {
     document.body.classList.add('om-sheet-lock');
+    /* Al abrir, la clase que marca la hoja como abierta puede llegar en el
+       fotograma siguiente: se reintenta para no aislar de mas ni de menos. */
+    aislarFondoDeHojas(hojaVisibleAhora());
+    requestAnimationFrame(() => aislarFondoDeHojas(hojaVisibleAhora()));
+  }
+
+  /* El bloqueo de scroll impedia mover la pagina, pero no el Tab: desde
+     una hoja abierta se seguia tabulando hacia la pagina de detras, que
+     queda invisible bajo el velo. inert la retira a la vez del recorrido
+     de teclado y del arbol de accesibilidad, igual que hace el motor con
+     sus modales. */
+  const SIN_AISLAR = new Set(['modalRoot', 'toastRoot']);
+
+  /* No se usa la clase om-sheet-open para decidir esto: hay rutas de
+     apertura que no llegan a ponerla, y entonces el fondo se quedaba sin
+     aislar con la hoja delante. Se mira si la hoja se ve de verdad. */
+  const IDS_HOJAS = ['omProfile', 'omVozPanel', 'omGrimorio', 'omBiblioteca', 'omRitual'];
+
+  function hojaVisibleAhora() {
+    for (const id of IDS_HOJAS) {
+      const el = document.getElementById(id);
+      if (!el || el.hidden) continue;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+      return el;
+    }
+    return null;
+  }
+
+  function aislarFondoDeHojas(abierto) {
+    if (!('inert' in HTMLElement.prototype)) return;
+    Array.from(document.body.children).forEach(el => {
+      if (SIN_AISLAR.has(el.id)) return;
+      // La hoja abierta y quien la contiene se quedan fuera del aislamiento.
+      const dentro = abierto && (el === abierto || el.contains(abierto));
+      if (abierto && !dentro) el.setAttribute('inert', '');
+      else el.removeAttribute('inert');
+    });
   }
 
   function refrescarBloqueoPantalla() {
     document.body.classList.toggle('om-sheet-lock', hayPanelBloqueanteAbierto());
+    aislarFondoDeHojas(hojaVisibleAhora());
   }
 
   function liberarPantallaSiProcede() {
     requestAnimationFrame(() => setTimeout(refrescarBloqueoPantalla, 0));
+    /* requestAnimationFrame no corre mientras la pestana esta en segundo
+       plano. Sin esta segunda via, el aislamiento del fondo podria quedarse
+       puesto al cerrar una hoja ahi. La funcion es idempotente. */
+    setTimeout(refrescarBloqueoPantalla, 320);
   }
 
   /* ---------- Perfil ---------- */
