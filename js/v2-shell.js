@@ -169,7 +169,7 @@
     if (primero) primero.focus();
   }
 
-  function cerrarPerfil() {
+  function cerrarPerfil({ inmediato = false } = {}) {
     const hoja = $('#omProfile');
     if (!hoja) {
       liberarPantallaSiProcede();
@@ -188,7 +188,7 @@
       cierrePerfilPendiente = null;
       liberarPantallaSiProcede();
     };
-    if (movimientoReducido()) ocultar();
+    if (inmediato || movimientoReducido()) ocultar();
     else cierrePerfilPendiente = setTimeout(ocultar, 260);
     if (focoAntesPerfil && document.contains(focoAntesPerfil)) {
       try { focoAntesPerfil.focus(); } catch {}
