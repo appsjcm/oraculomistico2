@@ -1833,6 +1833,114 @@ function setOracleMouthShape(shape = 'closed') {
   if (!frames.length) return;
   frames.forEach(frame => frame.classList.toggle('active', frame.classList.contains(`frame-${shape}`)));
 }
+/* ------------------------------------------------------------------
+   Movimiento de boca
+
+   Antes se avanzaba letra a letra y toda consonante devolvia 'closed',
+   asi que en "oraculo" la boca hacia o-cerrada-a-cerrada-u-cerrada-o:
+   se veia masticar, no hablar. Ademas se cerraba tras cada vocal dentro
+   de la misma palabra.
+
+   Ahora manda la silaba, que es la unidad que de verdad abre la boca al
+   hablar. Dentro de una palabra la boca no se cierra: pasa de una forma
+   a la siguiente. Solo se cierra donde se cierra de verdad: en las
+   bilabiales (p, b, m), en las pausas y al final.
+   ------------------------------------------------------------------ */
+
+const VOCALES = 'aeiouáéíóúüAEIOUÁÉÍÓÚÜ';
+const VOCAL_FUERTE = 'aeoáéóAEOÁÉÓ';
+/* Grupos que nunca se separan al silabear. */
+const GRUPOS_UNIDOS = ['ch', 'll', 'rr', 'pr', 'br', 'tr', 'dr', 'cr', 'gr', 'fr',
+                       'pl', 'bl', 'cl', 'gl', 'fl'];
+
+function esVocal(c) { return VOCALES.includes(c); }
+function esFuerte(c) { return VOCAL_FUERTE.includes(c); }
+
+/* Dos vocales seguidas forman diptongo salvo que ambas sean fuertes o
+   la debil lleve tilde: ahi hay hiato y son dos silabas. */
+function hayDiptongo(a, b) {
+  if (!esVocal(a) || !esVocal(b)) return false;
+  if (esFuerte(a) && esFuerte(b)) return false;
+  if ('íúÍÚ'.includes(a) || 'íúÍÚ'.includes(b)) return false;
+  return true;
+}
+
+function silabear(palabra) {
+  const w = String(palabra || '');
+  if (!w) return [];
+  const silabas = [];
+  let actual = '';
+  let i = 0;
+  while (i < w.length) {
+    actual += w[i];
+    if (esVocal(w[i])) {
+      /* Se absorbe el diptongo o triptongo. */
+      while (i + 1 < w.length && hayDiptongo(w[i], w[i + 1])) {
+        i += 1; actual += w[i];
+      }
+      /* Consonantes hasta la siguiente vocal: deciden donde se corta. */
+      let j = i + 1, grupo = '';
+      while (j < w.length && !esVocal(w[j])) { grupo += w[j]; j += 1; }
+      if (j >= w.length) { actual += grupo; break; }          // final de palabra
+      if (grupo.length === 0) {
+        silabas.push(actual); actual = '';
+      } else if (grupo.length === 1) {
+        silabas.push(actual); actual = '';                     // V-CV
+      } else if (grupo.length === 2) {
+        if (GRUPOS_UNIDOS.includes(grupo.toLowerCase())) {
+          silabas.push(actual); actual = '';                   // el grupo pasa entero
+        } else {
+          actual += grupo[0]; silabas.push(actual); actual = ''; i += 1;   // VC-CV
+        }
+      } else {
+        const dos = grupo.slice(-2).toLowerCase();
+        const corte = GRUPOS_UNIDOS.includes(dos) ? grupo.length - 2 : grupo.length - 1;
+        actual += grupo.slice(0, corte); silabas.push(actual); actual = '';
+        i += corte;
+      }
+    }
+    i += 1;
+  }
+  if (actual) {
+    if (silabas.length && !/[aeiouáéíóúü]/i.test(actual)) silabas[silabas.length - 1] += actual;
+    else silabas.push(actual);
+  }
+  return silabas.filter(Boolean);
+}
+
+/* Con tres imagenes solo caben tres aperturas. Se reparten por como se
+   abre la boca de verdad: a y o abiertas, el resto entreabierta. */
+function formaDeVocal(v) {
+  const c = String(v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  if ('ao'.includes(c)) return 'wide';
+  if ('eiu'.includes(c)) return 'medium';
+  return 'closed';
+}
+
+function nucleoDeSilaba(silaba) {
+  const v = [...String(silaba)].filter(esVocal);
+  if (!v.length) return null;
+  /* Manda la vocal mas abierta del nucleo. */
+  return v.find(x => esFuerte(x)) || v[0];
+}
+
+/* Pasos de boca de una palabra: uno por silaba, con cierre solo donde
+   la lengua lo hace. Cada paso lleva su peso de duracion. */
+function pasosDeBoca(palabra) {
+  const silabas = silabear(palabra);
+  if (!silabas.length) return [{ forma: 'closed', peso: 1 }];
+  const pasos = [];
+  silabas.forEach(silaba => {
+    /* Bilabial al empezar: los labios se juntan un instante. */
+    if (/^[pbm]/i.test(silaba)) pasos.push({ forma: 'closed', peso: .35 });
+    const nucleo = nucleoDeSilaba(silaba);
+    pasos.push({ forma: nucleo ? formaDeVocal(nucleo) : 'medium', peso: 1 });
+  });
+  /* Al terminar la palabra la boca se relaja, no se cierra de golpe. */
+  pasos.push({ forma: 'closed', peso: .5 });
+  return pasos;
+}
+
 function mouthShapeForCharacter(character = '') {
   const clean = character.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/[ao]/.test(clean)) return 'wide';
@@ -1849,16 +1957,7 @@ function getSpokenWordAt(text = '', charIndex = 0) {
   return { start, end, word:source.slice(start, end) };
 }
 function buildWordMouthSequence(word = '') {
-  const vowels = [...String(word)].filter(character => /[aeiouáéíóúü]/i.test(character));
-  if (!vowels.length) return ['closed', 'medium', 'closed'];
-  const sequence = ['closed'];
-  vowels.forEach(character => {
-    const shape = mouthShapeForCharacter(character);
-    if (sequence[sequence.length - 1] !== shape) sequence.push(shape);
-    sequence.push(shape === 'wide' ? 'medium' : 'closed');
-  });
-  sequence.push('closed');
-  return sequence;
+  return pasosDeBoca(word);
 }
 function syncOracleMouthToText(text = '', charIndex = 0, rate = 0.92) {
   const spoken = getSpokenWordAt(text, charIndex);
@@ -1869,36 +1968,59 @@ function syncOracleMouthToText(text = '', charIndex = 0, rate = 0.92) {
   if (spoken.start === oracleLipWordStart && oracleLipTimer) return;
   stopOracleLipSync(false);
   oracleLipWordStart = spoken.start;
-  const sequence = buildWordMouthSequence(spoken.word);
-  const stepMs = Math.max(58, Math.min(125, (spoken.word.length * 58) / Math.max(sequence.length, 1) / Math.max(Number(rate) || 0.92, 0.55)));
+  const pasos = buildWordMouthSequence(spoken.word);
+  /* Una silaba castellana ronda los 180 ms a velocidad normal. El tiempo
+     se reparte segun el peso: el cierre bilabial dura menos que la vocal. */
+  const velocidad = Math.max(Number(rate) || 0.92, 0.55);
+  const pesoTotal = pasos.reduce((a, x) => a + x.peso, 0) || 1;
+  const duracion = (pasos.length * 150) / velocidad;
   let index = 0;
   const advance = () => {
-    setOracleMouthShape(sequence[index] || 'closed');
-    index += 1;
-    if (index < sequence.length) oracleLipTimer = setTimeout(advance, stepMs);
-    else oracleLipTimer = setTimeout(() => {
+    const paso = pasos[index];
+    if (!paso) {
       setOracleMouthShape('closed');
       oracleLipTimer = null;
-    }, 45);
+      return;
+    }
+    setOracleMouthShape(paso.forma);
+    const ms = Math.max(45, Math.min(220, (duracion * paso.peso) / pesoTotal));
+    index += 1;
+    oracleLipTimer = setTimeout(advance, ms);
   };
   advance();
 }
+/* Cuando el navegador no avisa de los limites de palabra se recorre el
+   texto por silabas al ritmo estimado, en vez de letra a letra. */
+function pasosDeTexto(texto) {
+  const pasos = [];
+  String(texto || 'oráculo').split(/(\s+|[.,;:!?¡¿…]+)/).forEach(trozo => {
+    if (!trozo) return;
+    if (/^[\s.,;:!?¡¿…]+$/.test(trozo)) {
+      pasos.push({ forma: 'closed', peso: /[.;:!?…]/.test(trozo) ? 2.4 : 1 });
+      return;
+    }
+    pasosDeBoca(trozo).forEach(x => pasos.push(x));
+  });
+  return pasos.length ? pasos : [{ forma: 'closed', peso: 1 }];
+}
+
 function startOracleLipSync(text = 'oráculo', rate = 0.92) {
   stopOracleLipSync(false);
-  const source = String(text || 'oráculo');
-  let charIndex = 0;
+  const pasos = pasosDeTexto(text);
+  const velocidad = Math.max(Number(rate) || .92, .55);
+  let index = 0;
   const advance = () => {
-    const character = source[charIndex % source.length] || ' ';
-    const isPause = /[\s.,;:!?]/.test(character);
-    setOracleMouthShape(isPause ? 'closed' : mouthShapeForCharacter(character));
-    charIndex += 1;
-    oracleLipTimer = setTimeout(advance, (isPause ? 145 : 82) / Math.max(Number(rate) || .92, .55));
+    const paso = pasos[index % pasos.length];
+    setOracleMouthShape(paso.forma);
+    index += 1;
+    oracleLipTimer = setTimeout(advance, Math.max(50, (150 * paso.peso) / velocidad));
   };
   advance();
 }
 function startRemoteAudioLipSync(audio, text = '') {
   stopOracleLipSync(false);
   const source = String(text || '');
+  const pasosAudio = pasosDeTexto(source);
   const estimatedDuration = Math.max(1, (source.split(/\s+/).filter(Boolean).length / 2.35));
   const tick = () => {
     if (!audio || audio.ended) {
@@ -1908,11 +2030,13 @@ function startRemoteAudioLipSync(audio, text = '') {
     if (audio.paused) {
       setOracleMouthShape('closed');
     } else {
+      /* Se sigue el progreso real del audio, pero sobre la lista de
+         silabas: antes se tomaba la letra que tocaba y las consonantes
+         cerraban la boca a destiempo. */
       const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : estimatedDuration;
       const progress = Math.max(0, Math.min(0.999, (audio.currentTime || 0) / duration));
-      const charIndex = Math.min(source.length - 1, Math.floor(progress * source.length));
-      const character = source[Math.max(0, charIndex)] || ' ';
-      setOracleMouthShape(/[\s.,;:!?]/.test(character) ? 'closed' : mouthShapeForCharacter(character));
+      const i = Math.min(pasosAudio.length - 1, Math.floor(progress * pasosAudio.length));
+      setOracleMouthShape(pasosAudio[Math.max(0, i)]?.forma || 'closed');
     }
     oracleLipTimer = setTimeout(tick, 65);
   };
