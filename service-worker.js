@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astro-wheel-zoom-111';
+const CACHE_NAME = 'oraculo-v1-0-public-astro-wheel-fullscreen-112';
 const APP_SHELL = [
   './',
   './index.html',
