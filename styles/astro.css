@@ -622,6 +622,35 @@ html[data-appearance-mode="light"] .astro-engine-note strong {
   margin: 6px 0 0;
 }
 
+html[data-appearance-mode="light"] .astro-return-bridge article,
+html[data-appearance-mode="light"] .astro-aspect-overview > div,
+html[data-appearance-mode="light"] .astro-aspect {
+  border-color: rgba(64, 45, 76, .14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 248, 236, .64));
+  color: #241b2e;
+  box-shadow: 0 10px 24px rgba(76, 54, 32, .08);
+}
+
+html[data-appearance-mode="light"] .astro-return-bridge strong,
+html[data-appearance-mode="light"] .astro-aspect-overview strong,
+html[data-appearance-mode="light"] .astro-aspect strong {
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .astro-return-bridge small,
+html[data-appearance-mode="light"] .astro-return-bridge span,
+html[data-appearance-mode="light"] .astro-aspect-overview small,
+html[data-appearance-mode="light"] .astro-aspect small,
+html[data-appearance-mode="light"] .astro-aspect p {
+  color: rgba(36, 27, 46, .72);
+}
+
+html[data-appearance-mode="light"] .astro-aspect-glyph {
+  background: rgba(156, 116, 32, .12);
+  color: #9c7420;
+}
+
 @media (max-width: 760px) {
   .astro-grid,
   .astro-day-grid {
@@ -634,7 +663,7 @@ html[data-appearance-mode="light"] .astro-engine-note strong {
 
   .astro-wheel-wrap,
   .astro-wheel {
-    --wheel-size: min(78vw, 340px);
+    --wheel-size: min(72vw, 318px);
   }
 
   .astro-wheel-wrap {
@@ -644,7 +673,8 @@ html[data-appearance-mode="light"] .astro-engine-note strong {
   }
 
   .astro-wheel-paper {
-    padding: 12px;
+    padding: 10px;
+    border-radius: 8px;
   }
 
   .astro-aspect-legend {
@@ -674,10 +704,52 @@ html[data-appearance-mode="light"] .astro-engine-note strong {
   }
 
   .astro-planet-dot {
-    width: clamp(18px, 5vw, 24px);
-    height: clamp(18px, 5vw, 24px);
-    margin: calc(clamp(18px, 5vw, 24px) / -2);
-    font-size: clamp(.86rem, 3.8vw, 1.12rem);
+    width: clamp(16px, 4.7vw, 22px);
+    height: clamp(16px, 4.7vw, 22px);
+    margin: calc(clamp(16px, 4.7vw, 22px) / -2);
+    font-size: clamp(.78rem, 3.4vw, 1.04rem);
+  }
+
+  .astro-sign {
+    width: clamp(24px, 6.7vw, 36px);
+    height: clamp(24px, 6.7vw, 36px);
+    margin: calc(clamp(24px, 6.7vw, 36px) / -2);
+    font-size: clamp(1.12rem, 4.7vw, 1.86rem);
+    transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.388)) rotate(calc(var(--angle) * -1));
+  }
+
+  .astro-house-number {
+    font-size: .68rem;
+    transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.438)) rotate(calc(var(--angle) * -1));
+  }
+
+  .astro-aspect-web {
+    inset: 20%;
+  }
+
+  .astro-asc-line {
+    left: 0;
+    right: 0;
+  }
+
+  .astro-axis-ac {
+    left: 12px;
+  }
+
+  .astro-axis-dc {
+    right: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .astro-wheel-wrap,
+  .astro-wheel {
+    --wheel-size: min(70vw, 288px);
+  }
+
+  .astro-axis-label {
+    min-width: 24px;
+    font-size: .76rem;
   }
 }
 
