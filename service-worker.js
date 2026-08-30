@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-voice-panel-unblock-114';
+const CACHE_NAME = 'oraculo-v1-0-public-astro-wheel-modal-115';
 const APP_SHELL = [
   './',
   './index.html',
