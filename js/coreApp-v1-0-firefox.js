@@ -402,6 +402,14 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   doc.circle(cx, cy, size * .35, 'S');
   doc.circle(cx, cy, size * .255, 'S');
   doc.circle(cx, cy, size * .07, 'S');
+  for (let i = 0; i < 12; i++) {
+    const boundary = i * 30;
+    const p1 = toPoint(boundary, size * .35);
+    const p2 = toPoint(boundary, outer);
+    doc.setDrawColor(224, 217, 205);
+    doc.setLineWidth(.16);
+    doc.line(p1.x, p1.y, p2.x, p2.y);
+  }
   for (let i = 0; i < 180; i++) {
     const deg = i * 2;
     const isMajor = i % 15 === 0;
@@ -478,6 +486,10 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
       doc.setFontSize(4.4);
       doc.text('R', p.x + 5.5, p.y - 1.8, { align:'center' });
     }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(4.6);
+    doc.setTextColor(112, 108, 116);
+    doc.text(pdfAscii(planet.degreeLabel || `${planet.signDegree}°`).slice(0, 8), p.x, p.y + 6, { align:'center' });
   });
   const signLegend = 'ARI Aries · TAU Tauro · GEM Geminis · CAN Cancer · LEO Leo · VIR Virgo · LIB Libra · ESC Escorpio · SAG Sagitario · CAP Capricornio · ACU Acuario · PIS Piscis';
   const aspectLegend = 'CONJ 0 conjuncion · SEXT 60 sextil · CUAD 90 cuadratura · TRIG 120 trigono · OPOS 180 oposicion';
