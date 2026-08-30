@@ -747,9 +747,15 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   overflow-y: auto;
 }
 
+.grabovoi-more {
+  justify-content: center;
+  padding-bottom: var(--om-s-2);
+}
+
 @media (max-width: 520px) {
   .grabovoi-barra { flex-direction: column; align-items: stretch; }
-  .grabovoi-barra .btn { width: 100%; }
+  .grabovoi-barra .btn,
+  .grabovoi-more .btn { width: 100%; }
 }
 
 /* Entradas sanitarias: se muestran, pero marcadas. El distintivo no

@@ -2292,12 +2292,12 @@ function appendDictationText(target, original, transcript) {
 function micNativeDictationHintText() {
   const lang = (getAppLanguage() || 'es').slice(0, 2);
   const texts = {
-    es: 'En iPhone también puedes tocar el campo y usar el micrófono del teclado. Para dictar desde este botón, conecta IA.',
-    ca: 'A iPhone també pots tocar el camp i fer servir el micròfon del teclat. Per dictar des d’aquest botó, connecta la IA.',
-    en: 'On iPhone you can also tap the field and use the keyboard microphone. To dictate from this button, connect AI.',
-    fr: 'Sur iPhone, tu peux aussi toucher le champ et utiliser le micro du clavier. Pour dicter depuis ce bouton, connecte l’IA.',
-    de: 'Auf dem iPhone kannst du auch ins Feld tippen und das Mikrofon der Tastatur nutzen. Für diesen Button verbinde die KI.',
-    zh: '在 iPhone 上也可以点按输入框，使用键盘上的麦克风。若要用此按钮听写，请连接 AI。'
+    es: 'Este navegador no ofrece reconocimiento de voz desde el botón. Toca el campo y usa el micrófono del teclado del dispositivo.',
+    ca: 'Aquest navegador no ofereix reconeixement de veu des del botó. Toca el camp i fes servir el micròfon del teclat del dispositiu.',
+    en: 'This browser does not offer speech recognition from the button. Tap the field and use the device keyboard microphone.',
+    fr: 'Ce navigateur ne propose pas la reconnaissance vocale depuis le bouton. Touche le champ et utilise le micro du clavier.',
+    de: 'Dieser Browser bietet keine Spracherkennung über die Taste. Tippe ins Feld und nutze das Mikrofon der Tastatur.',
+    zh: '此浏览器不支持通过按钮语音识别。请点按输入框，并使用设备键盘上的麦克风。'
   };
   return texts[lang] || texts.es;
 }
@@ -2305,12 +2305,12 @@ function micNativeDictationHintText() {
 function micAiDictationHintText() {
   const lang = (getAppLanguage() || 'es').slice(0, 2);
   const texts = {
-    es: 'Para dictar desde este botón en este navegador, conecta Puter IA o usa Chrome/Edge con permiso de micrófono.',
-    ca: 'Per dictar des d’aquest botó en aquest navegador, connecta Puter IA o fes servir Chrome/Edge amb permís de micròfon.',
-    en: 'To dictate from this button in this browser, connect Puter AI or use Chrome/Edge with microphone permission.',
-    fr: 'Pour dicter depuis ce bouton dans ce navigateur, connecte Puter IA ou utilise Chrome/Edge avec l’autorisation du micro.',
-    de: 'Zum Diktieren über diese Taste verbinde Puter KI oder nutze Chrome/Edge mit Mikrofonberechtigung.',
-    zh: '要在此浏览器中使用这个按钮听写，请连接 Puter AI，或使用已授权麦克风的 Chrome/Edge。'
+    es: 'El dictado nativo no está disponible en este navegador. Prueba Chrome o Edge, y revisa el permiso de micrófono.',
+    ca: 'El dictat natiu no està disponible en aquest navegador. Prova Chrome o Edge i revisa el permís de micròfon.',
+    en: 'Native dictation is not available in this browser. Try Chrome or Edge and check microphone permission.',
+    fr: 'La dictée native n’est pas disponible dans ce navigateur. Essaie Chrome ou Edge et vérifie l’autorisation du micro.',
+    de: 'Natives Diktieren ist in diesem Browser nicht verfügbar. Versuch Chrome oder Edge und prüfe die Mikrofonberechtigung.',
+    zh: '此浏览器不支持原生听写。请尝试 Chrome 或 Edge，并检查麦克风权限。'
   };
   return texts[lang] || texts.es;
 }
@@ -2447,12 +2447,17 @@ async function startRecordedDictation(target) {
 function startBrowserSpeechDictation(target) {
   const Recognition = speechRecognitionSupport();
   if (!Recognition) return false;
+  if (window.isSecureContext === false) {
+    showMicInlineHint(target, t('tsMicPermission'));
+    return true;
+  }
   const targetId = target.id;
   try {
     const recognition = new Recognition();
     recognition.lang = getAppLocale();
     recognition.interimResults = true;
     recognition.continuous = false;
+    recognition.maxAlternatives = 1;
     const original = target.value || '';
     activeDictation = { mode: 'speech', targetId, recognition };
     setMicButtonState(targetId, true);
@@ -2463,7 +2468,15 @@ function startBrowserSpeechDictation(target) {
     };
     recognition.onerror = event => {
       pushErrorLog('mic-browser-speech', event?.error || 'Speech recognition failed', 'speech recognition');
-      showMicInlineHint(target, event?.error === 'not-allowed' ? t('tsMicPermission') : isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicFail'));
+      const err = event?.error || '';
+      const message = err === 'not-allowed' || err === 'service-not-allowed'
+        ? t('tsMicPermission')
+        : err === 'no-speech'
+          ? t('tsMicNoAudio')
+          : err === 'network'
+            ? t('tsMicNoStart')
+            : isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicFail');
+      showMicInlineHint(target, message);
     };
     recognition.onend = () => {
       if (activeDictation?.recognition === recognition) activeDictation = null;
@@ -2486,21 +2499,15 @@ async function startDictation(targetId) {
   if (activeDictation?.targetId === targetId) return stopActiveDictation();
   if (activeDictation) stopActiveDictation();
 
+  if (startBrowserSpeechDictation(target)) return;
+
+  if (localStorage.getItem(LS.puter) === 'true' && await waitForPuterSpeechToText(650) && await startRecordedDictation(target)) return;
+
   if (isIosLikeDevice()) {
-    const canUseAiTranscription = await waitForPuterSpeechToText();
-    if (!canUseAiTranscription) {
-      showMicInlineHint(target, micNativeDictationHintText());
-      return;
-    }
-    if (await startRecordedDictation(target)) return;
-    if (startBrowserSpeechDictation(target)) return;
     showMicInlineHint(target, micNativeDictationHintText());
     return;
   }
 
-  if (await waitForPuterSpeechToText() && await startRecordedDictation(target)) return;
-  if (startBrowserSpeechDictation(target)) return;
-  if (await startRecordedDictation(target)) return;
   showMicInlineHint(target, micAiDictationHintText());
 }
 function inputWithMic(id, attrs = '') {
@@ -5139,12 +5146,15 @@ async function handleChatGrabovoi(query = '') {
    buscar o cambiar de categoria no borra lo ya marcado.
    ============================================================ */
 const GRAB_MAX = 12;
+const GRAB_INITIAL_LIMIT = 160;
+const GRAB_INCREMENT = 160;
 /* La clave es el indice en el catalogo, no el codigo: 23 codigos
    estan repetidos en hasta 4 entradas distintas (varias formas de
    nombrar el mismo numero), y marcando una se arrastraban todas. */
 const grabSeleccion = new Set();
 let grabCategoria = '';
 let grabConsulta = '';
+let grabVisibleLimit = GRAB_INITIAL_LIMIT;
 
 /* El catalogo completo del JSON. Las sanitarias se muestran
    marcadas y con aviso reforzado, pero no se ocultan: ya eran
@@ -5183,6 +5193,10 @@ function grabFiltradas() {
   });
 }
 
+function grabVisibles(list = grabFiltradas()) {
+  return list.slice(0, Math.min(grabVisibleLimit, list.length));
+}
+
 /* ¿Hay alguna secuencia sanitaria entre las marcadas? */
 function grabHaySalud() {
   return grabSeleccionadas().some(isHealthGrabovoiEntry);
@@ -5195,7 +5209,8 @@ function grabTextoContador() {
 }
 
 function grabTextoResultados() {
-  return t('gbShownAll', { shown: grabFiltradas().length, total: grabDisponibles().length });
+  const list = grabFiltradas();
+  return t('gbShownAll', { shown: grabVisibles(list).length, total: list.length });
 }
 
 function renderGrabChips() {
@@ -5225,10 +5240,14 @@ function renderGrabList(list) {
 }
 
 function refrescarGrabList() {
+  const filtradas = grabFiltradas();
+  const visibles = grabVisibles(filtradas);
   const caja = $('#grabList');
-  if (caja) caja.innerHTML = renderGrabList(grabFiltradas());
+  if (caja) caja.innerHTML = renderGrabList(visibles);
   const resultados = $('#grabResultsCount');
-  if (resultados) resultados.textContent = grabTextoResultados();
+  if (resultados) resultados.textContent = t('gbShownAll', { shown: visibles.length, total: filtradas.length });
+  const more = $('#grabMoreBar');
+  if (more) more.hidden = visibles.length >= filtradas.length;
   const cont = $('#grabCount');
   if (cont) cont.textContent = grabTextoContador();
   const boton = $('#grabPdfBtn');
@@ -5243,6 +5262,9 @@ async function showGrabovoi() {
   await loadGrabovoi();
   grabConsulta = '';
   grabCategoria = '';
+  grabVisibleLimit = GRAB_INITIAL_LIMIT;
+  const inicial = grabFiltradas();
+  const visibles = grabVisibles(inicial);
   openModal({ icon:'📜', title:t('gbTitle'), subtitle:t('gbSub'), body:`
     <p class="notice">${escapeHTML(t('gbNotice'))}</p>
     <div class="field mt"><label>${escapeHTML(t('gbSearch'))}</label>${inputWithMic('grabSearch', `placeholder="${escapeHTML(t('gbSearchPh'))}"`)}</div>
@@ -5253,9 +5275,13 @@ async function showGrabovoi() {
       <button class="btn compact" data-act="grab-clear" type="button">${escapeHTML(t('gbClear'))}</button>
       <button class="btn primary compact" id="grabPdfBtn" data-act="grab-pdf" type="button" ${grabSeleccion.size ? '' : 'disabled'}>📄 ${escapeHTML(t('gbMakePdf'))}</button>
     </div>
-    <p id="grabResultsCount" class="subtle">${escapeHTML(grabTextoResultados())}</p>
+    <p id="grabResultsCount" class="subtle">${escapeHTML(t('gbShownAll', { shown: visibles.length, total: inicial.length }))}</p>
     <p class="subtle">${escapeHTML(t('gbMax', { n: GRAB_MAX }))}</p>
-    <div id="grabList" class="diary-list mt">${renderGrabList(grabFiltradas())}</div>` });
+    <div id="grabList" class="diary-list mt">${renderGrabList(visibles)}</div>
+    <div id="grabMoreBar" class="grabovoi-more actions mt" ${visibles.length >= inicial.length ? 'hidden' : ''}>
+      <button class="btn compact" data-act="grab-more" type="button">${escapeHTML(t('gbShowMore'))}</button>
+      <button class="btn compact" data-act="grab-all" type="button">${escapeHTML(t('gbShowAll'))}</button>
+    </div>` });
 }
 
 /** Las secuencias marcadas, en el orden del catalogo. */
@@ -5897,6 +5923,8 @@ function handleAction(action) {
     'factory-reset': factoryResetData,
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast(t('tsGuideDone')); },
     'grab-clear': () => { grabSeleccion.clear(); refrescarGrabList(); },
+    'grab-more': () => { grabVisibleLimit += GRAB_INCREMENT; refrescarGrabList(); },
+    'grab-all': () => { grabVisibleLimit = Number.MAX_SAFE_INTEGER; refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
     'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
@@ -6007,6 +6035,7 @@ function attachGlobalEvents() {
     const grabCat = e.target.closest('[data-grab-cat]');
     if (grabCat) {
       grabCategoria = grabCat.dataset.grabCat || '';
+      grabVisibleLimit = GRAB_INITIAL_LIMIT;
       refrescarGrabList();
       return;
     }
@@ -6058,6 +6087,7 @@ function attachGlobalEvents() {
       /* La seleccion vive en grabSeleccion, no en el DOM: repintar la
          lista al buscar ya no borra lo que hubiera marcado. */
       grabConsulta = e.target.value || '';
+      grabVisibleLimit = GRAB_INITIAL_LIMIT;
       refrescarGrabList();
     }
     if (e.target.id === 'grabPdfSearch') {

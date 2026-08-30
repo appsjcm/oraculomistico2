@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-grabovoi-all-120';
+const CACHE_NAME = 'oraculo-v1-0-public-mic-grab-perf-121';
 const APP_SHELL = [
   './',
   './index.html',
