@@ -634,10 +634,16 @@ html[data-text-scale="140"] { font-size: 140%; }
 /* Al crecer el texto, la barra inferior y la superior se comen la
    pantalla. Se limita su crecimiento para que el contenido gane el
    espacio, que es de lo que se trata. */
-html[data-text-scale="125"] .om-nav,
-html[data-text-scale="140"] .om-nav { font-size: .82rem; }
+/* La cabecera si se contiene un poco: es cromo fijo y si crece del todo
+   se come la pantalla. La barra inferior ya no, para que sus etiquetas
+   acompanen al ajuste. */
 html[data-text-scale="125"] .topbar,
-html[data-text-scale="140"] .topbar { font-size: .86rem; }
+html[data-text-scale="140"] .topbar { font-size: .9rem; }
+/* El titulo va en una sola linea entre dos botones: al agrandar en una
+   pantalla estrecha se montaba encima del de dia y noche. Se le pone un
+   tope por ancho de pantalla, ademas del que ya tenia. */
+html[data-text-scale="125"] .brand strong,
+html[data-text-scale="140"] .brand strong { font-size: min(1rem, 4.6vw); }
 
 /* La barra inferior son cinco columnas 1fr, y un 1fr no encoge por debajo
    de su contenido: con el texto grande las cinco etiquetas sumaban mas que
@@ -658,9 +664,20 @@ html[data-text-scale="140"] .topbar { font-size: .86rem; }
   max-width: 100%;
   white-space: normal;
   line-height: 1.08;
-  /* El max() es un suelo: en pantallas muy estrechas el 3.05vw se queda
-     en nada y la etiqueta dejaria de leerse. */
-  font-size: max(9px, min(.68rem, 3.05vw));
+  /* El tope sale del ancho de celda real, no de un vw a ojo.
+     La barra mide min(560px, 100vw - 22px) y tiene 8 px de relleno a cada
+     lado mas cuatro huecos de 4: quedan 32 px de descuento y cinco celdas.
+     La etiqueta mas larga, "Biblioteca", ocupa unas cinco veces su tamano
+     de letra, de donde sale el divisor, con algo de margen porque va en negrita.
+
+     Antes habia un tope fijo en vw y dejaba las etiquetas clavadas: de
+     100 % a 140 % el texto de la app crecia un 40 % y estas un 9 %, con lo
+     que acababan siendo lo mas pequeno de la pantalla justo cuando se
+     pedia lo contrario. Ahora crecen todo lo que caben: a 390 px suben de
+     10,9 a 13,4 px y en pantalla ancha llegan al 15,2 que les toca. En
+     320 px apenas pueden crecer, pero eso es geometria: cinco columnas en
+     320 px dan celdas de 53 px y ahi no cabe mas letra. */
+  font-size: min(.68rem, calc((min(560px, 100vw - 22px) - 32px) / 27));
 }
 /* Cinturon: pase lo que pase, una etiqueta no invade la celda vecina. */
 .premium-bottom-nav button { overflow: hidden; }
