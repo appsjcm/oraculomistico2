@@ -1196,3 +1196,12 @@ button:disabled,
   overflow: hidden;
   transition: opacity .35s ease, height .45s ease, min-height .45s ease, margin-top .45s ease, transform .45s ease;
 }
+
+/* El banner de espera dice "El oraculo prepara tu lectura..." y se quedaba
+   ahi con la carta ya revelada y el resultado escrito debajo. Contradice lo
+   que se ve y alimenta la sensacion de que la tirada sigue cargando, que era
+   justo la queja. En cuanto aparece el resultado, se retira. Vale para tarot
+   y para runas: las dos ceremonias marcan su resultado con result-appear. */
+.draw-experience:has(.result-appear) .ritual-banner {
+  display: none;
+}
