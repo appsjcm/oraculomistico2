@@ -118,6 +118,30 @@ export const ORACULO_3D_ASSETS = {
     camera: [0, 0.3, 4.2],
     rotation: [0.02, -0.25, 0],
     prefetch: ['tarotCard']
+  },
+  avatarFemale: {
+    label: 'Oráculo guía 3D', i18n: 'a3dAvatarFemale',
+    path: 'assets/3d/avatars/oracle-female-portrait.glb',
+    fallback: '✦',
+    section: 'Avatar del Oráculo',
+    scale: 1,
+    fitSize: 1.82,
+    camera: [0, 0.18, 4.25],
+    rotation: [0, 0, 0],
+    avatar: true,
+    prefetch: []
+  },
+  avatarMale: {
+    label: 'Oráculo guardián 3D', i18n: 'a3dAvatarMale',
+    path: 'assets/3d/avatars/oracle-male-portrait.glb',
+    fallback: '◎',
+    section: 'Avatar del Oráculo',
+    scale: 1,
+    fitSize: 1.82,
+    camera: [0, 0.18, 4.25],
+    rotation: [0, 0, 0],
+    avatar: true,
+    prefetch: []
   }
 };
 

@@ -2137,3 +2137,13 @@ const CARD_STRINGS = {
   zh: { cEnergy:'能量', cAdvice:'建议', cLight:'光', cShadow:'阴影', cLove:'爱与关系', cWork:'学习、工作与计划', cGrowth:'个人成长', cTrend:'象征倾向', cCorrespond:'对应关系' }
 };
 Object.keys(CARD_STRINGS).forEach(l => { if (STRINGS[l]) Object.assign(STRINGS[l], CARD_STRINGS[l]); });
+
+const AVATAR_3D_STRINGS = {
+  es: { stModeloAvatar:'Modelo del avatar', stAvatar2dRealista:'2D realista con labios', stAvatar3dExperimental:'3D experimental', stAvatar3dNota:'El 3D carga solo en modo Alto. En iPhone o con movimiento reducido usa el avatar 2D.', a3dAvatarFemale:'Oráculo guía 3D', a3dAvatarMale:'Oráculo guardián 3D' },
+  ca: { stModeloAvatar:'Model de l’avatar', stAvatar2dRealista:'2D realista amb llavis', stAvatar3dExperimental:'3D experimental', stAvatar3dNota:'El 3D només carrega en mode Alt. A iPhone o amb moviment reduït fa servir l’avatar 2D.', a3dAvatarFemale:'Oracle guia 3D', a3dAvatarMale:'Oracle guardià 3D' },
+  en: { stModeloAvatar:'Avatar model', stAvatar2dRealista:'Realistic 2D with lips', stAvatar3dExperimental:'Experimental 3D', stAvatar3dNota:'3D loads only in High mode. On iPhone or reduced motion it uses the 2D avatar.', a3dAvatarFemale:'3D oracle guide', a3dAvatarMale:'3D oracle guardian' },
+  fr: { stModeloAvatar:'Modèle de l’avatar', stAvatar2dRealista:'2D réaliste avec lèvres', stAvatar3dExperimental:'3D expérimentale', stAvatar3dNota:'La 3D se charge seulement en mode Élevé. Sur iPhone ou avec mouvements réduits, l’avatar 2D est utilisé.', a3dAvatarFemale:'Oracle guide 3D', a3dAvatarMale:'Oracle gardien 3D' },
+  de: { stModeloAvatar:'Avatar-Modell', stAvatar2dRealista:'Realistisches 2D mit Lippen', stAvatar3dExperimental:'Experimentelles 3D', stAvatar3dNota:'3D lädt nur im Modus Hoch. Auf dem iPhone oder bei reduzierter Bewegung wird der 2D-Avatar genutzt.', a3dAvatarFemale:'3D-Orakelführung', a3dAvatarMale:'3D-Orakelwächter' },
+  zh: { stModeloAvatar:'化身模型', stAvatar2dRealista:'带唇形的写实 2D', stAvatar3dExperimental:'实验性 3D', stAvatar3dNota:'3D 仅在高模式下加载。iPhone 或减少动态效果时会使用 2D 化身。', a3dAvatarFemale:'3D 神谕向导', a3dAvatarMale:'3D 神谕守护者' }
+};
+Object.keys(AVATAR_3D_STRINGS).forEach(l => { if (STRINGS[l]) Object.assign(STRINGS[l], AVATAR_3D_STRINGS[l]); });

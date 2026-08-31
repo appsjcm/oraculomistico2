@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-visual-136';
+const CACHE_NAME = 'oraculo-v1-0-public-avatar-3d-137';
 const APP_SHELL = [
   './',
   './index.html',
@@ -102,7 +102,16 @@ self.addEventListener('fetch', event => {
   const isFreshAsset = event.request.mode === 'navigate' || /\.(html|js|css|json)$/i.test(url.pathname);
 
   if (/\.glb$/i.test(url.pathname)) {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }).catch(() => Response.error()));
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          if (!response || !response.ok) return response;
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || Response.error()))
+    );
     return;
   }
 
