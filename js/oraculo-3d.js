@@ -309,7 +309,9 @@ function createProceduralOracleAvatar(THREE, asset = {}) {
 
   const skin = mat(female ? 0xb77a58 : 0xb98262, { roughness: 0.88 });
   const skinSoft = mat(female ? 0xcc9472 : 0xc59172, { roughness: 0.9 });
+  const skinShade = mat(female ? 0x8f5c45 : 0x8d604a, { roughness: 0.93 });
   const hair = mat(female ? 0x1d1517 : 0x241912, { roughness: 0.92 });
+  const hairLight = mat(female ? 0x3b2524 : 0x3a281b, { roughness: 0.94, opacity: 0.78 });
   const cloak = mat(female ? 0x173329 : 0x17243c, { roughness: 0.86 });
   const cloakDeep = mat(female ? 0x0d1d18 : 0x0d1424, { roughness: 0.9 });
   const gold = mat(0xd8aa42, { roughness: 0.58, emissive: 0x332107, emissiveIntensity: 0.08 });
@@ -330,29 +332,43 @@ function createProceduralOracleAvatar(THREE, asset = {}) {
   root.add(head);
   add(head, 'headOval', new SphereGeometry(0.5, 48, 32), skin, [0, 0.08, 0], [0.78, 1.0, 0.66]);
   add(head, 'faceWarmth', new SphereGeometry(0.49, 48, 16), skinSoft, [0, 0.02, 0.025], [0.62, 0.72, 0.54]);
+  add(head, 'chin', new SphereGeometry(0.11, 28, 12), skinShade, [0, -0.31, 0.245], [1.08, 0.5, 0.34]);
+  add(head, 'jawLeft', new SphereGeometry(0.09, 24, 10), skinShade, [-0.22, -0.23, 0.18], [0.7, 1.0, 0.38]);
+  add(head, 'jawRight', new SphereGeometry(0.09, 24, 10), skinShade, [0.22, -0.23, 0.18], [0.7, 1.0, 0.38]);
+  add(head, 'earLeft', new SphereGeometry(0.075, 24, 12), skinSoft, [-0.42, 0.065, 0.025], [0.45, 1.15, 0.2]);
+  add(head, 'earRight', new SphereGeometry(0.075, 24, 12), skinSoft, [0.42, 0.065, 0.025], [0.45, 1.15, 0.2]);
 
   if (female) {
     add(head, 'hairBack', new SphereGeometry(0.55, 48, 24), hair, [0, 0.06, -0.09], [0.9, 1.18, 0.56]);
     add(head, 'hairLeft', new SphereGeometry(0.25, 32, 18), hair, [-0.38, -0.1, 0.06], [0.6, 1.55, 0.44]);
     add(head, 'hairRight', new SphereGeometry(0.25, 32, 18), hair, [0.38, -0.1, 0.06], [0.6, 1.55, 0.44]);
     add(head, 'hairCrown', new SphereGeometry(0.46, 48, 18), hair, [0, 0.34, 0.04], [0.82, 0.38, 0.6]);
+    add(head, 'hairHighlightLeft', new SphereGeometry(0.12, 24, 10), hairLight, [-0.29, 0.1, 0.25], [0.42, 1.35, 0.16]);
+    add(head, 'hairHighlightRight', new SphereGeometry(0.1, 24, 10), hairLight, [0.3, 0.05, 0.25], [0.32, 1.12, 0.14]);
   } else {
     add(head, 'hairCap', new SphereGeometry(0.49, 48, 18), hair, [0, 0.38, 0.01], [0.78, 0.38, 0.62]);
+    add(head, 'templeLeft', new SphereGeometry(0.09, 24, 10), hairLight, [-0.31, 0.18, 0.24], [0.55, 0.92, 0.2]);
+    add(head, 'templeRight', new SphereGeometry(0.09, 24, 10), hairLight, [0.31, 0.18, 0.24], [0.55, 0.92, 0.2]);
     add(head, 'beard', new SphereGeometry(0.4, 32, 16), mat(0x2a1b16, { roughness: 0.94 }), [0, -0.22, 0.18], [0.72, 0.42, 0.28]);
+    add(head, 'beardShape', new SphereGeometry(0.28, 24, 12), mat(0x20130f, { roughness: 0.96 }), [0, -0.28, 0.28], [0.82, 0.36, 0.17]);
   }
 
   [-1, 1].forEach(side => {
     add(head, side < 0 ? 'eyeLeftWhite' : 'eyeRightWhite', new SphereGeometry(0.058, 24, 12), eyeWhite, [side * 0.16, 0.14, 0.35], [1.2, 0.76, 0.38]);
     add(head, side < 0 ? 'eyeLeftIris' : 'eyeRightIris', new SphereGeometry(0.03, 18, 10), iris, [side * 0.16, 0.137, 0.374], [1, 1, 0.24]);
+    add(head, side < 0 ? 'eyeLeftGlint' : 'eyeRightGlint', new SphereGeometry(0.008, 10, 6), flat(0xffffff, 0.88), [side * 0.148, 0.149, 0.386], [1, 1, 0.3]);
     add(head, side < 0 ? 'lidLeft' : 'lidRight', new SphereGeometry(0.062, 24, 8), skin, [side * 0.16, 0.16, 0.385], [1.23, 0.05, 0.24]);
     add(head, side < 0 ? 'browLeft' : 'browRight', new BoxGeometry(0.13, 0.018, 0.018), hair, [side * 0.16, 0.245, 0.365], [1, 1, 1], [0, 0, side * (female ? -0.12 : -0.06)]);
     add(head, side < 0 ? 'cheekLeft' : 'cheekRight', new SphereGeometry(0.06, 18, 8), flat(female ? 0xd58a83 : 0xbd8169, female ? 0.28 : 0.18), [side * 0.22, -0.015, 0.372], [1.2, 0.44, 0.16]);
   });
 
+  add(head, 'noseBridge', new BoxGeometry(0.028, 0.13, 0.025), skinSoft, [0, 0.105, 0.404], [1, 1, 1], [0.1, 0, 0]);
   add(head, 'nose', new SphereGeometry(0.04, 18, 10), skinSoft, [0, 0.055, 0.386], [0.72, 1.3, 0.44]);
   const mouth = add(head, 'mouth', new SphereGeometry(0.08, 24, 12), mouthDark, [0, -0.135, 0.398], [1.05, 0.16, 0.12]);
   const upperLip = add(head, 'upperLip', new SphereGeometry(0.072, 24, 8), lip, [0, -0.118, 0.415], [1.2, 0.11, 0.1]);
   const lowerLip = add(head, 'lowerLip', new SphereGeometry(0.07, 24, 8), lip, [0, -0.154, 0.415], [1.06, 0.12, 0.1]);
+  add(head, 'mouthCornerLeft', new SphereGeometry(0.018, 12, 8), lip, [-0.085, -0.135, 0.417], [1, 0.72, 0.5]);
+  add(head, 'mouthCornerRight', new SphereGeometry(0.018, 12, 8), lip, [0.085, -0.135, 0.417], [1, 0.72, 0.5]);
   add(head, 'foreheadGem', new OctahedronGeometry(0.035, 0), gold, [0, 0.31, 0.37], [0.75, 1, 0.42], [0, 0, Math.PI / 4]);
 
   root.userData.rigParts = { head, body, mouth, upperLip, lowerLip };
@@ -727,12 +743,40 @@ class OracleScene {
       rig.lowerLip.position.y = -0.154 - talk * 0.05 + grin * 0.006;
       rig.lowerLip.scale.x = 1.06 + talk * 0.08 + grin * 0.14;
     }
+    if (rig.mouthCornerLeft) {
+      rig.mouthCornerLeft.position.x = -0.085 - talk * 0.008 - grin * 0.012;
+      rig.mouthCornerLeft.position.y = -0.135 - talk * 0.006 + grin * 0.018;
+    }
+    if (rig.mouthCornerRight) {
+      rig.mouthCornerRight.position.x = 0.085 + talk * 0.008 + grin * 0.012;
+      rig.mouthCornerRight.position.y = -0.135 - talk * 0.006 + grin * 0.018;
+    }
+    if (rig.chin) {
+      rig.chin.position.y = -0.31 - talk * 0.018 + grin * 0.004;
+      rig.chin.scale.y = 0.5 + talk * 0.05;
+    }
     ['lidLeft', 'lidRight'].forEach(name => {
       if (rig[name]) {
         rig[name].scale.y = 0.05 + blinkAmount * 1.4;
         rig[name].position.y = 0.16 - blinkAmount * 0.022;
       }
     });
+    if (rig.eyeLeftIris) {
+      rig.eyeLeftIris.position.x = -0.16 + browAmount * 0.006 - grin * 0.004;
+      rig.eyeLeftIris.position.y = 0.137 + grin * 0.004;
+    }
+    if (rig.eyeRightIris) {
+      rig.eyeRightIris.position.x = 0.16 + browAmount * 0.006 + grin * 0.004;
+      rig.eyeRightIris.position.y = 0.137 + grin * 0.004;
+    }
+    if (rig.eyeLeftGlint) {
+      rig.eyeLeftGlint.position.x = -0.148 + browAmount * 0.006 - grin * 0.004;
+      rig.eyeLeftGlint.position.y = 0.149 + grin * 0.004;
+    }
+    if (rig.eyeRightGlint) {
+      rig.eyeRightGlint.position.x = 0.148 + browAmount * 0.006 + grin * 0.004;
+      rig.eyeRightGlint.position.y = 0.149 + grin * 0.004;
+    }
     if (rig.browLeft) {
       rig.browLeft.position.y = 0.245 + browAmount * 0.022;
       rig.browLeft.rotation.z = -0.12 - browAmount * 0.18 + grin * 0.08;
@@ -744,6 +788,13 @@ class OracleScene {
     if (rig.head) {
       rig.head.rotation.x += ((talk * 0.018 + browAmount * 0.012) - rig.head.rotation.x) * 0.08;
       rig.head.position.y += ((0.008 * talk) - rig.head.position.y) * 0.08;
+    }
+    if (rig.body) {
+      rig.body.scale.y = 1 + talk * 0.008;
+      rig.body.position.y = -talk * 0.006;
+    }
+    if (rig.foreheadGem) {
+      rig.foreheadGem.rotation.y += 0.018 + talk * 0.02;
     }
   }
 
