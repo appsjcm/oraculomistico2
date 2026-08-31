@@ -237,6 +237,9 @@ body.theme-light .error-log article{background:rgba(255,240,240,.86);border-colo
 /* v1.0.65 Avatar voz */
 .oracle-avatar-host{position:fixed;right:16px;bottom:16px;z-index:120;opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;transition:.25s ease}
 .oracle-avatar-host.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.oracle-avatar-host.attending.visible{animation:oracleAvatarAttend .62s ease-out both}
+.oracle-avatar-host.paused.visible{filter:saturate(.86) brightness(.92)}
+.oracle-avatar-host.closing.visible{opacity:0;transform:translateY(10px) scale(.985);pointer-events:none}
 .oracle-avatar-window{position:relative;width:min(340px,calc(100vw - 24px));display:grid;grid-template-columns:112px 1fr;gap:12px;padding:12px;border-radius:24px;border:1px solid rgba(242,204,101,.30);background:linear-gradient(145deg,rgba(15,11,29,.98),rgba(37,23,66,.96));box-shadow:0 28px 50px rgba(0,0,0,.35)}
 .oracle-avatar-close{position:absolute;right:10px;top:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(255,255,255,.10);color:#fff;cursor:pointer}
 .oracle-avatar-stage{position:relative;display:grid;place-items:center;min-height:116px;border-radius:20px;background:radial-gradient(circle at 50% 0%,rgba(242,204,101,.18),rgba(255,255,255,.02))}
@@ -270,6 +273,8 @@ body.theme-light .oracle-avatar-copy small{color:#3d3054}
 .oracle-avatar-window{position:relative;overflow:hidden;display:grid;gap:12px;padding:12px;border-radius:26px;border:1px solid rgba(242,204,101,.30);background:
 linear-gradient(145deg,rgba(13,10,29,.98),rgba(28,18,55,.96));box-shadow:0 28px 50px rgba(0,0,0,.35)}
 .oracle-avatar-window::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 15%,rgba(242,204,101,.12),transparent 26%),radial-gradient(circle at 80% 75%,rgba(141,102,255,.14),transparent 24%);pointer-events:none}
+.oracle-avatar-host.attending .oracle-avatar-window::before{animation:oracleAvatarWindowWake .62s ease-out both}
+.oracle-avatar-host.paused .oracle-avatar-window::before{opacity:.62}
 .oracle-avatar-host[data-mouth-shape="medium"] .oracle-avatar-window{box-shadow:0 28px 50px rgba(0,0,0,.35),0 0 18px rgba(242,204,101,.10)}
 .oracle-avatar-host[data-mouth-shape="wide"] .oracle-avatar-window{box-shadow:0 28px 50px rgba(0,0,0,.35),0 0 26px rgba(242,204,101,.16)}
 .oracle-avatar-close{position:absolute;right:10px;top:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(255,255,255,.10);color:#fff;cursor:pointer;z-index:2}
@@ -420,6 +425,8 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 @keyframes oracleRealisticIdle{0%,100%{transform:translateY(0) rotate(.15deg)}50%{transform:translateY(-1px) rotate(-.2deg)}}
 @keyframes oracleRealisticSpeak{0%,100%{transform:scale(calc(1.04 + var(--oracle-mouth-intensity) * .006)) translateY(0) rotate(.2deg)}38%{transform:scale(calc(1.058 + var(--oracle-mouth-intensity) * .014)) translateY(-1px) rotate(-.45deg)}72%{transform:scale(calc(1.05 + var(--oracle-mouth-intensity) * .01)) translateY(.5px) rotate(.34deg)}}
 @keyframes oracleVoiceRing{from{transform:translateX(-50%) scaleX(.65);opacity:.45}to{transform:translateX(-50%) scaleX(1.25);opacity:1}}
+@keyframes oracleAvatarAttend{0%{transform:translateY(14px) scale(.96);filter:saturate(.82) brightness(.86)}58%{transform:translateY(-2px) scale(1.012);filter:saturate(1.06) brightness(1.06)}100%{transform:translateY(0) scale(1);filter:none}}
+@keyframes oracleAvatarWindowWake{0%{opacity:.25;transform:translateX(-8%)}100%{opacity:1;transform:translateX(0)}}
 @keyframes oracleMoodLove{0%,100%{transform:translateX(0) rotate(0)}50%{transform:translateX(1px) rotate(.45deg)}}
 @keyframes oracleMoodFocus{0%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(1px) rotate(-.35deg)}}
 @keyframes oracleMoodStill{0%,100%{transform:translateY(0)}50%{transform:translateY(1px)}}
