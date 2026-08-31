@@ -15,10 +15,11 @@ Auditoria GLB:
 - Sin nodos separados de mandibula, labios, ojos o cejas.
 
 Por esa estructura, la boca no puede animarse de forma anatomica dentro del
-modelo actual. La app mantiene el avatar realista 2D para labios y expresion,
-y reserva el GLB como presencia visual opcional. Si en el futuro se suben GLB
-con morph targets tipo `jawOpen`, `mouthOpen` o `viseme_*`, el motor intentara
-usarlos automaticamente para una boca real en 3D.
+modelo actual. La app aplica una deformacion muy sutil de una zona frontal de
+la malla cuando no encuentra morph targets, y mantiene el avatar realista 2D
+como refuerzo de labios y expresion. Si en el futuro se suben GLB con morph
+targets tipo `jawOpen`, `mouthOpen` o `viseme_*`, el motor intentara usarlos
+automaticamente para una boca real en 3D.
 
 Los avatares no estan en el precache inicial de la PWA. Se cargan solo bajo
 demanda en el modo de avatar 3D experimental y se guardan en cache dinamica
