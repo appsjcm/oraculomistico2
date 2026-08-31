@@ -439,8 +439,11 @@ class OracleScene {
     this.model.scale.setScalar(targetScale);
     this.baseModelScale = targetScale;
     this.model.position.set(
-      -centro.x * targetScale + (this.asset.offset?.[0] || 0),
-      -centro.y * targetScale - tam.y * targetScale * 0.02 + (this.asset.offset?.[1] || 0),
+      -centro.x * targetScale + (this.asset.offset?.[0] || 0) + (this.ajusteX || 0),
+      /* El empujon del 2 % hacia abajo asienta los objetos en su peana. El
+         avatar no la tiene y ademas se centra midiendo su silueta, asi que
+         ahi solo desplazaba el resultado. */
+      -centro.y * targetScale - (this.asset.avatar ? 0 : tam.y * targetScale * 0.02) + (this.asset.offset?.[1] || 0) + (this.ajusteY || 0),
       -centro.z * targetScale + (this.asset.offset?.[2] || 0)
     );
     this.baseModelY = this.model.position.y;
@@ -458,19 +461,64 @@ class OracleScene {
 
      Solo para avatares. Los demas lienzos tienen su encuadre ajustado a
      mano y no se tocan. */
+  /* Centrar la caja del modelo no centra lo que se ve. La caja es
+     simetrica pero la figura no: la melena y el cuerpo bajan mas de lo que
+     sube la cabeza, y ademas la perspectiva agranda lo que esta mas cerca
+     de la camara. Centrando la caja, la figura quedaba pegada al borde de
+     abajo con un hueco arriba.
+
+     Asi que se mide lo que de verdad se pinta. Se renderiza un fotograma,
+     se leen los pixeles, se busca el rectangulo que ocupa la silueta y se
+     corrige posicion y escala para dejarla centrada y llenando el marco.
+     Dos o tres pasadas bastan para converger; se hace una sola vez al
+     montar y cuando cambia la proporcion del panel, no en cada fotograma.
+
+     Solo para avatares: los demas lienzos tienen su encuadre a mano. */
   encajarAvatar() {
-    if (!this.asset.avatar || !this.model || !this.cajaModelo) return;
+    if (!this.asset.avatar || !this.model || !this.cajaModelo || !this.renderer) return;
+    const gl = this.renderer.getContext?.();
+    if (!gl) return;
+    const W = Math.max(1, Math.round(this.stage.getBoundingClientRect().width));
+    const H = Math.max(1, Math.round(this.stage.getBoundingClientRect().height));
+    if (W < 8 || H < 8) return;
+
     const { tam } = this.cajaModelo;
-    const alto = Math.tan((this.camera.fov * Math.PI / 180) / 2) * this.camera.position.length() * 2;
-    const ancho = alto * this.camera.aspect;
-    const PARTE_ALTO = 0.82;
-    const TOPE_ANCHO = 1.18;
-    const escala = Math.min(
-      (alto * PARTE_ALTO) / (tam.y || 1),
-      (ancho * TOPE_ANCHO) / (tam.x || 1)
-    );
-    if (!(escala > 0) || Math.abs(escala - this.baseModelScale) < 0.001) return;
+    const altoMundo = Math.tan((this.camera.fov * Math.PI / 180) / 2) * this.camera.position.length() * 2;
+    const anchoMundo = altoMundo * this.camera.aspect;
+    const OCUPACION = 0.92;
+
+    this.ajusteX = 0;
+    this.ajusteY = 0;
+    let escala = Math.min((altoMundo * 0.94) / (tam.y || 1), (anchoMundo * 0.94) / (tam.x || 1));
     this.colocarModelo(escala);
+
+    const pixeles = new Uint8Array(W * H * 4);
+    for (let pasada = 0; pasada < 3; pasada += 1) {
+      this.renderer.render(this.scene, this.camera);
+      try { gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, pixeles); }
+      catch { return; }
+      let x0 = W, x1 = -1, y0 = H, y1 = -1;
+      for (let y = 0; y < H; y += 1) {
+        for (let x = 0; x < W; x += 1) {
+          if (pixeles[(y * W + x) * 4 + 3] > 16) {
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+          }
+        }
+      }
+      if (x1 < 0) return;                       // no se pinto nada
+      /* readPixels cuenta desde abajo, que es justo lo que necesitamos
+         para mover el modelo en el eje Y del mundo. */
+      this.ajusteY -= ((y0 + y1) / 2 - (H - 1) / 2) * (altoMundo / H);
+      this.ajusteX -= ((x0 + x1) / 2 - (W - 1) / 2) * (anchoMundo / W);
+      const ocupaY = (y1 - y0 + 1) / H;
+      const ocupaX = (x1 - x0 + 1) / W;
+      escala *= Math.min(OCUPACION / ocupaY, OCUPACION / ocupaX);
+      this.colocarModelo(escala);
+      this.model.updateMatrixWorld(true);
+    }
   }
 
   pointerMove(event) {
