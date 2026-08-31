@@ -172,6 +172,9 @@
   border-radius: 8px;
   background: #fffdf9;
   touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
   cursor: zoom-in;
   contain: paint;
 }
@@ -307,6 +310,8 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
     calc(env(safe-area-inset-bottom) + 10px);
   opacity: 0;
   pointer-events: none;
+  touch-action: pan-y;
+  overscroll-behavior: none;
   transition: opacity .18s ease;
 }
 
@@ -332,6 +337,7 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
   display: grid;
   align-items: center;
   justify-items: center;
+  touch-action: pan-y;
 }
 
 .astro-wheel-modal-root .astro-wheel-modal-copy {
@@ -370,6 +376,8 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
   width: var(--wheel-size);
   max-width: 100%;
   align-self: center;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .astro-wheel-modal-root .astro-wheel-caption {

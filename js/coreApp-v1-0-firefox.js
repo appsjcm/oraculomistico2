@@ -4863,13 +4863,14 @@ function resetAstroWheelGesture(viewport) {
 }
 function astroWheelPointerDown(e) {
   if (e.target.closest?.('[data-astro-zoom]')) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
   const viewport = astroWheelViewportFrom(e.target);
   if (!viewport) return;
   e.preventDefault();
   if (astroWheelGesture.viewport && astroWheelGesture.viewport !== viewport) astroWheelGesture.pointers.clear();
   astroWheelGesture.viewport = viewport;
   viewport.classList.add('astro-wheel-dragging');
-  viewport.setPointerCapture?.(e.pointerId);
+  try { viewport.setPointerCapture?.(e.pointerId); } catch {}
   const now = Date.now();
   const lastTap = Number(viewport.dataset.astroLastTap || 0);
   if (now - lastTap < 320 && astroWheelGesture.pointers.size === 0) {
@@ -4884,7 +4885,13 @@ function astroWheelPointerDown(e) {
 }
 function astroWheelPointerMove(e) {
   const viewport = astroWheelGesture.viewport;
-  if (!viewport || !astroWheelGesture.pointers.has(e.pointerId)) return;
+  if (!viewport || !document.contains(viewport) || !astroWheelGesture.pointers.has(e.pointerId)) {
+    if (viewport && !document.contains(viewport)) {
+      astroWheelGesture.pointers.clear();
+      astroWheelGesture.viewport = null;
+    }
+    return;
+  }
   e.preventDefault();
   astroWheelGesture.pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
   const points = astroWheelPointerList();
@@ -4910,6 +4917,7 @@ function astroWheelPointerMove(e) {
 }
 function astroWheelPointerEnd(e) {
   if (!astroWheelGesture.viewport) return;
+  try { astroWheelGesture.viewport.releasePointerCapture?.(e.pointerId); } catch {}
   astroWheelGesture.pointers.delete(e.pointerId);
   if (astroWheelGesture.pointers.size) resetAstroWheelGesture(astroWheelGesture.viewport);
   else {
