@@ -273,7 +273,7 @@ function makeFallback(stage, assetId, reason = '') {
   const matiz = tr ? tr('a3dLight') : '';
   stage.classList.add('om-3d-fallback-active');
   stage.classList.remove('om-3d-mounted');
-  stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready');
+  stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient');
   /* El aro se dibuja aqui y no con un SVG externo: son cuatro trazos y
      asi no anade ni una peticion mas ni depende de la cache. */
   stage.innerHTML = `<div class="om-3d-fallback" role="img" aria-label="${escaparAttr(nombre)}${matiz ? ' · ' + escaparAttr(matiz) : ''}">
@@ -369,7 +369,15 @@ class OracleScene {
     if (this.asset.avatar) this.collectAvatarMorphs();
     this.scene.add(this.model);
     this.stage.classList.add('om-3d-mounted');
-    this.stage.closest?.('.oracle-avatar-stage')?.classList?.add('avatar-3d-ready');
+    const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
+    if (this.asset.avatar) {
+      const hasRealLipSync = this.avatarMorphs.length > 0;
+      avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
+      avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
+      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, lipSync: hasRealLipSync ? 'morph-targets' : '2d-overlay' });
+    } else {
+      avatarStage?.classList?.add('avatar-3d-ready');
+    }
 
     this.resize();
     window.addEventListener('resize', this.onResize, { passive: true });
@@ -588,7 +596,7 @@ class OracleScene {
       disposeObject(this.THREE, this.model);
     }
     this.stage.classList.remove('om-3d-mounted');
-    this.stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready');
+    this.stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient');
     this.avatarMorphs = [];
     /* dispose() libera programas y render targets, pero NO el contexto
        WebGL: para eso hace falta forceContextLoss(). El navegador solo
