@@ -1228,4 +1228,13 @@ button:disabled,
   min-width: 0;
   margin: 0;
   aspect-ratio: auto;
+  /* La tarjeta redondea a 22 px y recorta, pero el lienzo es un elemento
+     reemplazado: si un navegador no lo recorta bien, dibuja una esquina
+     recta encima de la tarjeta y se ven dos rectangulos. Redondeandolo
+     tambien, ese caso no puede darse. */
+  border-radius: inherit;
+  overflow: hidden;
+}
+.om-3d-stage.oracle-avatar-3d-stage canvas {
+  border-radius: inherit;
 }
