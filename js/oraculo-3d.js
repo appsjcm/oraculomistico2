@@ -400,6 +400,16 @@ class OracleScene {
 
     this.resize();
     window.addEventListener('resize', this.onResize, { passive: true });
+    /* El de la ventana no basta. El panel del avatar entra con animacion y
+       cambia de tamano por su cuenta, y ademas su medida depende del ajuste
+       de tamano del avatar. El lienzo se dimensionaba una sola vez, al
+       montar, y si en ese instante el panel aun no tenia su medida final la
+       camara se quedaba con una relacion de aspecto que no era la suya: el
+       modelo salia descentrado y con la cabeza cortada por el borde. */
+    if ('ResizeObserver' in window) {
+      this.observadorTamano = new ResizeObserver(() => this.resize());
+      this.observadorTamano.observe(this.stage);
+    }
     this.stage.addEventListener('pointermove', this.onPointerMove, { passive: true });
     document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true });
     this.running = true;
@@ -436,6 +446,11 @@ class OracleScene {
     const rect = this.stage.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
+    /* El observador de tamano dispara en cada fotograma mientras el panel
+       entra; si la medida no ha cambiado no hay nada que rehacer. */
+    if (width === this.anchoUltimo && height === this.altoUltimo) return;
+    this.anchoUltimo = width;
+    this.altoUltimo = height;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(0, 0, 0);
@@ -608,6 +623,8 @@ class OracleScene {
     this.running = false;
     cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
+    this.observadorTamano?.disconnect?.();
+    this.observadorTamano = null;
     this.stage.removeEventListener('pointermove', this.onPointerMove);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     if (this.model) {
