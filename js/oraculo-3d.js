@@ -426,14 +426,51 @@ class OracleScene {
     const largest = Math.max(size.x, size.y, size.z) || 1;
     const fitSize = this.asset.fitSize || 1.68;
     const targetScale = this.asset.scale * (fitSize / largest);
+    /* Se guarda la caja sin escalar: el avatar rehace su encaje cuando
+       cambia la proporcion del panel, y para eso hacen falta las medidas
+       originales. */
+    this.cajaModelo = { centro: center.clone(), tam: size.clone() };
+    this.colocarModelo(targetScale);
+    this.encajarAvatar();
+  }
+
+  colocarModelo(targetScale) {
+    const { centro, tam } = this.cajaModelo;
     this.model.scale.setScalar(targetScale);
     this.baseModelScale = targetScale;
     this.model.position.set(
-      -center.x * targetScale + (this.asset.offset?.[0] || 0),
-      -center.y * targetScale - size.y * targetScale * 0.02 + (this.asset.offset?.[1] || 0),
-      -center.z * targetScale + (this.asset.offset?.[2] || 0)
+      -centro.x * targetScale + (this.asset.offset?.[0] || 0),
+      -centro.y * targetScale - tam.y * targetScale * 0.02 + (this.asset.offset?.[1] || 0),
+      -centro.z * targetScale + (this.asset.offset?.[2] || 0)
     );
     this.baseModelY = this.model.position.y;
+  }
+
+  /* fitSize escala por la dimension mayor del modelo, que para un busto es
+     su altura, y con eso el avatar se quedaba pequeno: llenaba el ancho del
+     panel pero dejaba mucho aire arriba y abajo.
+
+     Aqui se escala contra el marco, no contra el modelo. La altura se llena
+     al 82 %, que es lo que en las pruebas de render daba un retrato con la
+     cabeza grande y entera y los hombros recortados de forma natural. El
+     tope de ancho evita el otro extremo: en un panel muy estrecho, llenar la
+     altura sacaria la cabeza fuera por los lados.
+
+     Solo para avatares. Los demas lienzos tienen su encuadre ajustado a
+     mano y no se tocan. */
+  encajarAvatar() {
+    if (!this.asset.avatar || !this.model || !this.cajaModelo) return;
+    const { tam } = this.cajaModelo;
+    const alto = Math.tan((this.camera.fov * Math.PI / 180) / 2) * this.camera.position.length() * 2;
+    const ancho = alto * this.camera.aspect;
+    const PARTE_ALTO = 0.82;
+    const TOPE_ANCHO = 1.18;
+    const escala = Math.min(
+      (alto * PARTE_ALTO) / (tam.y || 1),
+      (ancho * TOPE_ANCHO) / (tam.x || 1)
+    );
+    if (!(escala > 0) || Math.abs(escala - this.baseModelScale) < 0.001) return;
+    this.colocarModelo(escala);
   }
 
   pointerMove(event) {
@@ -455,6 +492,9 @@ class OracleScene {
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(0, 0, 0);
     this.renderer.setSize(width, height, false);
+    /* La proporcion del panel cambia con el texto que acompana al avatar,
+       asi que el encaje se rehace con cada medida nueva. */
+    this.encajarAvatar();
     if (!this.quality.motion) this.renderer.render(this.scene, this.camera);
   }
 
