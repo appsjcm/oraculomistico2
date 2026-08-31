@@ -128,7 +128,6 @@ export const ORACULO_3D_ASSETS = {
     fitSize: 1.46,
     camera: [0, 0.2, 4.55],
     offset: [-0.28, -0.04, 0],
-    fauxMouth: { x: 0.5, y: 0.64, rx: 0.095, ry: 0.048, frontDepth: 0.68 },
     rotation: [0, 0, 0],
     avatar: true,
     prefetch: []
@@ -142,7 +141,6 @@ export const ORACULO_3D_ASSETS = {
     fitSize: 1.46,
     camera: [0, 0.2, 4.55],
     offset: [-0.18, -0.04, 0],
-    fauxMouth: { x: 0.5, y: 0.635, rx: 0.095, ry: 0.048, frontDepth: 0.68 },
     rotation: [0, 0, 0],
     avatar: true,
     prefetch: []
