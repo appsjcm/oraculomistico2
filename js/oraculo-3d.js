@@ -195,13 +195,26 @@ function trimModelCache() {
   });
 }
 
-function cloneScene(scene) {
+function tuneAvatarMaterial(material) {
+  if (!material) return;
+  const materiales = Array.isArray(material) ? material : [material];
+  materiales.filter(Boolean).forEach(mat => {
+    if ('metalness' in mat) mat.metalness = Math.min(Number(mat.metalness || 0), 0.04);
+    if ('roughness' in mat) mat.roughness = Math.max(0.34, Math.min(Number(mat.roughness || 0.46), 0.58));
+    if ('envMapIntensity' in mat) mat.envMapIntensity = Math.max(Number(mat.envMapIntensity || 0), 0.35);
+    if ('aoMapIntensity' in mat) mat.aoMapIntensity = Math.max(Number(mat.aoMapIntensity || 0), 0.75);
+    mat.needsUpdate = true;
+  });
+}
+
+function cloneScene(scene, isAvatar = false) {
   const clone = scene.clone(true);
   clone.traverse(node => {
     if (node.isMesh) {
       if (node.geometry) node.geometry = node.geometry.clone();
       if (Array.isArray(node.material)) node.material = node.material.map(material => material?.clone?.() || material);
       else if (node.material) node.material = node.material.clone?.() || node.material;
+      if (isAvatar) tuneAvatarMaterial(node.material);
       node.castShadow = true;
       node.receiveShadow = true;
     }
@@ -299,6 +312,9 @@ class OracleScene {
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: this.options.antialias, powerPreference: this.quality.level === 'high' ? 'high-performance' : 'low-power' });
     this.renderer.setPixelRatio(this.options.dpr);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = this.asset.avatar ? 1.08 : 1.02;
+    if ('useLegacyLights' in this.renderer) this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = this.options.shadows;
     this.stage.textContent = '';
     this.stage.classList.remove('om-3d-fallback-active');
@@ -319,10 +335,17 @@ class OracleScene {
       violet.position.set(-2, 1.4, 2);
       this.scene.add(violet);
     }
+    if (this.asset.avatar && this.options.lights > 1) {
+      const fill = new THREE.DirectionalLight(0xffe2c2, 0.55);
+      fill.position.set(-2.5, 1.9, 3.5);
+      const rim = new THREE.DirectionalLight(0xb9a0ff, 0.72);
+      rim.position.set(-3, 2.4, -2.5);
+      this.scene.add(fill, rim);
+    }
 
     const gltf = await loadModel(this.assetId, this.quality);
     if (this.destroyed || !this.scene) return;
-    this.model = cloneScene(gltf.scene);
+    this.model = cloneScene(gltf.scene, this.asset.avatar);
     this.model.rotation.set(...this.asset.rotation);
     this.model.scale.setScalar(this.asset.scale);
     this.centerModel();
