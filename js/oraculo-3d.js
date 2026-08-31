@@ -611,6 +611,17 @@ class OracleScene {
   }
 }
 
+/* Un lienzo es de portada cuando no esta dentro de un modal ni es el
+   avatar. Se mira por el DOM y no por una lista de ids para que siga
+   valiendo si manana se anade otro lienzo a la pantalla de entrada. */
+function esDePortada(stage) {
+  if (stage.classList.contains('om-modal-3d')) return false;
+  if (stage.closest('.modal-root, .om-sheet, [data-om-avatar]')) return false;
+  const asset = assetById(stage.getAttribute('data-oraculo-3d-asset') || 'orb');
+  if (asset?.avatar) return false;
+  return true;
+}
+
 function mountStage(stage) {
   /* dataset NO camelliza un guion seguido de digito: la clave real de
      data-oraculo-3d-asset es dataset['oraculo-3dAsset'], asi que
@@ -620,6 +631,19 @@ function mountStage(stage) {
   const quality = qualityForStage(stage, assetId);
   if (!quality.enabled) {
     makeFallback(stage, assetId, quality.reason);
+    return;
+  }
+  /* En la portada el modelo no queda bien: sale oscuro y recortado sobre
+     el fondo claro, y en la fila del Santuario un modelo negro al lado de
+     tres medallones 2D limpios canta mucho. Ahi se usa siempre la version
+     ligera, que es el mismo lenguaje visual y ademas no abre contextos
+     WebGL en la pantalla de entrada. El 3D se conserva donde si luce y se
+     mira de cerca: dentro de los modales y en el avatar. */
+  if (esDePortada(stage)) {
+    /* El observador vuelve a llamar aqui en cada cambio de visibilidad, y
+       makeFallback reescribe el interior: sin esta guarda el medallon se
+       repintaria en cada scroll. */
+    if (!stage.querySelector('.om-3d-fallback')) makeFallback(stage, assetId, 'portada-usa-2d');
     return;
   }
   if (mountedStages.has(stage)) return;
