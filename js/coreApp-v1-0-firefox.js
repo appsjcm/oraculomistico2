@@ -1676,7 +1676,18 @@ function resolveOracleAvatarStyle(prefs = getVoicePrefs()) {
   if (preset.includes('masc')) return 'male';
   return 'female';
 }
+/* El avatar en 3D queda apagado por decision de Jordi: no le convence
+   como se ve. Se apaga desde aqui y no se toca el motor, que sigue
+   entero y se usa para las escenas de los modales. Volver a encenderlo
+   es poner esto en true.
+
+   Con el 3D apagado el avatar usa siempre el retrato 2D, que ademas es
+   el unico de los dos que mueve la boca: tiene tres fotogramas pintados
+   y sincronizacion por silabas. */
+const AVATAR_3D_DISPONIBLE = false;
+
 function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
+  if (!AVATAR_3D_DISPONIBLE) return false;
   const mode = normalizeAvatarRenderMode(prefs);
   const quality = get3dPreference();
   if (mode === '2d') return false;
@@ -5956,7 +5967,7 @@ function showSettings() {
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label for="oracleAvatarStyle">${escapeHTML(t('stEstiloDeAvatar'))}</label><select id="oracleAvatarStyle"><option value="auto" ${getVoicePrefs().avatarStyle==='auto'?'selected':''}>${escapeHTML(t('stAutomaticoSegunVoz'))}</option><option value="female" ${getVoicePrefs().avatarStyle==='female'?'selected':''}>${escapeHTML(t('stChicaOraculo'))}</option><option value="male" ${getVoicePrefs().avatarStyle==='male'?'selected':''}>${escapeHTML(t('stChicoOraculo'))}</option></select></div>
-      <div class="field"><label for="oracleAvatarRenderMode">${escapeHTML(t('stModeloAvatar'))}</label><select id="oracleAvatarRenderMode"><option value="auto" ${(voice.avatarRenderMode || 'auto')==='auto'?'selected':''}>${escapeHTML(t('stAvatarAuto3d'))}</option><option value="2d" ${voice.avatarRenderMode==='2d'?'selected':''}>${escapeHTML(t('stAvatar2dRealista'))}</option><option value="3d" ${voice.avatarRenderMode==='3d'?'selected':''}>${escapeHTML(t('stAvatar3dExperimental'))}</option></select><small>${escapeHTML(t('stAvatar3dNota'))}</small></div>
+      ${AVATAR_3D_DISPONIBLE ? `<div class="field"><label for="oracleAvatarRenderMode">${escapeHTML(t('stModeloAvatar'))}</label><select id="oracleAvatarRenderMode"><option value="auto" ${(voice.avatarRenderMode || 'auto')==='auto'?'selected':''}>${escapeHTML(t('stAvatarAuto3d'))}</option><option value="2d" ${voice.avatarRenderMode==='2d'?'selected':''}>${escapeHTML(t('stAvatar2dRealista'))}</option><option value="3d" ${voice.avatarRenderMode==='3d'?'selected':''}>${escapeHTML(t('stAvatar3dExperimental'))}</option></select><small>${escapeHTML(t('stAvatar3dNota'))}</small></div>` : ''}
       <div class="field"><label for="oracleAvatarEnabled">${escapeHTML(t('stMostrarAvatar'))}</label><select id="oracleAvatarEnabled"><option value="true" ${getVoicePrefs().avatarEnabled!==false?'selected':''}>${escapeHTML(t('stSiMostrarAlHablar'))}</option><option value="false" ${getVoicePrefs().avatarEnabled===false?'selected':''}>${escapeHTML(t('stNoMostrar'))}</option></select></div>
       <div class="field"><label for="oracleAvatarPosition">${escapeHTML(t('stPosicionDelAvatar'))}</label><select id="oracleAvatarPosition"><option value="right" ${getVoicePrefs().avatarPosition!=='left'?'selected':''}>${escapeHTML(t('stDerecha'))}</option><option value="left" ${getVoicePrefs().avatarPosition==='left'?'selected':''}>${escapeHTML(t('stIzquierda'))}</option></select></div>
       <div class="field"><label for="oracleAvatarSize">${escapeHTML(t('stTamanoDelAvatar'))}</label><select id="oracleAvatarSize"><option value="small" ${getVoicePrefs().avatarSize==='small'?'selected':''}>${escapeHTML(t('stPequeno'))}</option><option value="medium" ${getVoicePrefs().avatarSize!=='small' && getVoicePrefs().avatarSize!=='large'?'selected':''}>${escapeHTML(t('stMediano'))}</option><option value="large" ${getVoicePrefs().avatarSize==='large'?'selected':''}>${escapeHTML(t('stGrande'))}</option></select></div>
