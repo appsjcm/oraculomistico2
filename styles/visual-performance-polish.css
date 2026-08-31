@@ -1255,3 +1255,29 @@ button:disabled,
 .om-3d-stage.oracle-avatar-3d-stage canvas {
   border-radius: inherit;
 }
+
+/* ------------------------------------------------------------------
+   Alto contraste en modo claro
+
+   El ajuste "Alto contraste" se escribio cuando la app era solo oscura:
+   pone --muted en blanco al 88 % y el escenario de las ceremonias en
+   negro casi puro. En modo claro eso se vuelve del reves y hace justo lo
+   contrario de lo que promete: texto blanco sobre panel blanco, medido en
+   1,1 sobre 1, es decir invisible. Las etiquetas de la barra inferior
+   desaparecian por esto, y tambien era la razon de que el cuerpo de los
+   modales saliera negro con el titulo claro.
+
+   Aqui va su reflejo para modo claro: tinta muy oscura, panel claro y
+   bordes marcados. Se mantiene la intencion del ajuste, que es subir el
+   contraste, no invertirlo.
+   ------------------------------------------------------------------ */
+html[data-appearance-mode="light"] body.high-contrast {
+  --panel: rgba(255, 255, 255, .90);
+  --stroke: rgba(74, 50, 8, .58);
+  --muted: rgba(16, 11, 26, .94);
+}
+html[data-appearance-mode="light"] body.high-contrast .spectacular-stage,
+html[data-appearance-mode="light"] body.high-contrast .ceremony-intro {
+  background: #fffaf0;
+  border-color: var(--gold);
+}
