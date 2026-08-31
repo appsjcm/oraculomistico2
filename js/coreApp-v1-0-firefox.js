@@ -3268,9 +3268,19 @@ function ceremonyDelay(base) {
    revelarse la primera. */
 function acercarRevelado(elemento) {
   if (!elemento) return;
+  /* scrollIntoView desplaza todos los contenedores desplazables que haya
+     por encima, y eso incluye la pagina. Como el modal es fijo, el fondo
+     se movia por detras sin que se notara y al cerrar aparecias 550 px
+     mas abajo de donde estabas. Se mueve solo el cuerpo del modal. */
+  const caja = elemento.closest('.modal-body');
+  if (!caja) return;
+  const e = elemento.getBoundingClientRect();
+  const c = caja.getBoundingClientRect();
+  const destino = caja.scrollTop + (e.top - c.top) - (c.height - e.height) / 2;
+  const top = Math.max(0, destino);
   const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  try { elemento.scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' }); }
-  catch { elemento.scrollIntoView(); }
+  try { caja.scrollTo({ top, behavior: suave ? 'smooth' : 'auto' }); }
+  catch { caja.scrollTop = top; }
 }
 
 function ceremonyVibrate(pattern = 22) {
