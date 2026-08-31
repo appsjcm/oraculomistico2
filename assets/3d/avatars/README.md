@@ -1,6 +1,6 @@
 # Oraculo 3D avatar assets
 
-Estos dos GLB se usan como avatares opcionales del Oraculo al hablar:
+Estos dos GLB quedan como referencia/reserva visual:
 
 - `oracle-female-portrait.glb` - 5.27 MB
 - `oracle-male-portrait.glb` - 5.04 MB
@@ -15,11 +15,13 @@ Auditoria GLB:
 - Sin nodos separados de mandibula, labios, ojos o cejas.
 
 Por esa estructura, la boca no puede animarse de forma anatomica dentro del
-modelo actual sin que parezca una deformacion artificial. La app mantiene el
-avatar realista 2D para labios y expresion, y usa el GLB solo como presencia
-visual suave. Si en el futuro se suben GLB con morph targets tipo `jawOpen`,
-`mouthOpen` o `viseme_*`, el motor intentara usarlos automaticamente para una
-boca real en 3D.
+modelo actual sin que parezca una deformacion artificial. Desde la version 167,
+el avatar que habla se genera dentro de Three.js con piezas separadas para
+boca, labios, ojos, parpados, cejas, cabeza y cuerpo. Asi hay movimiento de
+boca y gesticulacion sin sumar megas ni depender de un GLB preparado.
+
+Si en el futuro se suben GLB con morph targets tipo `jawOpen`, `mouthOpen` o
+`viseme_*`, el motor sigue preparado para usarlos automaticamente.
 
 Los avatares no estan en el precache inicial de la PWA. Se cargan solo bajo
 demanda en el modo de avatar 3D experimental y se guardan en cache dinamica

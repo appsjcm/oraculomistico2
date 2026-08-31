@@ -490,6 +490,7 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 .oracle-avatar-stage.avatar-3d-ready .oracle-avatar-3d-stage{z-index:3;opacity:1;filter:none}
 .oracle-avatar-3d-stage::before{inset:8%;opacity:.46;filter:blur(14px)}
 .oracle-avatar-3d-stage canvas{width:100%;height:100%;filter:saturate(.78) contrast(.94) brightness(.84)}
+.oracle-avatar-stage.avatar-3d-ready .oracle-avatar-3d-stage canvas{filter:saturate(.95) contrast(.98) brightness(.92)}
 .oracle-avatar-3d-stage.om-3d-loading::after{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .oracle-avatar-3d-stage.om-3d-fallback-active{display:none}
 .oracle-avatar-window.uses-avatar-3d .oracle-avatar-voice-ring{z-index:4}

@@ -163,7 +163,7 @@ function qualityForStage(stage, assetId) {
     ...quality,
     enabled: true,
     level: quality.level === 'high' ? 'high' : 'medium',
-    motion: !isMobileWebKit(),
+    motion: asset.proceduralAvatar ? !prefersReducedMotion() : !isMobileWebKit(),
     reason: quality.level === 'high' ? quality.reason : 'avatar-high-safe',
     avatarHigh: true
   };
@@ -171,6 +171,34 @@ function qualityForStage(stage, assetId) {
 
 async function loadModel(assetId, quality = detectQuality()) {
   const asset = assetById(assetId);
+  if (asset.proceduralAvatar) {
+    if (modelCache.has(assetId)) {
+      const cached = modelCache.get(assetId);
+      cached.lastUsed = performance.now();
+      return cached.promise;
+    }
+    const started = performance.now();
+    const promise = loadThree().then(({ THREE }) => {
+      const scene = createProceduralOracleAvatar(THREE, asset);
+      const gltf = { scene };
+      updateReport(assetId, {
+        status: 'loaded',
+        path: `procedural:${asset.proceduralAvatar}`,
+        loadMs: Math.round(performance.now() - started),
+        meshes: countMeshes(scene),
+        triangles: countTriangles(scene),
+        procedural: true
+      });
+      return gltf;
+    });
+    modelCache.set(assetId, { promise, lastUsed: performance.now(), assetId, gltf: null });
+    promise.then(gltf => {
+      const entry = modelCache.get(assetId);
+      if (entry) entry.gltf = gltf;
+      trimModelCache();
+    }).catch(() => modelCache.delete(assetId));
+    return promise;
+  }
   if (await shouldSkipHeavyModel({ ...asset, id: assetId }, quality)) {
     throw new Error('model-too-heavy-for-quality');
   }
@@ -241,6 +269,95 @@ function tuneAvatarMaterial(material) {
     if (mat.color?.multiplyScalar) mat.color.multiplyScalar(0.9);
     mat.needsUpdate = true;
   });
+}
+
+function createProceduralOracleAvatar(THREE, asset = {}) {
+  const {
+    Group, Mesh, MeshStandardMaterial, MeshBasicMaterial, SphereGeometry,
+    CylinderGeometry, ConeGeometry, BoxGeometry, OctahedronGeometry
+  } = THREE;
+  const female = asset.proceduralAvatar !== 'male';
+  const root = new Group();
+  root.name = female ? 'oracleProceduralFemale' : 'oracleProceduralMale';
+  root.userData.proceduralAvatar = true;
+
+  const mat = (color, options = {}) => new MeshStandardMaterial({
+    color,
+    metalness: 0,
+    roughness: options.roughness ?? 0.82,
+    emissive: options.emissive || 0x000000,
+    emissiveIntensity: options.emissiveIntensity || 0,
+    transparent: Boolean(options.opacity && options.opacity < 1),
+    opacity: options.opacity ?? 1
+  });
+  const flat = (color, opacity = 1) => new MeshBasicMaterial({
+    color,
+    transparent: opacity < 1,
+    opacity
+  });
+  const add = (parent, name, geometry, material, position, scale = [1, 1, 1], rotation = [0, 0, 0]) => {
+    const mesh = new Mesh(geometry, material);
+    mesh.name = `oracleRig.${name}`;
+    mesh.position.set(...position);
+    mesh.scale.set(...scale);
+    mesh.rotation.set(...rotation);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  };
+
+  const skin = mat(female ? 0xb77a58 : 0xb98262, { roughness: 0.88 });
+  const skinSoft = mat(female ? 0xcc9472 : 0xc59172, { roughness: 0.9 });
+  const hair = mat(female ? 0x1d1517 : 0x241912, { roughness: 0.92 });
+  const cloak = mat(female ? 0x173329 : 0x17243c, { roughness: 0.86 });
+  const cloakDeep = mat(female ? 0x0d1d18 : 0x0d1424, { roughness: 0.9 });
+  const gold = mat(0xd8aa42, { roughness: 0.58, emissive: 0x332107, emissiveIntensity: 0.08 });
+  const eyeWhite = mat(0xf4eadf, { roughness: 0.78 });
+  const iris = mat(female ? 0x57321f : 0x2f3d54, { roughness: 0.72 });
+  const mouthDark = flat(0x2b1014, 0.96);
+  const lip = mat(female ? 0x8f3f47 : 0x744044, { roughness: 0.9 });
+
+  const body = new Group();
+  body.name = 'oracleRig.body';
+  root.add(body);
+  add(body, 'cloak', new ConeGeometry(0.72, 0.95, 48, 1, true), cloak, [0, -0.82, 0], [1.05, 1, 0.55], [0, 0, 0]);
+  add(body, 'torsoShade', new ConeGeometry(0.62, 0.86, 48, 1, true), cloakDeep, [0, -0.86, -0.02], [0.86, 0.9, 0.45], [0, 0, 0]);
+  add(body, 'neck', new CylinderGeometry(0.13, 0.16, 0.24, 32), skinSoft, [0, -0.3, 0.03], [1, 1, 0.9]);
+
+  const head = new Group();
+  head.name = 'oracleRig.head';
+  root.add(head);
+  add(head, 'headOval', new SphereGeometry(0.5, 48, 32), skin, [0, 0.08, 0], [0.78, 1.0, 0.66]);
+  add(head, 'faceWarmth', new SphereGeometry(0.49, 48, 16), skinSoft, [0, 0.02, 0.025], [0.62, 0.72, 0.54]);
+
+  if (female) {
+    add(head, 'hairBack', new SphereGeometry(0.55, 48, 24), hair, [0, 0.06, -0.09], [0.9, 1.18, 0.56]);
+    add(head, 'hairLeft', new SphereGeometry(0.25, 32, 18), hair, [-0.38, -0.1, 0.06], [0.6, 1.55, 0.44]);
+    add(head, 'hairRight', new SphereGeometry(0.25, 32, 18), hair, [0.38, -0.1, 0.06], [0.6, 1.55, 0.44]);
+    add(head, 'hairCrown', new SphereGeometry(0.46, 48, 18), hair, [0, 0.34, 0.04], [0.82, 0.38, 0.6]);
+  } else {
+    add(head, 'hairCap', new SphereGeometry(0.49, 48, 18), hair, [0, 0.38, 0.01], [0.78, 0.38, 0.62]);
+    add(head, 'beard', new SphereGeometry(0.4, 32, 16), mat(0x2a1b16, { roughness: 0.94 }), [0, -0.22, 0.18], [0.72, 0.42, 0.28]);
+  }
+
+  [-1, 1].forEach(side => {
+    add(head, side < 0 ? 'eyeLeftWhite' : 'eyeRightWhite', new SphereGeometry(0.058, 24, 12), eyeWhite, [side * 0.16, 0.14, 0.35], [1.2, 0.76, 0.38]);
+    add(head, side < 0 ? 'eyeLeftIris' : 'eyeRightIris', new SphereGeometry(0.03, 18, 10), iris, [side * 0.16, 0.137, 0.374], [1, 1, 0.24]);
+    add(head, side < 0 ? 'lidLeft' : 'lidRight', new SphereGeometry(0.062, 24, 8), skin, [side * 0.16, 0.16, 0.385], [1.23, 0.05, 0.24]);
+    add(head, side < 0 ? 'browLeft' : 'browRight', new BoxGeometry(0.13, 0.018, 0.018), hair, [side * 0.16, 0.245, 0.365], [1, 1, 1], [0, 0, side * (female ? -0.12 : -0.06)]);
+    add(head, side < 0 ? 'cheekLeft' : 'cheekRight', new SphereGeometry(0.06, 18, 8), flat(female ? 0xd58a83 : 0xbd8169, female ? 0.28 : 0.18), [side * 0.22, -0.015, 0.372], [1.2, 0.44, 0.16]);
+  });
+
+  add(head, 'nose', new SphereGeometry(0.04, 18, 10), skinSoft, [0, 0.055, 0.386], [0.72, 1.3, 0.44]);
+  const mouth = add(head, 'mouth', new SphereGeometry(0.08, 24, 12), mouthDark, [0, -0.135, 0.398], [1.05, 0.16, 0.12]);
+  const upperLip = add(head, 'upperLip', new SphereGeometry(0.072, 24, 8), lip, [0, -0.118, 0.415], [1.2, 0.11, 0.1]);
+  const lowerLip = add(head, 'lowerLip', new SphereGeometry(0.07, 24, 8), lip, [0, -0.154, 0.415], [1.06, 0.12, 0.1]);
+  add(head, 'foreheadGem', new OctahedronGeometry(0.035, 0), gold, [0, 0.31, 0.37], [0.75, 1, 0.42], [0, 0, Math.PI / 4]);
+
+  root.userData.rigParts = { head, body, mouth, upperLip, lowerLip };
+  root.position.y = -0.02;
+  return root;
 }
 
 function cloneScene(scene, isAvatar = false) {
@@ -329,6 +446,7 @@ class OracleScene {
     this.baseModelY = 0;
     this.baseModelScale = 1;
     this.avatarMorphs = [];
+    this.avatarRig = null;
     this.avatarGesture = null;
     this.nextAvatarGestureAt = performance.now() + 1800 + Math.random() * 1800;
     this.lastRender = 0;
@@ -392,10 +510,10 @@ class OracleScene {
     this.stage.classList.add('om-3d-mounted');
     const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
     if (this.asset.avatar) {
-      const hasRealLipSync = this.avatarMorphs.length > 0;
+      const hasRealLipSync = this.avatarMorphs.length > 0 || Boolean(this.avatarRig?.mouth);
       avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
       avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
-      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, lipSync: hasRealLipSync ? 'morph-targets' : '2d-overlay' });
+      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, proceduralRig: Boolean(this.avatarRig?.mouth), lipSync: this.avatarRig?.mouth ? 'procedural-rig' : hasRealLipSync ? 'morph-targets' : '2d-overlay' });
     } else {
       avatarStage?.classList?.add('avatar-3d-ready');
     }
@@ -555,7 +673,12 @@ class OracleScene {
   collectAvatarMorphs() {
     const candidatos = /(jaw|mouth|lip|viseme|aa|ah|oh|ou|open|wide|smile|blink|eye|brow|ceja|ojo|boca|labio|mand)/i;
     this.avatarMorphs = [];
+    this.avatarRig = null;
+    const rig = {};
     this.model?.traverse?.(node => {
+      if (node.name?.startsWith?.('oracleRig.')) {
+        rig[node.name.slice('oracleRig.'.length)] = node;
+      }
       const dict = node.morphTargetDictionary;
       const influences = node.morphTargetInfluences;
       if (!dict || !influences) return;
@@ -567,19 +690,61 @@ class OracleScene {
         this.avatarMorphs.push({ mesh:node, index, name, kind, weight });
       });
     });
+    if (rig.mouth) this.avatarRig = rig;
   }
 
   updateAvatarMorphs(amount = 0, expression = {}) {
-    if (!this.avatarMorphs.length) return;
+    if (!this.avatarMorphs.length && !this.avatarRig) return;
     const mouth = Math.max(0, Math.min(1, amount));
     const smile = Math.max(0, Math.min(1, expression.smile || 0));
     const blink = Math.max(0, Math.min(1, expression.blink || 0));
     const brow = Math.max(0, Math.min(1, expression.brow || 0));
+    if (this.avatarRig) this.updateProceduralAvatarRig({ mouth, smile, blink, brow, expression });
     this.avatarMorphs.forEach(target => {
       if (!target.mesh.morphTargetInfluences) return;
       const value = target.kind === 'smile' ? smile : target.kind === 'blink' ? blink : target.kind === 'brow' ? brow : mouth;
       target.mesh.morphTargetInfluences[target.index] = value * target.weight;
     });
+  }
+
+  updateProceduralAvatarRig({ mouth = 0, smile = 0, blink = 0, brow = 0 } = {}) {
+    const rig = this.avatarRig;
+    if (!rig) return;
+    const talk = Math.max(0, Math.min(1, mouth));
+    const grin = Math.max(0, Math.min(1, smile));
+    const blinkAmount = Math.max(0, Math.min(1, blink));
+    const browAmount = Math.max(0, Math.min(1, brow));
+    if (rig.mouth) {
+      rig.mouth.scale.y = 0.16 + talk * 0.95;
+      rig.mouth.scale.x = 1.05 + talk * 0.18 + grin * 0.12;
+      rig.mouth.position.y = -0.135 - talk * 0.018 + grin * 0.008;
+    }
+    if (rig.upperLip) {
+      rig.upperLip.position.y = -0.118 + grin * 0.006;
+      rig.upperLip.scale.x = 1.2 + grin * 0.12;
+    }
+    if (rig.lowerLip) {
+      rig.lowerLip.position.y = -0.154 - talk * 0.05 + grin * 0.006;
+      rig.lowerLip.scale.x = 1.06 + talk * 0.08 + grin * 0.14;
+    }
+    ['lidLeft', 'lidRight'].forEach(name => {
+      if (rig[name]) {
+        rig[name].scale.y = 0.05 + blinkAmount * 1.4;
+        rig[name].position.y = 0.16 - blinkAmount * 0.022;
+      }
+    });
+    if (rig.browLeft) {
+      rig.browLeft.position.y = 0.245 + browAmount * 0.022;
+      rig.browLeft.rotation.z = -0.12 - browAmount * 0.18 + grin * 0.08;
+    }
+    if (rig.browRight) {
+      rig.browRight.position.y = 0.245 + browAmount * 0.022;
+      rig.browRight.rotation.z = 0.12 + browAmount * 0.18 - grin * 0.08;
+    }
+    if (rig.head) {
+      rig.head.rotation.x += ((talk * 0.018 + browAmount * 0.012) - rig.head.rotation.x) * 0.08;
+      rig.head.position.y += ((0.008 * talk) - rig.head.position.y) * 0.08;
+    }
   }
 
   avatarMood() {
