@@ -1192,7 +1192,7 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.4);
           doc.setTextColor(...ink);
-          const foot = asset.reversed ? 'Invertida' : 'Al derecho';
+          const foot = pdfAscii(t(asset.reversed ? 'stInvertida' : 'stAlDerecho'));
           doc.text(foot, x + cardW / 2, boxY + boxH - 5, { align: 'center' });
         } else if (asset.kind === 'runa') {
           const imgW = Math.min(cardW - 10, 20);
@@ -1217,7 +1217,7 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.2);
           doc.setTextColor(...ink);
-          doc.text(asset.reversed ? 'Invertida' : 'Al derecho', x + cardW / 2, boxY + boxH - 4, { align: 'center' });
+          doc.text(pdfAscii(t(asset.reversed ? 'stInvertida' : 'stAlDerecho')), x + cardW / 2, boxY + boxH - 4, { align: 'center' });
         } else {
           const dataUrl = await canvasDataUrlFromImage(asset.image);
           if (dataUrl) {
@@ -3259,6 +3259,18 @@ function ceremonyDelay(base) {
   if (s === 'fast') return Math.round(base * .72);
   return base;
 }
+/* La ceremonia abre con un escenario decorativo y el banner de espera, y
+   las casillas quedan debajo. En una pantalla de portatil eso deja la
+   carta fuera de la vista: se revela, pero hay que bajar a buscarla, y da
+   la sensacion de que no pasa nada. Se lleva la rejilla a la vista al
+   revelarse la primera. */
+function acercarRevelado(elemento) {
+  if (!elemento) return;
+  const suave = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { elemento.scrollIntoView({ block: 'center', behavior: suave ? 'smooth' : 'auto' }); }
+  catch { elemento.scrollIntoView(); }
+}
+
 function ceremonyVibrate(pattern = 22) {
   const prefs = getCeremonyPrefs();
   if (prefs.vibration && navigator.vibrate) {
@@ -3475,6 +3487,7 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
       if (!slot) return;
       slot.className = 'reveal-slot tarot-slot revealed cinematic-slot';
       ceremonyTone('reveal'); ceremonyVibrate(28);
+      if (index === 0) acercarRevelado($('#tarotRevealGrid'));
       /* La carta revelada muestra sus tres conceptos y su energía. El texto
          base viene del catálogo local: funciona sin IA y sin conexión. */
       const claves = Array.isArray(item.card.keywords) ? item.card.keywords.join(' · ') : (item.card.key || '');
@@ -3599,7 +3612,8 @@ function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.
       if (!slot) return;
       slot.className = 'reveal-slot rune-slot revealed cinematic-slot';
       ceremonyTone('rune'); ceremonyVibrate(30);
-      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-stone ${item.rune.img ? 'has-art' : ''} ${item.rev ? 'reversed' : ''}">${runeImage(item.rune)}<strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
+      if (index === 0) acercarRevelado($('#runeRevealGrid'));
+      slot.innerHTML = `<div class="slot-aura reveal-burst"></div><div class="slot-label">${escapeHTML(t('lblRuneN', { n: index + 1 }))}</div><div class="rune-stone ${item.rune.img ? 'has-art' : ''} ${item.rev ? 'reversed' : ''}">${runeImage(item.rune)}<strong>${escapeHTML(item.rune.name)}</strong><small>${escapeHTML(t(item.rev ? 'stInvertida' : 'stAlDerecho'))}</small></div>`;
       if (index === runes.length - 1) {
         const bag = $('#runeBag');
         if (bag) bag.classList.add('bag-rest');
@@ -6075,7 +6089,7 @@ function chatTarotCardHTML(item) {
   return `<div class="chat-ritual-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${escapeHTML(posLabel(item.position) || t('lblCard'))}</div>${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}</strong><small>${escapeHTML(item.rev ? t('lblReversedShort') : t('lblUprightFull'))}</small></div>`;
 }
 function chatRuneHTML(item, index) {
-  return `<div class="chat-rune-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${index === 0 ? 'Primera runa' : index === 1 ? 'Segunda runa' : index === 2 ? 'Tercera runa' : `Runa ${index + 1}`}</div><div class="rune-big">${item.rune.sym}</div><strong>${escapeHTML(item.rune.name)}</strong><small>${item.rev ? 'Invertida' : 'Al derecho'}</small></div>`;
+  return `<div class="chat-rune-card ${item.rev ? 'reversed' : ''}"><div class="mini-label">${escapeHTML(t('lblRuneN', { n: index + 1 }))}</div><div class="rune-big">${item.rune.sym}</div><strong>${escapeHTML(item.rune.name)}</strong><small>${escapeHTML(t(item.rev ? 'stInvertida' : 'stAlDerecho'))}</small></div>`;
 }
 function showChatRitual() {
   openModal({ icon:'🕯️', title:t('chatTitle'), subtitle:t('chatSub'), body:`

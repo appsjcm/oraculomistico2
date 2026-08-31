@@ -245,6 +245,7 @@ export function applyAppTranslations(root = document) {
    ============================================================ */
 const V2_STRINGS = {
   es: {
+    lblRuneN:'Runa {n}',
     stIaConectada:'Conectada', stIaSimbolica:'Modo simbólico', phTuNombre:'Tu nombre',
     tsVocesActualizado:'Se ha actualizado el catálogo de voces.', stVocesAndroidAuto:'Chrome no publica los nombres de Google TTS, pero la opción automática utilizará el motor y el idioma configurados en Android.', stVocesAndroidRevisado:'Catálogo de Android revisado. La opción automática usa siempre el motor TTS predeterminado.', stVocesRevisado:'Catálogo revisado. En iPhone, si aún no aparece, cierra completamente la app y vuelve a abrirla.', arCambiarNoche:'Cambiar a Noche', arCambiarDia:'Cambiar a Día', cfBorrarChat:'¿Borrar el chat local?', cfBorrarPerfil:'¿Borrar el perfil local?', mdRitualTarot:'Ritual de Tarot', mdRitualRunas:'Ritual de Runas', stMazoPreparado:'El mazo está preparado', stSaquitoPreparado:'El saquito está preparado', stElegirTirada:'Elegir tirada', stElegirRunas:'Elegir runas', phCiudadPais:'Ciudad, país',
     stTocaParaVolver:'toca para volver al normal',
@@ -482,6 +483,7 @@ const V2_STRINGS = {
     omPanels: 'Paneles avanzados', omPanelsSub: 'Las herramientas de las versiones anteriores'
   },
   ca: {
+    lblRuneN:'Runa {n}',
     stIaConectada:'Connectada', stIaSimbolica:'Mode simbòlic', phTuNombre:'El teu nom',
     tsVocesActualizado:'S\u2019ha actualitzat el catàleg de veus.', stVocesAndroidAuto:'Chrome no publica els noms de Google TTS, però l\u2019opció automàtica farà servir el motor i l\u2019idioma configurats a Android.', stVocesAndroidRevisado:'Catàleg d\u2019Android revisat. L\u2019opció automàtica fa servir sempre el motor TTS predeterminat.', stVocesRevisado:'Catàleg revisat. A l\u2019iPhone, si encara no apareix, tanca completament l\u2019app i torna a obrir-la.', arCambiarNoche:'Canviar a Nit', arCambiarDia:'Canviar a Dia', cfBorrarChat:'Esborrar el xat local?', cfBorrarPerfil:'Esborrar el perfil local?', mdRitualTarot:'Ritual de Tarot', mdRitualRunas:'Ritual de Runes', stMazoPreparado:'La baralla està preparada', stSaquitoPreparado:'La bosseta està preparada', stElegirTirada:'Triar tirada', stElegirRunas:'Triar runes', phCiudadPais:'Ciutat, país',
     stTocaParaVolver:'toca per tornar al normal',
@@ -731,6 +733,7 @@ const V2_STRINGS = {
     omPanels: 'Plafons avançats', omPanelsSub: 'Les eines de les versions anteriors'
   },
   en: {
+    lblRuneN:'Rune {n}',
     stIaConectada:'Connected', stIaSimbolica:'Symbolic mode', phTuNombre:'Your name',
     tsVocesActualizado:'The voice catalogue has been updated.', stVocesAndroidAuto:'Chrome does not expose Google TTS voice names, but the automatic option will use the engine and language set in Android.', stVocesAndroidRevisado:'Android catalogue checked. The automatic option always uses the default TTS engine.', stVocesRevisado:'Catalogue checked. On iPhone, if it still does not appear, close the app completely and open it again.', arCambiarNoche:'Switch to night', arCambiarDia:'Switch to day', cfBorrarChat:'Delete the local chat?', cfBorrarPerfil:'Delete the local profile?', mdRitualTarot:'Tarot Ritual', mdRitualRunas:'Rune Ritual', stMazoPreparado:'The deck is ready', stSaquitoPreparado:'The pouch is ready', stElegirTirada:'Choose a spread', stElegirRunas:'Choose runes', phCiudadPais:'City, country',
     stTocaParaVolver:'tap to go back to normal',
@@ -979,6 +982,7 @@ const V2_STRINGS = {
     omPanels: 'Advanced panels', omPanelsSub: 'Tools from earlier versions'
   },
   fr: {
+    lblRuneN:'Rune {n}',
     stIaConectada:'Connectée', stIaSimbolica:'Mode symbolique', phTuNombre:'Votre prénom',
     tsVocesActualizado:'Le catalogue de voix a été mis à jour.', stVocesAndroidAuto:'Chrome ne publie pas les noms des voix Google TTS, mais l\u2019option automatique utilisera le moteur et la langue configurés dans Android.', stVocesAndroidRevisado:'Catalogue Android vérifié. L\u2019option automatique utilise toujours le moteur TTS par défaut.', stVocesRevisado:'Catalogue vérifié. Sur iPhone, s\u2019il n\u2019apparaît toujours pas, fermez complètement l\u2019app et rouvrez-la.', arCambiarNoche:'Passer en mode nuit', arCambiarDia:'Passer en mode jour', cfBorrarChat:'Supprimer la conversation locale ?', cfBorrarPerfil:'Supprimer le profil local ?', mdRitualTarot:'Rituel de Tarot', mdRitualRunas:'Rituel de Runes', stMazoPreparado:'Le jeu est prêt', stSaquitoPreparado:'La bourse est prête', stElegirTirada:'Choisir un tirage', stElegirRunas:'Choisir des runes', phCiudadPais:'Ville, pays',
     stTocaParaVolver:'touche pour revenir au normal',
@@ -1231,6 +1235,7 @@ const V2_STRINGS = {
     omPanels: 'Panneaux avancés', omPanelsSub: 'Les outils des versions précédentes'
   },
   de: {
+    lblRuneN:'Rune {n}',
     stIaConectada:'Verbunden', stIaSimbolica:'Symbolischer Modus', phTuNombre:'Dein Name',
     tsVocesActualizado:'Der Stimmenkatalog wurde aktualisiert.', stVocesAndroidAuto:'Chrome gibt die Namen der Google-TTS-Stimmen nicht preis, aber die automatische Option nutzt die in Android eingestellte Engine und Sprache.', stVocesAndroidRevisado:'Android-Katalog geprüft. Die automatische Option nutzt immer die Standard-TTS-Engine.', stVocesRevisado:'Katalog geprüft. Falls er auf dem iPhone weiterhin fehlt, schließe die App vollständig und öffne sie erneut.', arCambiarNoche:'Zu Nacht wechseln', arCambiarDia:'Zu Tag wechseln', cfBorrarChat:'Lokalen Chat löschen?', cfBorrarPerfil:'Lokales Profil löschen?', mdRitualTarot:'Tarot-Ritual', mdRitualRunas:'Runen-Ritual', stMazoPreparado:'Das Deck ist bereit', stSaquitoPreparado:'Der Beutel ist bereit', stElegirTirada:'Legung wählen', stElegirRunas:'Runen wählen', phCiudadPais:'Stadt, Land',
     stTocaParaVolver:'tippen für Normalgröße',
@@ -1469,6 +1474,7 @@ const V2_STRINGS = {
     omPanels: 'Erweiterte Bereiche', omPanelsSub: 'Werkzeuge früherer Versionen'
   },
   zh: {
+    lblRuneN:'第 {n} 枚卢恩',
     stIaConectada:'已连接', stIaSimbolica:'象征模式', phTuNombre:'你的名字',
     tsVocesActualizado:'语音目录已更新。', stVocesAndroidAuto:'Chrome 不公开 Google TTS 的语音名称，但自动选项会使用 Android 中设置的引擎和语言。', stVocesAndroidRevisado:'已检查 Android 目录。自动选项始终使用默认 TTS 引擎。', stVocesRevisado:'已检查目录。在 iPhone 上如果仍未出现，请完全关闭应用后重新打开。', arCambiarNoche:'切换到夜间', arCambiarDia:'切换到日间', cfBorrarChat:'删除本地对话？', cfBorrarPerfil:'删除本地资料？', mdRitualTarot:'塔罗仪式', mdRitualRunas:'卢恩仪式', stMazoPreparado:'牌组已就绪', stSaquitoPreparado:'符囊已就绪', stElegirTirada:'选择牌阵', stElegirRunas:'选择卢恩', phCiudadPais:'城市、国家',
     stTocaParaVolver:'点按恢复正常',

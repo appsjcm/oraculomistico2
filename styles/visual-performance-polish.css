@@ -1149,3 +1149,52 @@ button:disabled,
 .oracle-avatar-3d-stage {
   opacity: 0;
 }
+
+/* ------------------------------------------------------------------
+   La barra del modal, otra vez
+
+   Se dejo de pintar cuando el modal ya traia la fila de acciones al pie,
+   pero en la ceremonia esa fila no existe al abrir: llega unos segundos
+   despues, cuando termina el revelado. Asi que la barra se colaba y al
+   rato quedaba duplicada, que es justo lo que se veia en la grabacion.
+
+   La comprobacion en JS no puede saberlo de antemano, pero el CSS si lo
+   ve en cuanto aparece. Se deja la de JS para el caso inmediato y esta
+   se encarga del tardio.
+   ------------------------------------------------------------------ */
+.modal-body:has(.reading-actions) .premium-modal-toolbar {
+  display: none;
+}
+
+/* ------------------------------------------------------------------
+   El escenario de la ceremonia
+
+   Medido: antes de la primera carta habia 374 px de escenario, de los que
+   204 eran el medallon decorativo, que ademas casi siempre sale en su
+   version 2D. En una pantalla de portatil eso deja la carta fuera de la
+   vista, y como el revelado ocurre abajo parece que no pasa nada. Se veia
+   en la grabacion: diecisiete segundos de medallon y banner.
+
+   El medallon se queda, que es parte del rito, pero a un tamano que no
+   empuje la carta fuera de la pantalla. Y el revelado ahora se acerca
+   solo, que es la otra mitad del arreglo.
+   ------------------------------------------------------------------ */
+.om-3d-stage.om-3d-ritual {
+  width: min(22vw, 108px);
+  min-width: 84px;
+}
+
+/* El tablero de barajar se marcaba con fade-out al terminar el reparto,
+   pero fade-out solo bajaba la opacidad al 16 % y encogia un pelin: se
+   quedaba ocupando sus 120 px y los de la ilustracion, en medio, entre el
+   banner y las cartas. Sumado al escenario, la carta caia fuera de la
+   pantalla. Ahora ademas cede el sitio, con la misma transicion para que
+   no sea un salto. */
+.shuffle-board.fade-out {
+  opacity: 0;
+  min-height: 0;
+  height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  transition: opacity .35s ease, height .45s ease, min-height .45s ease, margin-top .45s ease, transform .45s ease;
+}
