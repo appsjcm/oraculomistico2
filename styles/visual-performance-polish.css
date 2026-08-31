@@ -668,3 +668,33 @@ html[data-text-scale="140"] .topbar { font-size: .86rem; }
    para que no tape el final del contenido. */
 html[data-text-scale="125"] .app-footer,
 html[data-text-scale="140"] .app-footer { padding-bottom: 128px; }
+
+/* ------------------------------------------------------------------
+   Nombre de carta en las miniaturas del avatar
+
+   Las fichas que acompanan al oraculo miden entre 27 y 58 px de ancho y
+   encima llevaban el nombre de la carta a 4,5, 5 o 6 px segun la
+   variante. A ese tamano no es texto: es una franja gris. Y ya venia
+   recortado con puntos suspensivos, asi que ni siquiera cabia entero.
+
+   No se borra, se deja de pintar: el nombre sigue en el arbol de
+   accesibilidad, y ademas ya estaba en el title de la ficha y en el alt
+   de la imagen. La miniatura se ve limpia y no se pierde informacion,
+   porque la que habia no se podia leer.
+
+   Los tres selectores repiten los del original para ganar la cascada.
+   ------------------------------------------------------------------ */
+.oracle-avatar-copy .oracle-reading-visuals.dense .oracle-reading-visual small,
+.oracle-avatar-copy .oracle-reading-visual small,
+.oracle-reading-visual small {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  background: none;
+}

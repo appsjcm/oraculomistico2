@@ -5785,7 +5785,7 @@ function showSettings() {
       <button class="choice" data-act="preview-avatar"><strong>${escapeHTML(t('stVistaPreviaDelAvatar'))}</strong><small>${escapeHTML(t('stVerElOraculoAnimado'))}</small></button>
       <button class="choice" data-act="stop-voice"><strong>${escapeHTML(t('stPararVoz'))}</strong><small>${escapeHTML(t('stDetieneLaLecturaHablada'))}</small></button>
       <button class="choice" data-act="toggle-contrast"><strong>${escapeHTML(t('stAltoContraste'))}</strong><small>${prefs.highContrast?'Activado':'Desactivado'}</small></button>
-      <button class="choice" data-act="cycle-text-scale"><strong>${escapeHTML(t('stTamanoTexto'))}</strong><small>${getEscalaTexto()}% · ${escapeHTML(t('stTocaParaAumentar'))}</small></button>
+      <button class="choice" data-act="cycle-text-scale"><strong>${escapeHTML(t('stTamanoTexto'))}</strong><small>${getEscalaTexto()}% · ${escapeHTML(t(siguienteEscalaTexto() > getEscalaTexto() ? 'stTocaParaAumentar' : 'stTocaParaVolver'))}</small></button>
     </div>
     <h3 class="section-title">${escapeHTML(t('stDatosYAyuda'))}</h3>
     <div class="panel-grid settings-actions">
