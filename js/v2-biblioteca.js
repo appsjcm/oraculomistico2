@@ -27,6 +27,10 @@
   const guardarFav = (s) => { try { localStorage.setItem(LS_FAV, JSON.stringify([...s])); } catch {} };
 
   let categoria = 'tarot', consulta = '', soloFavoritos = false, abierto = null, grabovoi = null, filtro = 'all';
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 3;
+  const ZOOM_STEP = .35;
+  let gestoZoom = { viewport:null, pointers:new Map(), startScale:1, startDistance:0, startMid:null, startX:0, startY:0 };
 
   const CATEGORIAS = [
     { id: 'tarot',    clave: 'bCatTarot',    icono: '🃏' },
@@ -74,6 +78,89 @@
   function partirConceptos(v) {
     if (Array.isArray(v)) return v.filter(Boolean).slice(0, 3);
     return String(v || '').split(/[,·]/).map(x => x.trim()).filter(Boolean).slice(0, 3);
+  }
+
+  function zoomState(viewport) {
+    return {
+      scale: Number(viewport?.dataset?.zoomScale || 1) || 1,
+      x: Number(viewport?.dataset?.zoomX || 0) || 0,
+      y: Number(viewport?.dataset?.zoomY || 0) || 0
+    };
+  }
+
+  function zoomClamp(viewport, x, y, scale) {
+    const rect = viewport?.getBoundingClientRect?.();
+    const width = rect?.width || viewport?.clientWidth || 260;
+    const height = rect?.height || viewport?.clientHeight || 260;
+    const maxX = Math.max(0, (scale - 1) * width * .5);
+    const maxY = Math.max(0, (scale - 1) * height * .5);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y))
+    };
+  }
+
+  function setZoom(viewport, next) {
+    if (!viewport) return;
+    const scale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Number(next.scale) || 1));
+    const pan = scale <= 1.01 ? { x:0, y:0 } : zoomClamp(viewport, Number(next.x) || 0, Number(next.y) || 0, scale);
+    viewport.dataset.zoomScale = scale.toFixed(2);
+    viewport.dataset.zoomX = pan.x.toFixed(1);
+    viewport.dataset.zoomY = pan.y.toFixed(1);
+    viewport.classList.toggle('om-bib-zoomed', scale > 1.01);
+    const target = viewport.querySelector('[data-bib-zoom-target]');
+    target?.style.setProperty('--bib-scale', scale.toFixed(2));
+    target?.style.setProperty('--bib-pan-x', `${pan.x.toFixed(1)}px`);
+    target?.style.setProperty('--bib-pan-y', `${pan.y.toFixed(1)}px`);
+    const status = viewport.closest('.om-bib-media')?.querySelector('[data-bib-zoom-status]');
+    if (status) status.textContent = `${Math.round(scale * 100)}%`;
+  }
+
+  function zoomPoints() {
+    return Array.from(gestoZoom.pointers.values());
+  }
+
+  function zoomDistance(points) {
+    if (points.length < 2) return 0;
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+  }
+
+  function zoomMid(points) {
+    if (points.length < 2) return { x:points[0]?.x || 0, y:points[0]?.y || 0 };
+    return { x:(points[0].x + points[1].x) / 2, y:(points[0].y + points[1].y) / 2 };
+  }
+
+  function resetZoomGesture(viewport) {
+    const state = zoomState(viewport);
+    const points = zoomPoints();
+    gestoZoom.startScale = state.scale;
+    gestoZoom.startX = state.x;
+    gestoZoom.startY = state.y;
+    gestoZoom.startDistance = zoomDistance(points);
+    gestoZoom.startMid = zoomMid(points);
+  }
+
+  function clearZoomGesture() {
+    gestoZoom.pointers.clear();
+    gestoZoom.viewport?.classList?.remove('om-bib-zoom-dragging');
+    gestoZoom.viewport = null;
+  }
+
+  function mediaHTML(e, enModal) {
+    const contenido = e.imagen
+      ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy" decoding="async">`
+      : `<div class="om-bib-simbolo-grande" aria-hidden="true">${esc(e.simbolo || e.etiqueta || '✦')}</div>`;
+    if (!enModal) return contenido;
+    return `
+      <div class="om-bib-zoom-tools" aria-label="Zoom">
+        <button type="button" data-bib="zoom-out" aria-label="${esc(tr('bZoomOut'))}">−</button>
+        <span data-bib-zoom-status aria-live="polite">100%</span>
+        <button type="button" data-bib="zoom-reset" aria-label="${esc(tr('bZoomReset'))}">⟲</button>
+        <button type="button" data-bib="zoom-in" aria-label="${esc(tr('bZoomIn'))}">+</button>
+      </div>
+      <div class="om-bib-zoom-viewport" data-bib-zoom-viewport tabindex="0" aria-label="${esc(tr('bZoomArea'))}">
+        <div class="om-bib-zoom-target" data-bib-zoom-target>${contenido}</div>
+      </div>`;
   }
 
   /* ---------- Fuentes ----------
@@ -250,8 +337,7 @@
         ${enModal ? '' : `<button class="om-bib-volver" data-bib="volver" type="button">‹ ${esc(tr('bBack'))}</button>`}
         <div class="om-bib-hero">
           <div class="om-bib-media">
-            ${e.imagen ? `<img class="om-bib-lamina" src="${esc(e.imagen)}" alt="${esc(e.titulo)}" loading="lazy" decoding="async">`
-                       : `<div class="om-bib-simbolo-grande" aria-hidden="true">${esc(e.simbolo || e.etiqueta || '✦')}</div>`}
+            ${mediaHTML(e, enModal)}
           </div>
           <div class="om-bib-info">
             ${e.etiqueta ? `<p class="om-bib-etiqueta">${esc(e.etiqueta)}</p>` : ''}
@@ -305,6 +391,7 @@
   function cerrarDetalle(repintar = true) {
     const modal = $('#omBibDetalleModal');
     if (!modal) { abierto = null; return; }
+    clearZoomGesture();
     modal.classList.remove('abierto');
     setTimeout(() => { modal.hidden = true; modal.innerHTML = ''; }, 180);
     abierto = null;
@@ -365,6 +452,13 @@
       ev.preventDefault();
       if (q === 'cerrar') return cerrar();
       if (q === 'cerrar-detalle') return cerrarDetalle();
+      if (q === 'zoom-in' || q === 'zoom-out' || q === 'zoom-reset') {
+        const viewport = t.closest('.om-bib-media')?.querySelector('[data-bib-zoom-viewport]');
+        const state = zoomState(viewport);
+        if (q === 'zoom-reset') setZoom(viewport, { scale:1, x:0, y:0 });
+        else setZoom(viewport, { ...state, scale:state.scale + (q === 'zoom-in' ? ZOOM_STEP : -ZOOM_STEP) });
+        return;
+      }
       if (q === 'categoria') {
         cerrarDetalle(false);
         categoria = t.dataset.valor; soloFavoritos = false; filtro = 'all';
@@ -398,6 +492,70 @@
     if (ev.key !== 'Escape' || $('#omBiblioteca')?.hidden !== false) return;
     if (abierto) cerrarDetalle(); else cerrar();
   });
+
+  document.addEventListener('pointerdown', (ev) => {
+    if (ev.target.closest?.('[data-bib]')) return;
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    const viewport = ev.target.closest?.('[data-bib-zoom-viewport]');
+    if (!viewport) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (gestoZoom.viewport && gestoZoom.viewport !== viewport) gestoZoom.pointers.clear();
+    gestoZoom.viewport = viewport;
+    viewport.classList.add('om-bib-zoom-dragging');
+    try { viewport.setPointerCapture?.(ev.pointerId); } catch {}
+    const now = Date.now();
+    const lastTap = Number(viewport.dataset.zoomLastTap || 0);
+    if (now - lastTap < 320 && gestoZoom.pointers.size === 0) {
+      const state = zoomState(viewport);
+      setZoom(viewport, { ...state, scale:state.scale > 1.05 ? 1 : 2 });
+      viewport.dataset.zoomLastTap = '0';
+      return;
+    }
+    viewport.dataset.zoomLastTap = String(now);
+    gestoZoom.pointers.set(ev.pointerId, { x:ev.clientX, y:ev.clientY });
+    resetZoomGesture(viewport);
+  }, { passive:false });
+
+  document.addEventListener('pointermove', (ev) => {
+    const viewport = gestoZoom.viewport;
+    if (!viewport || !document.contains(viewport) || !gestoZoom.pointers.has(ev.pointerId)) {
+      if (viewport && !document.contains(viewport)) clearZoomGesture();
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    gestoZoom.pointers.set(ev.pointerId, { x:ev.clientX, y:ev.clientY });
+    const points = zoomPoints();
+    if (points.length >= 2 && gestoZoom.startDistance > 0) {
+      const mid = zoomMid(points);
+      setZoom(viewport, {
+        scale:gestoZoom.startScale * (zoomDistance(points) / gestoZoom.startDistance),
+        x:gestoZoom.startX + (mid.x - gestoZoom.startMid.x),
+        y:gestoZoom.startY + (mid.y - gestoZoom.startMid.y)
+      });
+      return;
+    }
+    const state = zoomState(viewport);
+    if (state.scale <= 1.01) return;
+    const point = points[0];
+    setZoom(viewport, {
+      scale:state.scale,
+      x:gestoZoom.startX + point.x - gestoZoom.startMid.x,
+      y:gestoZoom.startY + point.y - gestoZoom.startMid.y
+    });
+  }, { passive:false });
+
+  const endZoomGesture = (ev) => {
+    const viewport = gestoZoom.viewport;
+    if (!viewport) return;
+    try { viewport.releasePointerCapture?.(ev.pointerId); } catch {}
+    gestoZoom.pointers.delete(ev.pointerId);
+    if (gestoZoom.pointers.size) resetZoomGesture(viewport);
+    else clearZoomGesture();
+  };
+  document.addEventListener('pointerup', endZoomGesture);
+  document.addEventListener('pointercancel', endZoomGesture);
 })();
 
 /* La Biblioteca se repinta al cambiar de idioma, sin recargar. */
