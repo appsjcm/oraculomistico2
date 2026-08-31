@@ -122,6 +122,7 @@ export const ORACULO_3D_ASSETS = {
   avatarFemale: {
     label: 'Oráculo guía 3D', i18n: 'a3dAvatarFemale',
     path: 'assets/3d/avatars/oracle-female-portrait.glb',
+    proceduralAvatar: 'female',
     fallback: '✦',
     section: 'Avatar del Oráculo',
     scale: 1,
@@ -135,6 +136,7 @@ export const ORACULO_3D_ASSETS = {
   avatarMale: {
     label: 'Oráculo guardián 3D', i18n: 'a3dAvatarMale',
     path: 'assets/3d/avatars/oracle-male-portrait.glb',
+    proceduralAvatar: 'male',
     fallback: '◎',
     section: 'Avatar del Oráculo',
     scale: 1,
@@ -147,4 +149,4 @@ export const ORACULO_3D_ASSETS = {
   }
 };
 
-export const ORACULO_3D_PATHS = Object.values(ORACULO_3D_ASSETS).map(asset => asset.path);
+export const ORACULO_3D_PATHS = Object.values(ORACULO_3D_ASSETS).map(asset => asset.path).filter(Boolean);
