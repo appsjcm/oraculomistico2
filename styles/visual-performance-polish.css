@@ -1281,3 +1281,26 @@ html[data-appearance-mode="light"] body.high-contrast .ceremony-intro {
   background: #fffaf0;
   border-color: var(--gold);
 }
+
+/* ------------------------------------------------------------------
+   Tema Claro combinado con modo Noche
+
+   El tema Claro fija tinta oscura y fondo claro. Es coherente consigo
+   mismo, pero quien elige ese tema y ademas pone el modo Noche se queda
+   con la tinta oscura sobre el fondo oscuro del modo: medido, quince
+   textos por debajo de 3 a 1, con el titulo en 1,14 y el boton de Guia en
+   1,03. Es una combinacion que la interfaz permite, asi que tiene que
+   funcionar.
+
+   En Noche manda el modo para tinta y fondo, que es lo que hace legible la
+   pantalla, y el tema conserva lo suyo: su acento y su oro, este ultimo
+   algo mas claro para que se lea sobre fondo oscuro sin dejar de ser el
+   ambar de ese tema.
+   ------------------------------------------------------------------ */
+html[data-appearance-mode="dark"] body.theme-light {
+  --bg: #080713;
+  --panel: rgba(255, 255, 255, .078);
+  --text: #fff7ea;
+  --muted: rgba(255, 247, 234, .72);
+  --gold: #c9922f;
+}
