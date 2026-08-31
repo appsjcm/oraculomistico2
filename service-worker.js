@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-avatar-states-141';
+const CACHE_NAME = 'oraculo-v1-0-public-avatar-prosody-142';
 const APP_SHELL = [
   './',
   './index.html',
