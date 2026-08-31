@@ -718,6 +718,16 @@ function observeStages(root = document) {
   const stages = Array.from(root.querySelectorAll('[data-oraculo-3d-asset]'));
   if (root.matches?.('[data-oraculo-3d-asset]')) stages.unshift(root);
   if (!stages.length) return;
+
+  /* El avatar se monta en cuanto aparece, sin pasar por el observador de
+     visibilidad. Su panel flota y entra con animacion, asi que en el
+     momento en que se observa puede medir cero y el observador no llega a
+     considerarlo visible nunca: el lienzo se quedaba creado y vacio, y lo
+     que se veia era el retrato 2D. El observador es la via correcta para
+     los lienzos que hay que ahorrar mientras no se miran; este no, porque
+     se ha pedido a proposito y solo existe mientras el panel esta abierto. */
+  stages.filter(esLienzoDeAvatar).forEach(mountStage);
+
   if (!('IntersectionObserver' in window)) {
     stages.slice(0, 1).forEach(mountStage);
     return;
@@ -733,7 +743,7 @@ function observeStages(root = document) {
       visibilidad.set(entry.target, entry.isIntersecting ? entry.intersectionRatio : 0);
       /* Al avatar no se le aplica: su panel flota y el observador lo da
          por fuera de vista en cuanto se mueve la pagina. */
-      if (!entry.isIntersecting && !esAvatarPrioritario(entry.target)) unmountStage(entry.target);
+      if (!entry.isIntersecting && !esLienzoDeAvatar(entry.target)) unmountStage(entry.target);
       else if (quality.level !== 'high') mountStage(entry.target);
     });
     /* En alta no montamos desde cada entrada del observador: primero se
@@ -766,6 +776,13 @@ function visiblePorGeometria(stage) {
   return (alto * ancho) / (r.height * r.width);
 }
 
+/* Si el lienzo es de avatar. A diferencia de esAvatarPrioritario, no mira
+   si el panel ya esta marcado como visible: en el instante en que el nodo
+   se anade al documento esa clase todavia no esta puesta. */
+function esLienzoDeAvatar(stage) {
+  return assetById(stage.getAttribute('data-oraculo-3d-asset') || 'orb')?.avatar === true;
+}
+
 function esAvatarPrioritario(stage) {
   return stage.classList.contains('oracle-avatar-3d-stage')
     && Boolean(stage.closest('#oracleVoiceAvatarHost.visible'));
@@ -784,7 +801,10 @@ function reconciliarEscenas() {
      encuadre. Eso era el "no aguanta en 3D" y el cambio de tamano.
      Tampoco se le exige area visible: el panel flota y durante su entrada
      llega a medir cero, y eso bastaba para desmontarlo. */
-  const avatares = vivas.filter(stage => esAvatarPrioritario(stage));
+  /* Se usa esLienzoDeAvatar y no esAvatarPrioritario: recien creado, el
+     panel aun no lleva la clase visible, y con el criterio estricto la
+     reconciliacion siguiente lo desmontaba justo despues de montarlo. */
+  const avatares = vivas.filter(esLienzoDeAvatar);
 
   /* Los lienzos de la portada van siempre en 2D. Si uno se lleva la plaza
      la gasta sin montar nada y deja fuera a los que si la aprovechan. */
@@ -792,7 +812,7 @@ function reconciliarEscenas() {
      DOM y no solo con lo que dejo el observador, porque tras un refresco
      aun no ha vuelto a disparar y todas quedarian empatadas. */
   const compiten = vivas
-    .filter(stage => !esAvatarPrioritario(stage) && !esDePortada(stage))
+    .filter(stage => !esLienzoDeAvatar(stage) && !esDePortada(stage))
     .map(stage => [stage, visiblePorGeometria(stage)])
     .filter(([, ratio]) => ratio > 0)
     .sort((a, b) => b[1] - a[1]);
