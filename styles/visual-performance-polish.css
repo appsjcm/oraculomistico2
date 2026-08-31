@@ -1118,34 +1118,32 @@ button:disabled,
 }
 
 /* ------------------------------------------------------------------
-   La segunda cara detras del avatar
+   Una sola cara en el avatar 3D
 
-   El lienzo 3D del avatar nace con opacity .18 y solo pasa a primer plano
-   cuando el modelo trae morph targets faciales: entonces se anade
-   avatar-3d-ready y el retrato 2D se aparta. Si no los trae, se marca
-   avatar-3d-ambient y el retrato 2D se queda, que es lo correcto porque
-   la boca la mueve el 2D.
+   El lienzo 3D nace de fondo y solo pasa a primer plano si el modelo trae
+   morph targets faciales (avatar-3d-ready). Si no los trae se marca
+   avatar-3d-ambient, y ahi quedaban los dos a la vez: el retrato 2D
+   delante y el modelo detras semitransparente, que son dos mujeres
+   distintas. De ahi la segunda cara asomando.
 
-   Pero en ese caso nadie apagaba el lienzo, asi que el modelo se quedaba
-   detras al 18 %: una segunda cara asomando por detras de la del retrato.
-   Y los dos GLB de avatar no tienen morph targets, ni uno, asi que ese
-   era el estado permanente, no un parpadeo de carga.
-
-   En modo ambiente el 3D no aporta nada que se pueda ver bien: se apaga.
+   Los dos GLB de avatar no tienen morph targets, ni uno, asi que ambiente
+   es su estado permanente. Primero se apago el lienzo, pero entonces el
+   avatar 3D no se veia nunca. Lo correcto es al reves: si se ha pedido el
+   avatar 3D, se ve el 3D y se aparta el retrato. La boca no se movera
+   porque estos modelos no pueden, pero se ve una sola cara y es la que se
+   ha pedido.
    ------------------------------------------------------------------ */
 .oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-3d-stage {
-  display: none;
-}
-/* Con el 3D apagado, el retrato vuelve a opacidad plena: en modo ambiente
-   se le habia bajado al 78 % para dejar ver el modelo por debajo, y sin
-   modelo debajo solo quedaba un retrato lavado. */
-.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic {
+  z-index: 3;
   opacity: 1;
+  filter: none;
 }
-/* Y mientras carga tampoco: hasta que no se sabe si el modelo mueve la
-   boca, el lienzo se queda a cero en vez de al 18 %, que era una cara
-   asomando durante toda la descarga. Al estar listo, avatar-3d-ready lo
-   sube a 1, asi que la aparicion sigue siendo suave. */
+.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic {
+  opacity: 0;
+}
+/* Mientras carga no asoma nadie: hasta que el modelo esta listo el lienzo
+   se queda a cero, en vez de al 18 % que dejaba una cara de fondo durante
+   toda la descarga. */
 .oracle-avatar-3d-stage {
   opacity: 0;
 }

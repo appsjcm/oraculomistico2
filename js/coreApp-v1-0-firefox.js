@@ -1680,10 +1680,12 @@ function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
   const mode = normalizeAvatarRenderMode(prefs);
   const quality = get3dPreference();
   if (mode === '2d') return false;
-  if (quality !== 'high') return false;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
   if (!window.WebGLRenderingContext) return false;
-  return true;
+  /* El criterio vive en el motor 3D, que es quien conoce la calidad
+     detectada. Aqui solo se pregunta, para no tener dos reglas que puedan
+     separarse. Si el motor aun no ha cargado, se queda en 2D. */
+  return window.Oraculo3D?.avatarPuede3D?.() === true;
 }
 function resolveOracleAvatarTheme(message = '', reading = lastReading || {}) {
   const text = `${message || ''} ${reading?.type || ''} ${reading?.title || ''}`.toLowerCase();

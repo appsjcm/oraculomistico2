@@ -136,10 +136,29 @@ async function shouldSkipPrefetch(assetId) {
   return skip;
 }
 
+/* Si el avatar puede ir en 3D. Vivia repartida en tres sitios que pedian
+   calidad Alta, asi que con los ajustes de fabrica no aparecia nunca: el
+   lienzo se creaba y el modelo se descartaba justo despues.
+
+   Aquella exigencia venia de cuando los dos modelos pesaban 54 MB cada
+   uno. Ahora pesan 5 y son un solo lienzo que solo vive mientras el panel
+   esta abierto. Se mantienen los frenos que importan: movimiento
+   reducido, WebGL ausente, y las rebajas por aparato, por iOS o por
+   ahorro de datos. Solo se acepta 'auto-heavy-assets', que es la rebaja
+   generica que se puso por el peso y ya no aplica. */
+function avatarPuede3D() {
+  if (prefersReducedMotion() || !webglAvailable()) return false;
+  const pref = readPreference();
+  if (pref === 'high') return true;
+  if (pref !== 'auto') return false;
+  const q = detectQuality();
+  return q.enabled === true && q.reason === 'auto-heavy-assets';
+}
+
 function qualityForStage(stage, assetId) {
   const quality = detectQuality();
   const asset = assetById(assetId);
-  if (!asset.avatar || readPreference() !== 'high' || prefersReducedMotion() || !webglAvailable()) return quality;
+  if (!asset.avatar || !avatarPuede3D()) return quality;
   return {
     ...quality,
     enabled: true,
@@ -370,12 +389,8 @@ class OracleScene {
     this.scene.add(this.model);
     this.stage.classList.add('om-3d-mounted');
     const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
-    /* En modo ambiente el lienzo queda oculto, asi que animarlo seria
-       gastar GPU y bateria en algo que no se ve. */
-    let ambienteInvisible = false;
     if (this.asset.avatar) {
       const hasRealLipSync = this.avatarMorphs.length > 0;
-      ambienteInvisible = !hasRealLipSync;
       avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
       avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
       updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, lipSync: hasRealLipSync ? 'morph-targets' : '2d-overlay' });
@@ -388,7 +403,7 @@ class OracleScene {
     this.stage.addEventListener('pointermove', this.onPointerMove, { passive: true });
     document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true });
     this.running = true;
-    if (this.quality.motion && !ambienteInvisible) this.animate();
+    if (this.quality.motion) this.animate();
     else this.renderer.render(this.scene, this.camera);
     schedulePrefetch(this.asset.prefetch || []);
   }
@@ -716,7 +731,9 @@ function observeStages(root = document) {
     const quality = detectQuality();
     entries.forEach(entry => {
       visibilidad.set(entry.target, entry.isIntersecting ? entry.intersectionRatio : 0);
-      if (!entry.isIntersecting) unmountStage(entry.target);
+      /* Al avatar no se le aplica: su panel flota y el observador lo da
+         por fuera de vista en cuanto se mueve la pagina. */
+      if (!entry.isIntersecting && !esAvatarPrioritario(entry.target)) unmountStage(entry.target);
       else if (quality.level !== 'high') mountStage(entry.target);
     });
     /* En alta no montamos desde cada entrada del observador: primero se
@@ -758,15 +775,29 @@ function reconciliarEscenas() {
   const quality = detectQuality();
   if (!quality.enabled) return;
   const tope = topeEscenas(quality);
-  /* Orden por cuanto se ve. La visibilidad se mide sobre el DOM y no
-     solo con lo que dejo el observador, porque tras un refresco aun no
-     ha vuelto a disparar y todas quedarian empatadas. */
-  const candidatas = Array.from(document.querySelectorAll('[data-oraculo-3d-asset]'))
-    .map(stage => [stage, visiblePorGeometria(stage), esAvatarPrioritario(stage)])
-    .filter(([stage, ratio]) => ratio > 0 && stage.isConnected)
-    .sort((a, b) => Number(b[2]) - Number(a[2]) || b[1] - a[1]);
+  const vivas = Array.from(document.querySelectorAll('[data-oraculo-3d-asset]'))
+    .filter(stage => stage.isConnected);
 
-  const quieroMontar = candidatas.slice(0, tope).map(([stage]) => stage);
+  /* El avatar no entra en el reparto. Es el unico lienzo que la persona
+     pide a proposito, y es persistente: compitiendo por la plaza unica
+     cualquier reconciliacion se la quitaba y caia al retrato 2D, con otro
+     encuadre. Eso era el "no aguanta en 3D" y el cambio de tamano.
+     Tampoco se le exige area visible: el panel flota y durante su entrada
+     llega a medir cero, y eso bastaba para desmontarlo. */
+  const avatares = vivas.filter(stage => esAvatarPrioritario(stage));
+
+  /* Los lienzos de la portada van siempre en 2D. Si uno se lleva la plaza
+     la gasta sin montar nada y deja fuera a los que si la aprovechan. */
+  /* El resto se ordena por cuanto se ve. La visibilidad se mide sobre el
+     DOM y no solo con lo que dejo el observador, porque tras un refresco
+     aun no ha vuelto a disparar y todas quedarian empatadas. */
+  const compiten = vivas
+    .filter(stage => !esAvatarPrioritario(stage) && !esDePortada(stage))
+    .map(stage => [stage, visiblePorGeometria(stage)])
+    .filter(([, ratio]) => ratio > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  const quieroMontar = [...avatares, ...compiten.slice(0, tope).map(([stage]) => stage)];
   const sobran = [...activeStages].filter(stage => !quieroMontar.includes(stage));
   sobran.forEach(unmountStage);
 
@@ -776,7 +807,8 @@ function reconciliarEscenas() {
 
   /* Las que no entran en el tope muestran la version ligera, que no
      es un hueco: es el mismo lenguaje visual con aro y simbolo. */
-  candidatas.slice(tope).forEach(([stage]) => {
+  vivas.forEach(stage => {
+    if (quieroMontar.includes(stage)) return;
     if (!mountedStages.has(stage) && !stage.querySelector('.om-3d-fallback')) {
       makeFallback(stage, stage.getAttribute('data-oraculo-3d-asset') || 'orb', 'fuera-de-seccion');
     }
@@ -853,6 +885,7 @@ window.Oraculo3D = {
     refreshAllStages();
   },
   getQuality: detectQuality,
+  avatarPuede3D,
   getReport() {
     try { return JSON.parse(sessionStorage.getItem(REPORT_KEY) || '{}'); }
     catch { return {}; }
