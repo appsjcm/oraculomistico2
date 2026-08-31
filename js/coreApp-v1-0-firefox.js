@@ -1549,12 +1549,12 @@ async function reloadDeviceVoices({ reopenLibrary = false, awaken = true } = {})
     const platform = getVoicePlatform();
     const inventory = voiceInventory();
     const status = changed
-      ? 'Se ha actualizado el catálogo de voces.'
+      ? t('tsVocesActualizado')
       : platform === 'android' && !inventory.all.length
-        ? 'Chrome no publica los nombres de Google TTS, pero la opción automática utilizará el motor y el idioma configurados en Android.'
+        ? t('stVocesAndroidAuto')
         : platform === 'android'
-          ? 'Catálogo de Android revisado. La opción automática usa siempre el motor TTS predeterminado.'
-          : 'Catálogo revisado. En iPhone, si aún no aparece, cierra completamente la app y vuelve a abrirla.';
+          ? t('stVocesAndroidRevisado')
+          : t('stVocesRevisado');
     showVoiceLibrary(status);
   }
   return changed;
@@ -2972,7 +2972,7 @@ function applyAppearanceMode() {
   document.querySelectorAll?.('[data-om-appearance]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.omAppearance === mode)));
   document.querySelectorAll?.('[data-om-appearance-toggle]').forEach(button => {
     button.setAttribute('aria-pressed', String(mode === 'light'));
-    button.setAttribute('aria-label', mode === 'light' ? 'Cambiar a Noche' : 'Cambiar a Día');
+    button.setAttribute('aria-label', t(mode === 'light' ? 'arCambiarNoche' : 'arCambiarDia'));
     const icon = button.querySelector('[data-om-appearance-icon]');
     const label = button.querySelector('[data-om-appearance-label]');
     if (icon) icon.textContent = mode === 'light' ? '☼' : '☾';
@@ -3131,8 +3131,8 @@ function showGlobalSearch() { openModal({ icon:'🔎', title:t('mdBuscar'), body
 function showPrivacyCenter() {
   openModal({ icon:'🔒', title:t('mdPrivacidad'), subtitle:t('mdPrivacidadS'), body:`<div class="result-card"><p>${escapeHTML(t('stLasLecturasElPerfilYEl'))}</p><p><a href="privacy.html" target="_blank" rel="noopener">Leer política de privacidad</a></p></div><div class="actions"><button class="btn" data-act="backup-data">Crear backup</button><button class="btn" data-act="clear-chat">Borrar chat</button><button class="btn" data-act="clear-profile">Borrar perfil</button><button class="btn danger" data-act="factory-reset">Restablecer app</button></div>` });
 }
-function clearChatData() { if (confirm('¿Borrar el chat local?')) { storeSet(LS.chat, []); toast(t('tsChatCleared')); } }
-function clearProfileData() { if (confirm('¿Borrar el perfil local?')) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast(t('tsProfileCleared')); } }
+function clearChatData() { if (confirm(t('cfBorrarChat'))) { storeSet(LS.chat, []); toast(t('tsChatCleared')); } }
+function clearProfileData() { if (confirm(t('cfBorrarPerfil'))) { localStorage.removeItem(LS.name); localStorage.removeItem(LS.profile); localStorage.removeItem(LS.intention); localStorage.removeItem(LS.birthDate); localStorage.removeItem(LS.birthTime); localStorage.removeItem(LS.birthPlace); localStorage.removeItem(LS.astroHouseSystem); updateHome(); toast(t('tsProfileCleared')); } }
 function factoryResetData() {
   if (!confirm('¿Restablecer todos los datos de Oráculo Místico en este navegador?')) return;
   Object.values(LS).forEach(key => localStorage.removeItem(key));
@@ -3196,7 +3196,7 @@ function showMiOraculo() {
     <div class="form-grid mt">
       <div class="field"><label>${escapeHTML(t('stFechaDeNacimiento'))}</label><input class="input" id="profileBirth" type="date" value="${escapeHTML(profile.birth || '')}"></div>
       <div class="field"><label>${escapeHTML(t('stHoraDeNacimiento'))}</label><input class="input" id="profileBirthTime" type="time" value="${escapeHTML(profile.birthTime || '')}"></div>
-      <div class="field"><label>${escapeHTML(t('stLugarDeNacimiento'))}</label><input class="input" id="profileBirthPlace" value="${escapeHTML(profile.birthPlace?.label || '')}" placeholder="Ciudad, país"></div>
+      <div class="field"><label>${escapeHTML(t('stLugarDeNacimiento'))}</label><input class="input" id="profileBirthPlace" value="${escapeHTML(profile.birthPlace?.label || '')}" placeholder="${escapeHTML(t('phCiudadPais'))}"></div>
       <div class="field"><label>${escapeHTML(t('stSignoEnergia'))}</label><input class="input" id="profileSign" value="${escapeHTML(profile.sign || '')}" placeholder="Aries, Luna, Agua..."></div>
       <div class="field"><label>${escapeHTML(t('stIntencionPrincipal'))}</label><input class="input" id="profileIntention" value="${escapeHTML(profile.intention || '')}" placeholder="Claridad, amor, calma..."></div>
       <div class="field"><label>${escapeHTML(t('stTiradaFavorita'))}</label><select id="profileSpread"><option value="one" ${profile.favoriteSpread==='one'?'selected':''}>${escapeHTML(t('stCartaRapida'))}</option><option value="three" ${(profile.favoriteSpread||'three')==='three'?'selected':''}>${escapeHTML(t('stPasadoPresenteFuturo'))}</option><option value="love" ${profile.favoriteSpread==='love'?'selected':''}>${escapeHTML(t('stAmor'))}</option><option value="decision" ${profile.favoriteSpread==='decision'?'selected':''}>${escapeHTML(t('stDecision'))}</option><option value="celtic" ${profile.favoriteSpread==='celtic'?'selected':''}>${escapeHTML(t('stCruzCelta'))}</option></select></div>
@@ -3321,12 +3321,12 @@ window.OraculoSonido = {
 };
 function openCeremonyIntro(kind = 'tarot') {
   const isTarot = kind === 'tarot';
-  openModal({ icon:isTarot?'🃏':'ᚱ', title:isTarot?'Ritual de Tarot':'Ritual de Runas', subtitle:t('mdAntesS'), body:`
+  openModal({ icon:isTarot?'🃏':'ᚱ', title:t(isTarot?'mdRitualTarot':'mdRitualRunas'), subtitle:t('mdAntesS'), body:`
     <div class="ceremony-intro">
       <div class="ceremony-orb">${isTarot?'🔮':'ᚱ'}</div>
-      <h3>${isTarot?'El mazo está preparado':'El saquito está preparado'}</h3>
+      <h3>${escapeHTML(t(isTarot?'stMazoPreparado':'stSaquitoPreparado'))}</h3>
       <p>${escapeHTML(t('stEligeUnaPreguntaClaraRespiraTres'))}</p>
-      <div class="actions mt"><button class="btn primary" data-module="${isTarot?'tarot':'runas'}">${isTarot?'Elegir tirada':'Elegir runas'}</button><button class="btn" data-act="settings">Ajustes</button></div>
+      <div class="actions mt"><button class="btn primary" data-module="${isTarot?'tarot':'runas'}">${escapeHTML(t(isTarot?'stElegirTirada':'stElegirRunas'))}</button><button class="btn" data-act="settings">${escapeHTML(t('settings'))}</button></div>
     </div>` });
 }
 function getAppVersionLabel() { return 'v1.0'; }
