@@ -370,8 +370,12 @@ class OracleScene {
     this.scene.add(this.model);
     this.stage.classList.add('om-3d-mounted');
     const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
+    /* En modo ambiente el lienzo queda oculto, asi que animarlo seria
+       gastar GPU y bateria en algo que no se ve. */
+    let ambienteInvisible = false;
     if (this.asset.avatar) {
       const hasRealLipSync = this.avatarMorphs.length > 0;
+      ambienteInvisible = !hasRealLipSync;
       avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
       avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
       updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, lipSync: hasRealLipSync ? 'morph-targets' : '2d-overlay' });
@@ -384,7 +388,7 @@ class OracleScene {
     this.stage.addEventListener('pointermove', this.onPointerMove, { passive: true });
     document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true });
     this.running = true;
-    if (this.quality.motion) this.animate();
+    if (this.quality.motion && !ambienteInvisible) this.animate();
     else this.renderer.render(this.scene, this.camera);
     schedulePrefetch(this.asset.prefetch || []);
   }
