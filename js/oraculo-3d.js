@@ -293,6 +293,8 @@ class OracleScene {
     this.baseModelY = 0;
     this.baseModelScale = 1;
     this.avatarMorphs = [];
+    this.avatarGesture = null;
+    this.nextAvatarGestureAt = performance.now() + 1800 + Math.random() * 1800;
     this.lastRender = 0;
     this.destroyed = false;
     this.targetFrameMs = quality.level === 'high' ? 16 : quality.level === 'medium' ? 33 : 80;
@@ -404,24 +406,85 @@ class OracleScene {
   }
 
   collectAvatarMorphs() {
-    const candidatos = /(jaw|mouth|lip|viseme|aa|ah|oh|ou|open|wide|smile|boca|labio|mand)/i;
+    const candidatos = /(jaw|mouth|lip|viseme|aa|ah|oh|ou|open|wide|smile|blink|eye|brow|ceja|ojo|boca|labio|mand)/i;
     this.avatarMorphs = [];
     this.model?.traverse?.(node => {
       const dict = node.morphTargetDictionary;
       const influences = node.morphTargetInfluences;
       if (!dict || !influences) return;
       Object.entries(dict).forEach(([name, index]) => {
-        if (candidatos.test(name)) this.avatarMorphs.push({ mesh:node, index, name, weight:/smile/i.test(name) ? .18 : .72 });
+        if (!candidatos.test(name)) return;
+        const lower = name.toLowerCase();
+        const kind = /blink|eye|ojo/.test(lower) ? 'blink' : /brow|ceja/.test(lower) ? 'brow' : /smile/.test(lower) ? 'smile' : 'mouth';
+        const weight = kind === 'smile' ? .22 : kind === 'blink' ? .95 : kind === 'brow' ? .28 : .72;
+        this.avatarMorphs.push({ mesh:node, index, name, kind, weight });
       });
     });
   }
 
-  updateAvatarMorphs(amount = 0) {
+  updateAvatarMorphs(amount = 0, expression = {}) {
     if (!this.avatarMorphs.length) return;
-    const value = Math.max(0, Math.min(1, amount));
+    const mouth = Math.max(0, Math.min(1, amount));
+    const smile = Math.max(0, Math.min(1, expression.smile || 0));
+    const blink = Math.max(0, Math.min(1, expression.blink || 0));
+    const brow = Math.max(0, Math.min(1, expression.brow || 0));
     this.avatarMorphs.forEach(target => {
-      if (target.mesh.morphTargetInfluences) target.mesh.morphTargetInfluences[target.index] = value * target.weight;
+      if (!target.mesh.morphTargetInfluences) return;
+      const value = target.kind === 'smile' ? smile : target.kind === 'blink' ? blink : target.kind === 'brow' ? brow : mouth;
+      target.mesh.morphTargetInfluences[target.index] = value * target.weight;
     });
+  }
+
+  avatarMood() {
+    const avatar = document.getElementById('oracleVoiceAvatarHost')?.querySelector('.oracle-avatar-window');
+    const match = [...(avatar?.classList || [])].find(clase => clase.startsWith('mood-'));
+    return match ? match.slice(5) : 'calm';
+  }
+
+  avatarMotionProfile(mood = 'calm') {
+    const profiles = {
+      love: { yaw:.08, pitch:.045, roll:.04, bob:.024, glow:.42, smile:.55, brow:.05, tempo:1.12 },
+      smile: { yaw:.075, pitch:.052, roll:.03, bob:.03, glow:.48, smile:.7, brow:.08, tempo:1.22 },
+      warning: { yaw:.04, pitch:.03, roll:.018, bob:.012, glow:.28, smile:.02, brow:.34, tempo:.82 },
+      blocked: { yaw:.028, pitch:.024, roll:.014, bob:.01, glow:.18, smile:0, brow:.22, tempo:.68 },
+      dream: { yaw:.095, pitch:.038, roll:.055, bob:.034, glow:.36, smile:.22, brow:.02, tempo:.72 },
+      power: { yaw:.052, pitch:.05, roll:.024, bob:.022, glow:.5, smile:.18, brow:.2, tempo:.95 },
+      serious: { yaw:.036, pitch:.034, roll:.016, bob:.014, glow:.24, smile:.04, brow:.28, tempo:.78 }
+    };
+    return profiles[mood] || { yaw:.058, pitch:.04, roll:.024, bob:.02, glow:.32, smile:.16, brow:.08, tempo:.9 };
+  }
+
+  avatarGestureOffset(now, mood) {
+    if (!this.avatarGesture && now > this.nextAvatarGestureAt) {
+      const pool = mood === 'warning' || mood === 'serious'
+        ? ['slow-nod', 'focus-tilt', 'glance']
+        : mood === 'blocked'
+          ? ['soft-shake', 'look-down', 'slow-nod']
+          : mood === 'dream'
+            ? ['float-turn', 'glance', 'slow-nod']
+            : ['slow-nod', 'glance', 'emphasis'];
+      this.avatarGesture = {
+        type: pool[Math.floor(Math.random() * pool.length)],
+        start: now,
+        duration: 900 + Math.random() * 850,
+        sign: Math.random() > .5 ? 1 : -1
+      };
+    }
+    if (!this.avatarGesture) return { x:0, y:0, z:0, lift:0 };
+    const g = this.avatarGesture;
+    const p = Math.min(1, Math.max(0, (now - g.start) / g.duration));
+    const ease = Math.sin(p * Math.PI);
+    if (p >= 1) {
+      this.avatarGesture = null;
+      this.nextAvatarGestureAt = now + 2600 + Math.random() * 4200;
+      return { x:0, y:0, z:0, lift:0 };
+    }
+    if (g.type === 'slow-nod') return { x:ease * .07, y:0, z:0, lift:0 };
+    if (g.type === 'soft-shake') return { x:0, y:Math.sin(p * Math.PI * 3) * .035, z:0, lift:0 };
+    if (g.type === 'look-down') return { x:ease * .08, y:g.sign * ease * .025, z:g.sign * ease * .012, lift:-ease * .01 };
+    if (g.type === 'float-turn') return { x:-ease * .025, y:g.sign * ease * .075, z:g.sign * ease * .032, lift:ease * .012 };
+    if (g.type === 'emphasis') return { x:ease * .045, y:g.sign * ease * .035, z:g.sign * ease * .018, lift:ease * .018 };
+    return { x:0, y:g.sign * ease * .065, z:g.sign * ease * .02, lift:0 };
   }
 
   animate(now = performance.now()) {
@@ -435,15 +498,25 @@ class OracleScene {
     if (this.model && motion) {
       const t = performance.now() * 0.00035;
       if (this.asset.avatar) {
-        const speaking = document.getElementById('oracleVoiceAvatarHost')?.classList.contains('speaking');
-        const talk = speaking ? (0.5 + Math.sin(performance.now() * 0.018) * 0.5) : 0;
-        this.model.rotation.y += (this.asset.rotation[1] + this.pointer.x * 0.09 + Math.sin(t * 1.6) * 0.025 - this.model.rotation.y) * 0.055;
-        this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.045 + Math.sin(t * 1.3) * 0.018 - this.model.rotation.x) * 0.055;
-        this.model.rotation.z += (this.pointer.x * -0.025 + Math.sin(t * 1.1) * 0.01 - this.model.rotation.z) * 0.045;
-        this.model.position.y = this.baseModelY + Math.sin(t * 1.45) * 0.018 + talk * 0.012;
-        this.model.scale.setScalar(this.baseModelScale * (1 + Math.sin(t * 1.25) * 0.004 + talk * 0.006));
-        if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talk * 0.32 - this.keyLight.intensity) * 0.12;
-        this.updateAvatarMorphs(talk);
+        const host = document.getElementById('oracleVoiceAvatarHost');
+        const speaking = host?.classList.contains('speaking');
+        const mood = this.avatarMood();
+        const profile = this.avatarMotionProfile(mood);
+        const gesture = this.avatarGestureOffset(now, mood);
+        const breath = Math.sin(t * profile.tempo * 1.35);
+        const talkWave = speaking ? (0.5 + Math.sin(now * 0.018) * 0.5) : 0;
+        const emphasis = speaking ? Math.max(0, Math.sin(now * 0.006)) ** 4 : 0;
+        const blink = Math.max(0, Math.sin(now * 0.0017 + 1.2)) ** 42;
+        const targetY = this.asset.rotation[1] + this.pointer.x * .095 + Math.sin(t * profile.tempo * 1.6) * profile.yaw + gesture.y;
+        const targetX = this.asset.rotation[0] + this.pointer.y * .045 + breath * profile.pitch + gesture.x + emphasis * .035;
+        const targetZ = this.pointer.x * -.025 + Math.sin(t * profile.tempo * 1.1) * profile.roll + gesture.z;
+        this.model.rotation.y += (targetY - this.model.rotation.y) * 0.06;
+        this.model.rotation.x += (targetX - this.model.rotation.x) * 0.065;
+        this.model.rotation.z += (targetZ - this.model.rotation.z) * 0.052;
+        this.model.position.y = this.baseModelY + breath * profile.bob + talkWave * 0.012 + gesture.lift;
+        this.model.scale.setScalar(this.baseModelScale * (1 + breath * 0.004 + talkWave * 0.006 + emphasis * .008));
+        if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talkWave * profile.glow + emphasis * .25 - this.keyLight.intensity) * 0.12;
+        this.updateAvatarMorphs(talkWave, { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 });
       } else {
         this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
         this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
