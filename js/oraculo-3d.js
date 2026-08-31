@@ -459,6 +459,10 @@ class OracleScene {
     return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
   }
 
+  avatarState(host) {
+    return host?.dataset?.avatarState || 'idle';
+  }
+
   avatarGestureOffset(now, mood) {
     if (!this.avatarGesture && now > this.nextAvatarGestureAt) {
       const pool = mood === 'warning' || mood === 'serious'
@@ -505,13 +509,22 @@ class OracleScene {
       if (this.asset.avatar) {
         const host = document.getElementById('oracleVoiceAvatarHost');
         const speaking = host?.classList.contains('speaking');
+        const state = this.avatarState(host);
         const mood = this.avatarMood();
-        const profile = this.avatarMotionProfile(mood);
-        const gesture = this.avatarGestureOffset(now, mood);
+        const profile = { ...this.avatarMotionProfile(mood) };
+        if (state === 'paused') {
+          profile.yaw *= .45; profile.pitch *= .45; profile.roll *= .45; profile.bob *= .5; profile.glow *= .35;
+        } else if (state === 'closing') {
+          profile.yaw *= .25; profile.pitch *= .25; profile.roll *= .25; profile.bob *= .25; profile.glow *= .2;
+        } else if (state === 'attending') {
+          profile.yaw *= 1.35; profile.pitch *= 1.25; profile.glow *= 1.25;
+        }
+        const gesture = state === 'closing' ? { x:0, y:0, z:0, lift:-.02 } : this.avatarGestureOffset(now, mood);
         const breath = Math.sin(t * profile.tempo * 1.35);
         const mouthIntensity = speaking ? this.avatarMouthIntensity(host) : 0;
         const talkWave = speaking ? Math.max(0.5 + Math.sin(now * 0.018) * 0.5, mouthIntensity) : 0;
-        const emphasis = speaking ? Math.max(Math.max(0, Math.sin(now * 0.006)) ** 4, mouthIntensity * .62) : 0;
+        const emphasis = speaking && state !== 'paused' ? Math.max(Math.max(0, Math.sin(now * 0.006)) ** 4, mouthIntensity * .62) : 0;
+        const attendingLift = state === 'attending' ? Math.max(0, Math.sin(now * 0.01)) * .018 : 0;
         const blink = Math.max(0, Math.sin(now * 0.0017 + 1.2)) ** 42;
         const targetY = this.asset.rotation[1] + this.pointer.x * .095 + Math.sin(t * profile.tempo * 1.6) * profile.yaw + gesture.y;
         const targetX = this.asset.rotation[0] + this.pointer.y * .045 + breath * profile.pitch + gesture.x + emphasis * .035;
@@ -519,7 +532,7 @@ class OracleScene {
         this.model.rotation.y += (targetY - this.model.rotation.y) * 0.06;
         this.model.rotation.x += (targetX - this.model.rotation.x) * 0.065;
         this.model.rotation.z += (targetZ - this.model.rotation.z) * 0.052;
-        this.model.position.y = this.baseModelY + breath * profile.bob + talkWave * 0.012 + gesture.lift;
+        this.model.position.y = this.baseModelY + breath * profile.bob + talkWave * 0.012 + gesture.lift + attendingLift;
         this.model.scale.setScalar(this.baseModelScale * (1 + breath * 0.004 + talkWave * 0.006 + emphasis * .008));
         if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talkWave * profile.glow + emphasis * .25 - this.keyLight.intensity) * 0.12;
         this.updateAvatarMorphs(talkWave, { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 });

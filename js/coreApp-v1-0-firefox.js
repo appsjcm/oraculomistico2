@@ -40,6 +40,7 @@ let grabovoiEntries = [];
 let grabovoiGuide = { digitMeanings: {}, methods: [] };
 let oracleLipTimer = null;
 let oracleLipWordStart = -1;
+let oracleAvatarHideTimer = null;
 let voiceWakeLock = null;
 let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 let voiceSpeechSession = 0;
@@ -1820,6 +1821,12 @@ function ensureOracleAvatarHost() {
   }
   return host;
 }
+function setOracleAvatarState(host, state = 'idle') {
+  if (!host) return;
+  host.classList.remove('attending', 'paused', 'closing');
+  if (state && state !== 'idle') host.classList.add(state);
+  host.dataset.avatarState = state || 'idle';
+}
 function applyOracleAvatarPrefs(host, prefs = getVoicePrefs()) {
   host.classList.remove('pos-left','pos-right','size-small','size-medium','size-large');
   host.classList.add(`pos-${prefs.avatarPosition || 'right'}`, `size-${prefs.avatarSize || 'medium'}`);
@@ -1832,13 +1839,21 @@ function showOracleVoiceAvatar(message = '') {
   const theme = resolveOracleAvatarTheme(message);
   const mood = resolveOracleAvatarMood(message, prefs);
   const speechMode = resolveOracleSpeechMode(message, prefs);
+  if (oracleAvatarHideTimer) clearTimeout(oracleAvatarHideTimer);
+  oracleAvatarHideTimer = null;
   host.innerHTML = buildOracleAvatarHTML(resolveOracleAvatarStyle(prefs), cleaned, theme, mood, speechMode);
   applyOracleAvatarPrefs(host, prefs);
+  setOracleMouthShape('closed');
+  setOracleAvatarState(host, 'attending');
   host.classList.add('visible', 'speaking');
+  setTimeout(() => {
+    if (host.classList.contains('visible')) setOracleAvatarState(host, 'idle');
+  }, 640);
 }
 function updateOracleVoiceAvatarSpeaking(speaking = true) {
   const host = ensureOracleAvatarHost();
   host.classList.toggle('speaking', !!speaking);
+  setOracleAvatarState(host, speaking ? 'idle' : 'paused');
   if (!speaking) stopOracleLipSync();
 }
 function mouthIntensityForShape(shape = 'closed') {
@@ -2102,8 +2117,14 @@ function hideOracleVoiceAvatar() {
   stopOracleLipSync();
   const host = document.getElementById('oracleVoiceAvatarHost');
   if (!host) return;
+  if (oracleAvatarHideTimer) clearTimeout(oracleAvatarHideTimer);
+  setOracleAvatarState(host, 'closing');
   host.classList.remove('speaking');
-  host.classList.remove('visible');
+  oracleAvatarHideTimer = setTimeout(() => {
+    host.classList.remove('visible');
+    setOracleAvatarState(host, 'idle');
+    oracleAvatarHideTimer = null;
+  }, 220);
 }
 function previewOracleAvatar() {
   const prefs = getVoicePrefs();
