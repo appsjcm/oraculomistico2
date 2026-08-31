@@ -483,8 +483,10 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 .oracle-avatar-stage.has-avatar-3d{background:radial-gradient(circle at 50% 18%,rgba(242,204,101,.20),rgba(141,102,255,.10),rgba(255,255,255,.03))}
 .oracle-avatar-stage.has-avatar-3d .oracle-avatar-realistic{transition:opacity .28s ease,filter .28s ease}
 .oracle-avatar-stage.avatar-3d-ready .oracle-avatar-realistic{opacity:0;filter:blur(2px)}
-.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic{opacity:1;filter:none}
-.oracle-avatar-3d-stage{position:absolute;inset:0;z-index:0;width:100%;height:100%;min-width:0;margin:0;aspect-ratio:auto;pointer-events:none;touch-action:none;opacity:.18;filter:blur(.8px) saturate(.82)}
+.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic{opacity:.78;filter:none}
+.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic::after{box-shadow:inset 0 0 24px rgba(141,102,255,.16)}
+.oracle-avatar-3d-stage{position:absolute;inset:0;z-index:0;width:100%;height:100%;min-width:0;margin:0;aspect-ratio:auto;pointer-events:none;touch-action:none;opacity:.24;filter:blur(.45px) saturate(.9)}
+.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-3d-stage{z-index:2;opacity:.46;filter:saturate(.94) contrast(1.02)}
 .oracle-avatar-stage.avatar-3d-ready .oracle-avatar-3d-stage{z-index:3;opacity:1;filter:none}
 .oracle-avatar-3d-stage::before{inset:8%;opacity:.46;filter:blur(14px)}
 .oracle-avatar-3d-stage canvas{width:100%;height:100%;filter:saturate(.96) contrast(1.04)}
