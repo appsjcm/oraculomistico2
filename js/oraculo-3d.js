@@ -526,10 +526,16 @@ class OracleScene {
     this.stage.classList.add('om-3d-mounted');
     const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
     if (this.asset.avatar) {
+      const isProceduralAvatar = Boolean(this.model?.userData?.proceduralAvatar);
       const hasRealLipSync = this.avatarMorphs.length > 0 || Boolean(this.avatarRig?.mouth);
-      avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
-      avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
-      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, proceduralRig: Boolean(this.avatarRig?.mouth), lipSync: this.avatarRig?.mouth ? 'procedural-rig' : hasRealLipSync ? 'morph-targets' : '2d-overlay' });
+      avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync && !isProceduralAvatar);
+      avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync || isProceduralAvatar);
+      updateReport(this.assetId, {
+        facialMorphs: this.avatarMorphs.length,
+        proceduralRig: Boolean(this.avatarRig?.mouth),
+        lipSync: isProceduralAvatar ? 'photographic-overlay' : this.avatarRig?.mouth ? 'procedural-rig' : hasRealLipSync ? 'morph-targets' : '2d-overlay',
+        visualMode: isProceduralAvatar ? 'photographic-primary' : '3d-primary'
+      });
     } else {
       avatarStage?.classList?.add('avatar-3d-ready');
     }
