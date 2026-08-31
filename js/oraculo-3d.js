@@ -698,6 +698,11 @@ function visiblePorGeometria(stage) {
   return (alto * ancho) / (r.height * r.width);
 }
 
+function esAvatarPrioritario(stage) {
+  return stage.classList.contains('oracle-avatar-3d-stage')
+    && Boolean(stage.closest('#oracleVoiceAvatarHost.visible'));
+}
+
 function reconciliarEscenas() {
   const quality = detectQuality();
   if (!quality.enabled) return;
@@ -706,9 +711,9 @@ function reconciliarEscenas() {
      solo con lo que dejo el observador, porque tras un refresco aun no
      ha vuelto a disparar y todas quedarian empatadas. */
   const candidatas = Array.from(document.querySelectorAll('[data-oraculo-3d-asset]'))
-    .map(stage => [stage, visiblePorGeometria(stage)])
+    .map(stage => [stage, visiblePorGeometria(stage), esAvatarPrioritario(stage)])
     .filter(([stage, ratio]) => ratio > 0 && stage.isConnected)
-    .sort((a, b) => b[1] - a[1]);
+    .sort((a, b) => Number(b[2]) - Number(a[2]) || b[1] - a[1]);
 
   const quieroMontar = candidatas.slice(0, tope).map(([stage]) => stage);
   const sobran = [...activeStages].filter(stage => !quieroMontar.includes(stage));
