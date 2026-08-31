@@ -125,8 +125,9 @@ export const ORACULO_3D_ASSETS = {
     fallback: '✦',
     section: 'Avatar del Oráculo',
     scale: 1,
-    fitSize: 1.82,
-    camera: [0, 0.18, 4.25],
+    fitSize: 1.46,
+    camera: [0, 0.2, 4.55],
+    offset: [-0.28, -0.04, 0],
     rotation: [0, 0, 0],
     avatar: true,
     prefetch: []
@@ -137,8 +138,9 @@ export const ORACULO_3D_ASSETS = {
     fallback: '◎',
     section: 'Avatar del Oráculo',
     scale: 1,
-    fitSize: 1.82,
-    camera: [0, 0.18, 4.25],
+    fitSize: 1.46,
+    camera: [0, 0.2, 4.55],
+    offset: [-0.18, -0.04, 0],
     rotation: [0, 0, 0],
     avatar: true,
     prefetch: []

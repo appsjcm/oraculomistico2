@@ -392,9 +392,9 @@ class OracleScene {
     this.model.scale.setScalar(targetScale);
     this.baseModelScale = targetScale;
     this.model.position.set(
-      -center.x * targetScale,
-      -center.y * targetScale - size.y * targetScale * 0.02,
-      -center.z * targetScale
+      -center.x * targetScale + (this.asset.offset?.[0] || 0),
+      -center.y * targetScale - size.y * targetScale * 0.02 + (this.asset.offset?.[1] || 0),
+      -center.z * targetScale + (this.asset.offset?.[2] || 0)
     );
     this.baseModelY = this.model.position.y;
   }
