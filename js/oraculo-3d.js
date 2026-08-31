@@ -454,6 +454,11 @@ class OracleScene {
     return profiles[mood] || { yaw:.058, pitch:.04, roll:.024, bob:.02, glow:.32, smile:.16, brow:.08, tempo:.9 };
   }
 
+  avatarMouthIntensity(host) {
+    const value = Number.parseFloat(host?.style?.getPropertyValue('--oracle-mouth-intensity') || '0');
+    return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+  }
+
   avatarGestureOffset(now, mood) {
     if (!this.avatarGesture && now > this.nextAvatarGestureAt) {
       const pool = mood === 'warning' || mood === 'serious'
@@ -504,8 +509,9 @@ class OracleScene {
         const profile = this.avatarMotionProfile(mood);
         const gesture = this.avatarGestureOffset(now, mood);
         const breath = Math.sin(t * profile.tempo * 1.35);
-        const talkWave = speaking ? (0.5 + Math.sin(now * 0.018) * 0.5) : 0;
-        const emphasis = speaking ? Math.max(0, Math.sin(now * 0.006)) ** 4 : 0;
+        const mouthIntensity = speaking ? this.avatarMouthIntensity(host) : 0;
+        const talkWave = speaking ? Math.max(0.5 + Math.sin(now * 0.018) * 0.5, mouthIntensity) : 0;
+        const emphasis = speaking ? Math.max(Math.max(0, Math.sin(now * 0.006)) ** 4, mouthIntensity * .62) : 0;
         const blink = Math.max(0, Math.sin(now * 0.0017 + 1.2)) ** 42;
         const targetY = this.asset.rotation[1] + this.pointer.x * .095 + Math.sin(t * profile.tempo * 1.6) * profile.yaw + gesture.y;
         const targetX = this.asset.rotation[0] + this.pointer.y * .045 + breath * profile.pitch + gesture.x + emphasis * .035;

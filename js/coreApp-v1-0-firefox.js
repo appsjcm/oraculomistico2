@@ -1841,7 +1841,18 @@ function updateOracleVoiceAvatarSpeaking(speaking = true) {
   host.classList.toggle('speaking', !!speaking);
   if (!speaking) stopOracleLipSync();
 }
+function mouthIntensityForShape(shape = 'closed') {
+  if (shape === 'wide') return 1;
+  if (shape === 'medium') return 0.58;
+  return 0;
+}
 function setOracleMouthShape(shape = 'closed') {
+  const host = document.getElementById('oracleVoiceAvatarHost');
+  if (host) {
+    const intensity = mouthIntensityForShape(shape);
+    host.dataset.mouthShape = shape;
+    host.style.setProperty('--oracle-mouth-intensity', String(intensity));
+  }
   const frames = $$('.oracle-avatar-frame');
   if (!frames.length) return;
   frames.forEach(frame => frame.classList.toggle('active', frame.classList.contains(`frame-${shape}`)));
@@ -2105,7 +2116,9 @@ function previewOracleAvatar() {
 function previewOracleAvatarEmotions() {
   const samples = [
     'Amor y ternura abren una puerta suave en tu camino.',
+    'La alegría confirma que hay luz suficiente para dar el paso.',
     'Hay una advertencia: actúa con prudencia y cuida tus límites.',
+    'La claridad llega cuando miras el asunto con calma y precisión.',
     'Un bloqueo empieza a transformarse cuando aceptas tu duda.',
     'La luna y la intuición te piden escuchar en silencio.',
     'La fuerza rúnica te protege y te invita a avanzar.'
