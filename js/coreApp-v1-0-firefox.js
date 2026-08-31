@@ -1357,14 +1357,14 @@ function getVoicePrefs() {
   const saved = storeGet(LS.voice, null);
   if (saved?.preset) {
     const migrated = Number(saved.localePreferenceVersion || 0) >= 2 ? saved : { ...saved, language:'auto', localePreferenceVersion:3 };
-    return { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset(saved.preset), ...migrated };
+    return { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'2d', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset(saved.preset), ...migrated };
   }
-  return { engine:'device', remoteVoice:'coral', preset:'mistica_femenina', language:'auto', localePreferenceVersion:3, voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset('mistica_femenina') };
+  return { engine:'device', remoteVoice:'coral', preset:'mistica_femenina', language:'auto', localePreferenceVersion:3, voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'2d', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset('mistica_femenina') };
 }
 function setVoicePrefs(prefs) {
   const preset = prefs.preset || getVoicePrefs().preset || 'mistica_femenina';
   const base = getVoicePreset(preset);
-  storeSet(LS.voice, { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...base, ...getVoicePrefs(), ...prefs, preset, localePreferenceVersion:3 });
+  storeSet(LS.voice, { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'2d', avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...base, ...getVoicePrefs(), ...prefs, preset, localePreferenceVersion:3 });
 }
 function getNativeAndroidVoices() {
   if (!window.AndroidTTS?.getVoices) return [];
@@ -1605,6 +1605,7 @@ function testVoiceSettings() {
     deviceVoiceURI:value('#deviceVoiceURI', current.deviceVoiceURI || ''),
     preset,
     avatarStyle:value('#oracleAvatarStyle', current.avatarStyle || 'auto'),
+    avatarRenderMode:value('#oracleAvatarRenderMode', current.avatarRenderMode || '2d'),
     avatarEnabled:value('#oracleAvatarEnabled', String(current.avatarEnabled !== false)) !== 'false',
     avatarPosition:value('#oracleAvatarPosition', current.avatarPosition || 'right'),
     avatarSize:value('#oracleAvatarSize', current.avatarSize || 'medium'),
@@ -1657,6 +1658,14 @@ function resolveOracleAvatarStyle(prefs = getVoicePrefs()) {
   const preset = String(prefs.preset || '').toLowerCase();
   if (preset.includes('masc')) return 'male';
   return 'female';
+}
+function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
+  if ((prefs.avatarRenderMode || '2d') !== '3d') return false;
+  if (get3dPreference() !== 'high') return false;
+  if (isIosLikeDevice()) return false;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
+  if (!window.WebGLRenderingContext) return false;
+  return true;
 }
 function resolveOracleAvatarTheme(message = '', reading = lastReading || {}) {
   const text = `${message || ''} ${reading?.type || ''} ${reading?.title || ''}`.toLowerCase();
@@ -1766,6 +1775,7 @@ function buildOracleReadingVisualsHTML(visuals = []) {
     </div>`).join('')}</div>`;
 }
 function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está canalizando…', theme = 'chat', mood = 'calm', speechMode = 'channeling') {
+  const prefs = getVoicePrefs();
   const isMale = style === 'male';
   const title = isMale ? 'Oráculo guardián' : 'Oráculo guía';
   const speechLabel = speechMode === 'whisper' ? 'Susurrando' : 'Canalizando';
@@ -1773,10 +1783,12 @@ function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está ca
   const portraitMedium = isMale ? 'img/avatars/oracle-male-mouth-medium.webp' : 'img/avatars/oracle-female-mouth-medium.webp';
   const portraitOpen = isMale ? 'img/avatars/oracle-male-mouth-open.webp' : 'img/avatars/oracle-female-mouth-open.webp';
   const readingVisuals = getOracleReadingVisuals();
+  const avatar3d = shouldUseOracleAvatar3D(prefs);
+  const avatar3dAsset = isMale ? 'avatarMale' : 'avatarFemale';
   return `
-    <div class="oracle-avatar-window ${isMale ? 'male' : 'female'} theme-${theme} mood-${mood} mode-${speechMode} ${readingVisuals.length ? 'has-reading-visuals' : ''}">
+    <div class="oracle-avatar-window ${isMale ? 'male' : 'female'} theme-${theme} mood-${mood} mode-${speechMode} ${avatar3d ? 'uses-avatar-3d' : ''} ${readingVisuals.length ? 'has-reading-visuals' : ''}">
       <button class="oracle-avatar-close" type="button" data-act="hide-avatar" aria-label="Cerrar avatar">×</button>
-      <div class="oracle-avatar-stage">
+      <div class="oracle-avatar-stage ${avatar3d ? 'has-avatar-3d' : ''}">
         <div class="oracle-avatar-aura"></div>
         <div class="oracle-avatar-stars"><span></span><span></span><span></span><span></span></div>
         <div class="oracle-avatar-realistic">
@@ -1788,6 +1800,7 @@ function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está ca
           <div class="oracle-avatar-realistic-shade"></div>
           <div class="oracle-avatar-voice-ring" aria-hidden="true"></div>
         </div>
+        ${avatar3d ? `<div class="om-3d-stage oracle-avatar-3d-stage" data-oraculo-3d-asset="${avatar3dAsset}" aria-hidden="true"></div>` : ''}
       </div>
       <div class="oracle-avatar-copy">
         <div class="oracle-avatar-badge">${speechLabel} · ${getOracleMoodLabel(mood)}</div>
@@ -5817,6 +5830,7 @@ function showSettings() {
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label>${escapeHTML(t('stEstiloDeAvatar'))}</label><select id="oracleAvatarStyle"><option value="auto" ${getVoicePrefs().avatarStyle==='auto'?'selected':''}>${escapeHTML(t('stAutomaticoSegunVoz'))}</option><option value="female" ${getVoicePrefs().avatarStyle==='female'?'selected':''}>${escapeHTML(t('stChicaOraculo'))}</option><option value="male" ${getVoicePrefs().avatarStyle==='male'?'selected':''}>${escapeHTML(t('stChicoOraculo'))}</option></select></div>
+      <div class="field"><label>${escapeHTML(t('stModeloAvatar'))}</label><select id="oracleAvatarRenderMode"><option value="2d" ${(getVoicePrefs().avatarRenderMode || '2d')!=='3d'?'selected':''}>${escapeHTML(t('stAvatar2dRealista'))}</option><option value="3d" ${getVoicePrefs().avatarRenderMode==='3d'?'selected':''}>${escapeHTML(t('stAvatar3dExperimental'))}</option></select><small>${escapeHTML(t('stAvatar3dNota'))}</small></div>
       <div class="field"><label>${escapeHTML(t('stMostrarAvatar'))}</label><select id="oracleAvatarEnabled"><option value="true" ${getVoicePrefs().avatarEnabled!==false?'selected':''}>${escapeHTML(t('stSiMostrarAlHablar'))}</option><option value="false" ${getVoicePrefs().avatarEnabled===false?'selected':''}>${escapeHTML(t('stNoMostrar'))}</option></select></div>
       <div class="field"><label>${escapeHTML(t('stPosicionDelAvatar'))}</label><select id="oracleAvatarPosition"><option value="right" ${getVoicePrefs().avatarPosition!=='left'?'selected':''}>${escapeHTML(t('stDerecha'))}</option><option value="left" ${getVoicePrefs().avatarPosition==='left'?'selected':''}>${escapeHTML(t('stIzquierda'))}</option></select></div>
       <div class="field"><label>${escapeHTML(t('stTamanoDelAvatar'))}</label><select id="oracleAvatarSize"><option value="small" ${getVoicePrefs().avatarSize==='small'?'selected':''}>${escapeHTML(t('stPequeno'))}</option><option value="medium" ${getVoicePrefs().avatarSize!=='small' && getVoicePrefs().avatarSize!=='large'?'selected':''}>${escapeHTML(t('stMediano'))}</option><option value="large" ${getVoicePrefs().avatarSize==='large'?'selected':''}>${escapeHTML(t('stGrande'))}</option></select></div>
@@ -6153,7 +6167,7 @@ function handleAction(action) {
     'grab-more': () => { grabVisibleLimit += GRAB_INCREMENT; refrescarGrabList(); },
     'grab-all': () => { grabVisibleLimit = Number.MAX_SAFE_INTEGER; refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
-    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
+    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarRenderMode: $('#oracleAvatarRenderMode')?.value || '2d', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'cycle-text-scale': () => { const p=storeGet(LS.prefs,{}); p.textScale=siguienteEscalaTexto(); delete p.largeText; storeSet(LS.prefs,p); aplicarEscalaTexto(); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },

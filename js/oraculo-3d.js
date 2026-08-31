@@ -244,6 +244,8 @@ function makeFallback(stage, assetId, reason = '') {
   const nombre = etiquetaAsset(asset);
   const matiz = tr ? tr('a3dLight') : '';
   stage.classList.add('om-3d-fallback-active');
+  stage.classList.remove('om-3d-mounted');
+  stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready');
   /* El aro se dibuja aqui y no con un SVG externo: son cuatro trazos y
      asi no anade ni una peticion mas ni depende de la cache. */
   stage.innerHTML = `<div class="om-3d-fallback" role="img" aria-label="${escaparAttr(nombre)}${matiz ? ' · ' + escaparAttr(matiz) : ''}">
@@ -276,6 +278,8 @@ class OracleScene {
     this.running = false;
     this.frame = 0;
     this.baseModelY = 0;
+    this.baseModelScale = 1;
+    this.avatarMorphs = [];
     this.lastRender = 0;
     this.destroyed = false;
     this.targetFrameMs = quality.level === 'high' ? 16 : quality.level === 'medium' ? 33 : 80;
@@ -307,6 +311,8 @@ class OracleScene {
     const key = new THREE.DirectionalLight(0xf5cc74, this.options.lights === 3 ? 2.2 : 1.45);
     key.position.set(3, 4, 5);
     key.castShadow = this.options.shadows;
+    this.keyLight = key;
+    this.baseKeyIntensity = key.intensity;
     this.scene.add(key);
     if (this.options.lights > 1) {
       const violet = new THREE.PointLight(0x9c74ff, this.options.lights === 3 ? 1.4 : 0.8, 6);
@@ -320,7 +326,10 @@ class OracleScene {
     this.model.rotation.set(...this.asset.rotation);
     this.model.scale.setScalar(this.asset.scale);
     this.centerModel();
+    if (this.asset.avatar) this.collectAvatarMorphs();
     this.scene.add(this.model);
+    this.stage.classList.add('om-3d-mounted');
+    this.stage.closest?.('.oracle-avatar-stage')?.classList?.add('avatar-3d-ready');
 
     this.resize();
     window.addEventListener('resize', this.onResize, { passive: true });
@@ -341,6 +350,7 @@ class OracleScene {
     const fitSize = this.asset.fitSize || 1.68;
     const targetScale = this.asset.scale * (fitSize / largest);
     this.model.scale.setScalar(targetScale);
+    this.baseModelScale = targetScale;
     this.model.position.set(
       -center.x * targetScale,
       -center.y * targetScale - size.y * targetScale * 0.02,
@@ -370,6 +380,27 @@ class OracleScene {
     if (document.hidden) this.lastRender = 0;
   }
 
+  collectAvatarMorphs() {
+    const candidatos = /(jaw|mouth|lip|viseme|aa|ah|oh|ou|open|wide|smile|boca|labio|mand)/i;
+    this.avatarMorphs = [];
+    this.model?.traverse?.(node => {
+      const dict = node.morphTargetDictionary;
+      const influences = node.morphTargetInfluences;
+      if (!dict || !influences) return;
+      Object.entries(dict).forEach(([name, index]) => {
+        if (candidatos.test(name)) this.avatarMorphs.push({ mesh:node, index, name, weight:/smile/i.test(name) ? .18 : .72 });
+      });
+    });
+  }
+
+  updateAvatarMorphs(amount = 0) {
+    if (!this.avatarMorphs.length) return;
+    const value = Math.max(0, Math.min(1, amount));
+    this.avatarMorphs.forEach(target => {
+      if (target.mesh.morphTargetInfluences) target.mesh.morphTargetInfluences[target.index] = value * target.weight;
+    });
+  }
+
   animate(now = performance.now()) {
     if (!this.running) return;
     if (document.hidden || now - this.lastRender < this.targetFrameMs) {
@@ -380,10 +411,22 @@ class OracleScene {
     const motion = this.quality.motion;
     if (this.model && motion) {
       const t = performance.now() * 0.00035;
-      this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
-      this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
-      this.model.rotation.z += (this.pointer.x * -0.035 - this.model.rotation.z) * 0.04;
-      this.model.position.y = this.baseModelY + Math.sin(t * 1.2) * 0.026;
+      if (this.asset.avatar) {
+        const speaking = document.getElementById('oracleVoiceAvatarHost')?.classList.contains('speaking');
+        const talk = speaking ? (0.5 + Math.sin(performance.now() * 0.018) * 0.5) : 0;
+        this.model.rotation.y += (this.asset.rotation[1] + this.pointer.x * 0.09 + Math.sin(t * 1.6) * 0.025 - this.model.rotation.y) * 0.055;
+        this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.045 + Math.sin(t * 1.3) * 0.018 - this.model.rotation.x) * 0.055;
+        this.model.rotation.z += (this.pointer.x * -0.025 + Math.sin(t * 1.1) * 0.01 - this.model.rotation.z) * 0.045;
+        this.model.position.y = this.baseModelY + Math.sin(t * 1.45) * 0.018 + talk * 0.012;
+        this.model.scale.setScalar(this.baseModelScale * (1 + Math.sin(t * 1.25) * 0.004 + talk * 0.006));
+        if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talk * 0.32 - this.keyLight.intensity) * 0.12;
+        this.updateAvatarMorphs(talk);
+      } else {
+        this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
+        this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
+        this.model.rotation.z += (this.pointer.x * -0.035 - this.model.rotation.z) * 0.04;
+        this.model.position.y = this.baseModelY + Math.sin(t * 1.2) * 0.026;
+      }
     }
     this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(() => this.animate());
@@ -400,6 +443,9 @@ class OracleScene {
       this.scene?.remove(this.model);
       disposeObject(this.THREE, this.model);
     }
+    this.stage.classList.remove('om-3d-mounted');
+    this.stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready');
+    this.avatarMorphs = [];
     /* dispose() libera programas y render targets, pero NO el contexto
        WebGL: para eso hace falta forceContextLoss(). El navegador solo
        admite unos 16 contextos vivos y, al pasarse, mata los primeros
