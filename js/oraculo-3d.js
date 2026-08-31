@@ -233,10 +233,12 @@ function tuneAvatarMaterial(material) {
   if (!material) return;
   const materiales = Array.isArray(material) ? material : [material];
   materiales.filter(Boolean).forEach(mat => {
-    if ('metalness' in mat) mat.metalness = Math.min(Number(mat.metalness || 0), 0.04);
-    if ('roughness' in mat) mat.roughness = Math.max(0.34, Math.min(Number(mat.roughness || 0.46), 0.58));
-    if ('envMapIntensity' in mat) mat.envMapIntensity = Math.max(Number(mat.envMapIntensity || 0), 0.35);
-    if ('aoMapIntensity' in mat) mat.aoMapIntensity = Math.max(Number(mat.aoMapIntensity || 0), 0.75);
+    if ('metalness' in mat) mat.metalness = 0;
+    if ('roughness' in mat) mat.roughness = Math.max(0.74, Number(mat.roughness || 0.74));
+    if ('envMapIntensity' in mat) mat.envMapIntensity = Math.min(Number(mat.envMapIntensity || 0.12), 0.16);
+    if ('aoMapIntensity' in mat) mat.aoMapIntensity = Math.max(Number(mat.aoMapIntensity || 0), 0.92);
+    if ('emissiveIntensity' in mat) mat.emissiveIntensity = Math.min(Number(mat.emissiveIntensity || 0), 0.02);
+    if (mat.color?.multiplyScalar) mat.color.multiplyScalar(0.9);
     mat.needsUpdate = true;
   });
 }
@@ -292,7 +294,7 @@ function makeFallback(stage, assetId, reason = '') {
   const matiz = tr ? tr('a3dLight') : '';
   stage.classList.add('om-3d-fallback-active');
   stage.classList.remove('om-3d-mounted');
-  stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient');
+  stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient', 'avatar-3d-faux-mouth');
   /* El aro se dibuja aqui y no con un SVG externo: son cuatro trazos y
      asi no anade ni una peticion mas ni depende de la cache. */
   stage.innerHTML = `<div class="om-3d-fallback" role="img" aria-label="${escaparAttr(nombre)}${matiz ? ' · ' + escaparAttr(matiz) : ''}">
@@ -327,6 +329,7 @@ class OracleScene {
     this.baseModelY = 0;
     this.baseModelScale = 1;
     this.avatarMorphs = [];
+    this.avatarFauxMouth = [];
     this.avatarGesture = null;
     this.nextAvatarGestureAt = performance.now() + 1800 + Math.random() * 1800;
     this.lastRender = 0;
@@ -349,7 +352,7 @@ class OracleScene {
     this.renderer.setPixelRatio(this.options.dpr);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = this.asset.avatar ? 1.08 : 1.02;
+    this.renderer.toneMappingExposure = this.asset.avatar ? 0.74 : 1.02;
     if ('useLegacyLights' in this.renderer) this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = this.options.shadows;
     this.stage.textContent = '';
@@ -357,24 +360,24 @@ class OracleScene {
     this.stage.appendChild(this.renderer.domElement);
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
 
-    const ambient = new THREE.HemisphereLight(0xf8edcf, 0x14101f, this.options.lights === 1 ? 1.8 : 1.3);
+    const ambient = new THREE.HemisphereLight(0xf8edcf, 0x14101f, this.asset.avatar ? 0.78 : (this.options.lights === 1 ? 1.8 : 1.3));
     if (this.destroyed) return;
     this.scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xf5cc74, this.options.lights === 3 ? 2.2 : 1.45);
+    const key = new THREE.DirectionalLight(0xf5cc74, this.asset.avatar ? 0.86 : (this.options.lights === 3 ? 2.2 : 1.45));
     key.position.set(3, 4, 5);
     key.castShadow = this.options.shadows;
     this.keyLight = key;
     this.baseKeyIntensity = key.intensity;
     this.scene.add(key);
     if (this.options.lights > 1) {
-      const violet = new THREE.PointLight(0x9c74ff, this.options.lights === 3 ? 1.4 : 0.8, 6);
+      const violet = new THREE.PointLight(0x9c74ff, this.asset.avatar ? 0.28 : (this.options.lights === 3 ? 1.4 : 0.8), 6);
       violet.position.set(-2, 1.4, 2);
       this.scene.add(violet);
     }
     if (this.asset.avatar && this.options.lights > 1) {
-      const fill = new THREE.DirectionalLight(0xffe2c2, 0.55);
+      const fill = new THREE.DirectionalLight(0xffe2c2, 0.22);
       fill.position.set(-2.5, 1.9, 3.5);
-      const rim = new THREE.DirectionalLight(0xb9a0ff, 0.72);
+      const rim = new THREE.DirectionalLight(0xb9a0ff, 0.3);
       rim.position.set(-3, 2.4, -2.5);
       this.scene.add(fill, rim);
     }
@@ -391,9 +394,13 @@ class OracleScene {
     const avatarStage = this.stage.closest?.('.oracle-avatar-stage');
     if (this.asset.avatar) {
       const hasRealLipSync = this.avatarMorphs.length > 0;
+      if (!hasRealLipSync) this.prepareAvatarFauxMouth();
+      const fauxMouthVertices = this.avatarFauxMouth.reduce((total, item) => total + item.points.length, 0);
+      const hasFauxMouth = fauxMouthVertices > 0;
       avatarStage?.classList?.toggle('avatar-3d-ready', hasRealLipSync);
       avatarStage?.classList?.toggle('avatar-3d-ambient', !hasRealLipSync);
-      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, lipSync: hasRealLipSync ? 'morph-targets' : '2d-overlay' });
+      avatarStage?.classList?.toggle('avatar-3d-faux-mouth', !hasRealLipSync && hasFauxMouth);
+      updateReport(this.assetId, { facialMorphs: this.avatarMorphs.length, fauxMouthVertices, lipSync: hasRealLipSync ? 'morph-targets' : hasFauxMouth ? 'mesh-region' : '2d-overlay' });
     } else {
       avatarStage?.classList?.add('avatar-3d-ready');
     }
@@ -567,6 +574,50 @@ class OracleScene {
     });
   }
 
+  prepareAvatarFauxMouth() {
+    if (!this.model) return;
+    this.avatarFauxMouth = [];
+    this.model.updateMatrixWorld(true);
+    this.model.traverse(node => {
+      const geometry = node.isMesh ? node.geometry : null;
+      const attr = geometry?.attributes?.position;
+      if (!attr || !attr.array || attr.itemSize !== 3 || !Number.isFinite(attr.count)) return;
+      geometry.computeBoundingBox?.();
+      const box = geometry.boundingBox;
+      if (!box) return;
+      const width = Math.max(0.0001, box.max.x - box.min.x);
+      const height = Math.max(0.0001, box.max.y - box.min.y);
+      const depth = Math.max(0.0001, box.max.z - box.min.z);
+      const frontNegative = this.asset.fauxMouth?.front === 'negative';
+      const centerX = this.asset.fauxMouth?.x ?? 0.5;
+      const centerY = this.asset.fauxMouth?.y ?? 0.64;
+      const radiusX = this.asset.fauxMouth?.rx ?? 0.105;
+      const radiusY = this.asset.fauxMouth?.ry ?? 0.052;
+      const minFront = this.asset.fauxMouth?.frontDepth ?? 0.66;
+      const points = [];
+      const base = new Float32Array(attr.array);
+      for (let index = 0; index < attr.count; index += 1) {
+        const i = index * 3;
+        const xNorm = (base[i] - box.min.x) / width;
+        const yNorm = (base[i + 1] - box.min.y) / height;
+        const zNorm = frontNegative ? (box.max.z - base[i + 2]) / depth : (base[i + 2] - box.min.z) / depth;
+        if (zNorm < minFront) continue;
+        const dx = (xNorm - centerX) / radiusX;
+        const dy = (yNorm - centerY) / radiusY;
+        const distance = dx * dx + dy * dy;
+        if (distance > 1) continue;
+        points.push({
+          index,
+          weight: (1 - distance) * Math.min(1, Math.max(0, (zNorm - minFront) / Math.max(0.001, 1 - minFront))),
+          side: xNorm < centerX ? -1 : 1,
+          lower: yNorm < centerY ? 1 : -0.35,
+          frontSign: frontNegative ? -1 : 1
+        });
+      }
+      if (points.length) this.avatarFauxMouth.push({ attr, base, points, width, height, depth });
+    });
+  }
+
   updateAvatarMorphs(amount = 0, expression = {}) {
     if (!this.avatarMorphs.length) return;
     const mouth = Math.max(0, Math.min(1, amount));
@@ -577,6 +628,32 @@ class OracleScene {
       if (!target.mesh.morphTargetInfluences) return;
       const value = target.kind === 'smile' ? smile : target.kind === 'blink' ? blink : target.kind === 'brow' ? brow : mouth;
       target.mesh.morphTargetInfluences[target.index] = value * target.weight;
+    });
+  }
+
+  updateAvatarFauxMouth(amount = 0, expression = {}) {
+    if (!this.avatarFauxMouth.length) return;
+    const mouth = Math.max(0, Math.min(1, amount));
+    const smile = Math.max(0, Math.min(1, expression.smile || 0));
+    this.avatarFauxMouth.forEach(item => {
+      const data = item.attr.array;
+      item.points.forEach(point => {
+        const i = point.index * 3;
+        const force = mouth * point.weight;
+        const smileLift = smile * point.weight * item.height * 0.004;
+        data[i] = item.base[i] + point.side * force * item.width * 0.012;
+        data[i + 1] = item.base[i + 1] + point.lower * force * item.height * 0.018 + smileLift;
+        data[i + 2] = item.base[i + 2] + point.frontSign * force * item.depth * 0.006;
+      });
+      item.attr.needsUpdate = true;
+    });
+  }
+
+  resetAvatarFauxMouth() {
+    if (!this.avatarFauxMouth.length) return;
+    this.avatarFauxMouth.forEach(item => {
+      item.attr.array.set(item.base);
+      item.attr.needsUpdate = true;
     });
   }
 
@@ -694,7 +771,9 @@ class OracleScene {
         this.model.position.y = this.baseModelY + breath * profile.bob + talkWave * 0.012 + gesture.lift + attendingLift;
         this.model.scale.setScalar(this.baseModelScale * (1 + breath * 0.004 + talkWave * 0.006 + emphasis * .008));
         if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talkWave * profile.glow + emphasis * .25 + prosody.emphasis * .18 - this.keyLight.intensity) * 0.12;
-        this.updateAvatarMorphs(talkWave, { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 + (prosody.cue === 'question' ? .18 : 0) });
+        const expression = { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 + (prosody.cue === 'question' ? .18 : 0) };
+        this.updateAvatarMorphs(talkWave, expression);
+        this.updateAvatarFauxMouth(talkWave, expression);
       } else {
         this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
         this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
@@ -716,12 +795,14 @@ class OracleScene {
     this.stage.removeEventListener('pointermove', this.onPointerMove);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     if (this.model) {
+      this.resetAvatarFauxMouth();
       this.scene?.remove(this.model);
       disposeObject(this.THREE, this.model);
     }
     this.stage.classList.remove('om-3d-mounted');
-    this.stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient');
+    this.stage.closest?.('.oracle-avatar-stage')?.classList?.remove('avatar-3d-ready', 'avatar-3d-ambient', 'avatar-3d-faux-mouth');
     this.avatarMorphs = [];
+    this.avatarFauxMouth = [];
     /* dispose() libera programas y render targets, pero NO el contexto
        WebGL: para eso hace falta forceContextLoss(). El navegador solo
        admite unos 16 contextos vivos y, al pasarse, mata los primeros
