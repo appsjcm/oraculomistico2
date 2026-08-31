@@ -1205,3 +1205,27 @@ button:disabled,
 .draw-experience:has(.result-appear) .ritual-banner {
   display: none;
 }
+
+/* ------------------------------------------------------------------
+   El lienzo del avatar tomaba el tamano del lienzo generico
+
+   Medido: el contenedor del avatar es de 116x260 y recorta lo que sobra,
+   pero el lienzo 3D salia de 260x260. Se dibujaba cuadrado y el padre le
+   cortaba 144 px por un lado: de ahi la cabeza desplazada y cortada.
+
+   No era la regla, que existe y es correcta, sino donde vive. La
+   excepcion del avatar esta en core-remodel y la regla generica
+   .om-3d-stage en oraculo-3d.css, que se carga despues. Misma
+   especificidad, gana la ultima, asi que la generica pisaba a la
+   excepcion. Se repite aqui, que es la ultima hoja, para que gane la
+   que debe.
+   ------------------------------------------------------------------ */
+.om-3d-stage.oracle-avatar-3d-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  aspect-ratio: auto;
+}
