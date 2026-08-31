@@ -105,6 +105,7 @@ function assetById(assetId) {
 }
 
 async function shouldSkipHeavyModel(asset, quality) {
+  if (asset.avatar && quality.avatarHigh === true) return false;
   if (quality.level === 'high') return false;
   updateReport(asset.id || asset.path, {
     status: 'fallback',
@@ -133,6 +134,20 @@ async function shouldSkipPrefetch(assetId) {
   } catch {}
   prefetchSkips.set(assetId, skip);
   return skip;
+}
+
+function qualityForStage(stage, assetId) {
+  const quality = detectQuality();
+  const asset = assetById(assetId);
+  if (!asset.avatar || readPreference() !== 'high' || prefersReducedMotion() || !webglAvailable()) return quality;
+  return {
+    ...quality,
+    enabled: true,
+    level: quality.level === 'high' ? 'high' : 'medium',
+    motion: !isMobileWebKit(),
+    reason: quality.level === 'high' ? quality.reason : 'avatar-high-safe',
+    avatarHigh: true
+  };
 }
 
 async function loadModel(assetId, quality = detectQuality()) {
@@ -594,7 +609,7 @@ function mountStage(stage) {
      .oraculo3dAsset era siempre undefined y TODA escena caia al orbe.
      Se lee el atributo directamente, que no tiene ambiguedad. */
   const assetId = stage.getAttribute('data-oraculo-3d-asset') || 'orb';
-  const quality = detectQuality();
+  const quality = qualityForStage(stage, assetId);
   if (!quality.enabled) {
     makeFallback(stage, assetId, quality.reason);
     return;

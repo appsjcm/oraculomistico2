@@ -1602,11 +1602,11 @@ function showVoiceLibrary(statusMessage = '') {
     ${platform === 'ios' ? iosSteps : platform === 'android' ? androidSteps : iosSteps + androidSteps}
     <div class="actions mt"><button class="btn primary" data-act="refresh-voices">Volver a detectar</button><button class="btn" data-act="test-voice">Probar voz elegida</button>${window.AndroidTTS?.openSettings ? '<button class="btn" data-act="open-tts-settings">Ajustes TTS de Android</button>' : ''}</div>` });
 }
-function testVoiceSettings() {
+function collectVoicePrefsFromControls() {
   const current = getVoicePrefs();
   const value = (id, fallback) => $(id)?.value ?? fallback;
   const preset = value('#voicePreset', current.preset || 'mistica_femenina');
-  setVoicePrefs({
+  return {
     engine:value('#voiceEngine', current.engine || 'device'),
     remoteVoice:value('#remoteVoice', current.remoteVoice || 'coral'),
     voiceFilter:value('#voiceFilter', current.voiceFilter || 'all'),
@@ -1622,7 +1622,14 @@ function testVoiceSettings() {
     avatarMood:value('#oracleAvatarMood', current.avatarMood || 'auto'),
     avatarSpeechMode:value('#oracleAvatarSpeechMode', current.avatarSpeechMode || 'auto'),
     rate:Number(value('#voiceRate', current.rate || getVoicePreset(preset).rate))
-  });
+  };
+}
+function applyLiveAvatarControls() {
+  if ($('#oracleAvatarRenderMode') || $('#voicePreset')) setVoicePrefs(collectVoicePrefsFromControls());
+  if ($('#effects3dSelect')) set3dPreference($('#effects3dSelect')?.value || get3dPreference());
+}
+function testVoiceSettings() {
+  applyLiveAvatarControls();
   refreshDeviceVoiceSelect();
   previewOracleAvatar();
   unlockAchievement('first_voice');
@@ -1674,7 +1681,6 @@ function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
   const quality = get3dPreference();
   if (mode === '2d') return false;
   if (quality !== 'high') return false;
-  if (isIosLikeDevice()) return false;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
   if (!window.WebGLRenderingContext) return false;
   return true;
@@ -2184,6 +2190,7 @@ function hideOracleVoiceAvatar() {
   }, 220);
 }
 function previewOracleAvatar() {
+  applyLiveAvatarControls();
   const prefs = getVoicePrefs();
   const mode = resolveOracleSpeechMode('El oráculo comparte un mensaje de prueba.', prefs);
   const previewText = mode === 'whisper' ? 'El oráculo comparte un susurro de prueba para ti.' : 'El oráculo está canalizando un mensaje de prueba para ti.';
