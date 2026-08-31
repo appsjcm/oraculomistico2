@@ -1680,6 +1680,8 @@ function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
   const mode = normalizeAvatarRenderMode(prefs);
   const quality = get3dPreference();
   if (mode === '2d') return false;
+  if (mode !== '3d') return false;
+  if (quality === 'off') return false;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
   if (!window.WebGLRenderingContext) return false;
   /* El criterio vive en el motor 3D, que es quien conoce la calidad
