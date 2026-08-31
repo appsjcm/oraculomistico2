@@ -2371,6 +2371,7 @@ function speechRecognitionSupport() {
 }
 let activeDictation = null;
 const DICTATION_MAX_MS = 11000;
+const SPEECH_DICTATION_MAX_MS = 18000;
 
 async function waitForPuterSpeechToText(timeout = 1400) {
   if (window.puter?.ai?.speech2txt) return true;
@@ -2460,6 +2461,39 @@ function micAiDictationHintText() {
     zh: '此浏览器不支持原生听写。请尝试 Chrome 或 Edge，并检查麦克风权限。'
   };
   return texts[lang] || texts.es;
+}
+
+function micPcNoAudioHintText() {
+  const lang = (getAppLanguage() || 'es').slice(0, 2);
+  const texts = {
+    es: 'Chrome ha abierto el micrófono, pero no ha detectado voz. Revisa el micrófono elegido en Windows, el permiso del sitio y habla cerca del micro.',
+    ca: 'Chrome ha obert el micròfon, però no ha detectat veu. Revisa el micròfon triat a Windows, el permís del lloc i parla a prop del micro.',
+    en: 'Chrome opened the microphone, but did not detect speech. Check the selected Windows microphone, the site permission and speak close to the mic.',
+    fr: 'Chrome a ouvert le micro, mais n’a détecté aucune voix. Vérifie le micro choisi dans Windows, l’autorisation du site et parle près du micro.',
+    de: 'Chrome hat das Mikrofon geöffnet, aber keine Stimme erkannt. Prüfe das ausgewählte Windows-Mikrofon, die Website-Berechtigung und sprich nah am Mikrofon.',
+    zh: 'Chrome 已打开麦克风，但没有检测到语音。请检查 Windows 选择的麦克风、网站权限，并靠近麦克风说话。'
+  };
+  return texts[lang] || texts.es;
+}
+
+async function requestMicrophoneProbe() {
+  if (!navigator.mediaDevices?.getUserMedia) return { ok:false, reason:'unsupported' };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: { ideal: true },
+        noiseSuppression: { ideal: true },
+        autoGainControl: { ideal: true }
+      }
+    });
+    return { ok:true, stream };
+  } catch (error) {
+    return { ok:false, error, reason:error?.name || 'blocked' };
+  }
+}
+
+function stopMicrophoneProbe(stream) {
+  try { stream?.getTracks?.().forEach(track => track.stop()); } catch {}
 }
 
 function clearMicInlineHint(target) {
@@ -2591,7 +2625,7 @@ async function startRecordedDictation(target) {
   }
 }
 
-function startBrowserSpeechDictation(target) {
+async function startBrowserSpeechDictation(target) {
   const Recognition = speechRecognitionSupport();
   if (!Recognition) return false;
   if (window.isSecureContext === false) {
@@ -2599,19 +2633,36 @@ function startBrowserSpeechDictation(target) {
     return true;
   }
   const targetId = target.id;
+  const probe = await requestMicrophoneProbe();
+  if (!probe.ok) {
+    const blocked = /NotAllowed|Permission|Security/i.test(probe.reason || '');
+    showMicInlineHint(target, blocked ? t('tsMicPermission') : t('tsMicNoStart'));
+    pushErrorLog('mic-permission-probe', probe.error?.message || probe.reason || 'No se pudo abrir el microfono', 'microphone');
+    return true;
+  }
   try {
     const recognition = new Recognition();
     recognition.lang = getAppLocale();
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = !isIosLikeDevice();
     recognition.maxAlternatives = 1;
     const original = target.value || '';
-    activeDictation = { mode: 'speech', targetId, recognition };
+    let gotResult = false;
+    const timer = setTimeout(() => {
+      if (activeDictation?.recognition !== recognition) return;
+      toast(t('tsMicTranscribing'));
+      try { recognition.stop(); } catch {}
+    }, SPEECH_DICTATION_MAX_MS);
+    activeDictation = { mode: 'speech', targetId, recognition, stream:probe.stream, timer };
     setMicButtonState(targetId, true);
     toast(t('tsListening'));
     recognition.onresult = event => {
       const transcript = Array.from(event.results).map(r => r[0]?.transcript || '').join('\n\n').trim();
-      appendDictationText(target, original, transcript);
+      gotResult = appendDictationText(target, original, transcript) || gotResult;
+      if (gotResult) {
+        clearTimeout(timer);
+        try { recognition.stop(); } catch {}
+      }
     };
     recognition.onerror = event => {
       pushErrorLog('mic-browser-speech', event?.error || 'Speech recognition failed', 'speech recognition');
@@ -2619,13 +2670,15 @@ function startBrowserSpeechDictation(target) {
       const message = err === 'not-allowed' || err === 'service-not-allowed'
         ? t('tsMicPermission')
         : err === 'no-speech'
-          ? t('tsMicNoAudio')
+          ? micPcNoAudioHintText()
           : err === 'network'
             ? t('tsMicNoStart')
             : isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicFail');
       showMicInlineHint(target, message);
     };
     recognition.onend = () => {
+      clearTimeout(timer);
+      stopMicrophoneProbe(probe.stream);
       if (activeDictation?.recognition === recognition) activeDictation = null;
       setMicButtonState(targetId, false);
       target.focus();
@@ -2633,6 +2686,7 @@ function startBrowserSpeechDictation(target) {
     recognition.start();
     return true;
   } catch (error) {
+    stopMicrophoneProbe(probe.stream);
     pushErrorLog('mic-browser-start', error?.message || 'Speech recognition could not start', 'speech recognition');
     setMicButtonState(targetId, false);
     showMicInlineHint(target, isIosLikeDevice() ? micNativeDictationHintText() : t('tsMicNoStart'));
@@ -2646,7 +2700,7 @@ async function startDictation(targetId) {
   if (activeDictation?.targetId === targetId) return stopActiveDictation();
   if (activeDictation) stopActiveDictation();
 
-  if (startBrowserSpeechDictation(target)) return;
+  if (await startBrowserSpeechDictation(target)) return;
 
   if (localStorage.getItem(LS.puter) === 'true' && await waitForPuterSpeechToText(650) && await startRecordedDictation(target)) return;
 
