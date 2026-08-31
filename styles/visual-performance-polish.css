@@ -614,3 +614,57 @@ html[data-appearance-mode="light"] body.theme-light   { --gold: #8a5f10; }
     flex: 1 1 100%;
   }
 }
+
+
+/* ------------------------------------------------------------------
+   Tamano de texto
+   Habia un ajuste "Texto grande" que ponia font-size en body, pero la
+   app dimensiona con rem y rem se resuelve contra la raiz, no contra
+   body: no cambiaba de tamano ni una sola letra. Se comprobo midiendo
+   antes y despues, y todos los elementos daban el mismo valor.
+
+   Ahora se escala la raiz, que es lo unico que hace crecer un rem, y en
+   varios pasos en vez de un si/no. El 100% se deja sin regla para no
+   pisar el tamano que haya elegido la persona en su navegador.
+   ------------------------------------------------------------------ */
+html[data-text-scale="112"] { font-size: 112%; }
+html[data-text-scale="125"] { font-size: 125%; }
+html[data-text-scale="140"] { font-size: 140%; }
+
+/* Al crecer el texto, la barra inferior y la superior se comen la
+   pantalla. Se limita su crecimiento para que el contenido gane el
+   espacio, que es de lo que se trata. */
+html[data-text-scale="125"] .om-nav,
+html[data-text-scale="140"] .om-nav { font-size: .82rem; }
+html[data-text-scale="125"] .topbar,
+html[data-text-scale="140"] .topbar { font-size: .86rem; }
+
+/* La barra inferior son cinco columnas 1fr, y un 1fr no encoge por debajo
+   de su contenido: con el texto grande las cinco etiquetas sumaban mas que
+   el ancho de la barra y el ultimo boton, Perfil, se salia de la pantalla.
+   Con min-width 0 las columnas ya pueden ceder. Es un fallo que estaba ahi
+   desde siempre; solo se veia al agrandar. */
+.premium-bottom-nav button { min-width: 0; }
+/* A 375 px la celda medida daba 64 px y "Mi Grimorio" 65: rozaba el borde.
+   Cerrando un poco el hueco entre botones la etiqueta entra holgada. */
+.premium-bottom-nav { gap: 4px; }
+/* La etiqueta parte en dos lineas en vez de recortarse, asi se lee entera.
+   Y su tamano queda atado al ancho de pantalla ademas de al de la raiz:
+   una palabra suelta como "Biblioteca" no cabe en su celda al agrandar y
+   las etiquetas se pisaban unas a otras. El min() coge siempre el menor de
+   los dos, de modo que ni crece de mas al agrandar ni se queda enana en
+   pantallas anchas. */
+.premium-bottom-nav small {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.08;
+  /* El max() es un suelo: en pantallas muy estrechas el 3.05vw se queda
+     en nada y la etiqueta dejaria de leerse. */
+  font-size: max(9px, min(.68rem, 3.05vw));
+}
+/* Cinturon: pase lo que pase, una etiqueta no invade la celda vecina. */
+.premium-bottom-nav button { overflow: hidden; }
+/* La barra se hace mas alta al partir las etiquetas; el pie deja mas aire
+   para que no tape el final del contenido. */
+html[data-text-scale="125"] .app-footer,
+html[data-text-scale="140"] .app-footer { padding-bottom: 128px; }

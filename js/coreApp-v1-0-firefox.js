@@ -1941,6 +1941,29 @@ function pasosDeBoca(palabra) {
   return pasos;
 }
 
+/* Pasos de tamano de texto. El 100 no pone atributo: asi respeta el
+   tamano base del navegador de quien lo tenga cambiado. */
+const ESCALAS_TEXTO = [100, 112, 125, 140];
+
+function getEscalaTexto() {
+  const p = storeGet(LS.prefs, {});
+  if (ESCALAS_TEXTO.includes(Number(p.textScale))) return Number(p.textScale);
+  /* Quien tenia activado el antiguo "Texto grande" pasa a un paso que
+     de verdad se note. */
+  return p.largeText ? 125 : 100;
+}
+
+function aplicarEscalaTexto() {
+  const e = getEscalaTexto();
+  if (e === 100) document.documentElement.removeAttribute('data-text-scale');
+  else document.documentElement.setAttribute('data-text-scale', String(e));
+}
+
+function siguienteEscalaTexto() {
+  const i = ESCALAS_TEXTO.indexOf(getEscalaTexto());
+  return ESCALAS_TEXTO[(i + 1) % ESCALAS_TEXTO.length];
+}
+
 function mouthShapeForCharacter(character = '') {
   const clean = character.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/[ao]/.test(clean)) return 'wide';
@@ -2664,6 +2687,7 @@ function updateHome() {
     platformChip.textContent = nativePlatform === 'ios' ? '📱 App iPhone' : nativePlatform === 'android' ? '📱 App Android' : `📱 ${t('installable')}`;
   }
   const prefs = storeGet(LS.prefs, {});
+  aplicarEscalaTexto();
   document.body.classList.toggle('large-text', !!prefs.largeText);
   document.body.classList.toggle('high-contrast', !!prefs.highContrast);
   document.body.classList.toggle('private-mode', isPrivateMode());
@@ -5761,7 +5785,7 @@ function showSettings() {
       <button class="choice" data-act="preview-avatar"><strong>${escapeHTML(t('stVistaPreviaDelAvatar'))}</strong><small>${escapeHTML(t('stVerElOraculoAnimado'))}</small></button>
       <button class="choice" data-act="stop-voice"><strong>${escapeHTML(t('stPararVoz'))}</strong><small>${escapeHTML(t('stDetieneLaLecturaHablada'))}</small></button>
       <button class="choice" data-act="toggle-contrast"><strong>${escapeHTML(t('stAltoContraste'))}</strong><small>${prefs.highContrast?'Activado':'Desactivado'}</small></button>
-      <button class="choice" data-act="toggle-large-text"><strong>${escapeHTML(t('stTextoGrande'))}</strong><small>${prefs.largeText?'Activado':'Desactivado'}</small></button>
+      <button class="choice" data-act="cycle-text-scale"><strong>${escapeHTML(t('stTamanoTexto'))}</strong><small>${getEscalaTexto()}% · ${escapeHTML(t('stTocaParaAumentar'))}</small></button>
     </div>
     <h3 class="section-title">${escapeHTML(t('stDatosYAyuda'))}</h3>
     <div class="panel-grid settings-actions">
@@ -6069,7 +6093,7 @@ function handleAction(action) {
     'grab-pdf': () => exportGrabovoiSheetPDF(),
     'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
-    'toggle-large-text': () => { const p=storeGet(LS.prefs,{}); p.largeText=!p.largeText; storeSet(LS.prefs,p); updateHome(); showSettings(); },
+    'cycle-text-scale': () => { const p=storeGet(LS.prefs,{}); p.textScale=siguienteEscalaTexto(); delete p.largeText; storeSet(LS.prefs,p); aplicarEscalaTexto(); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
     'open-manual': () => window.open('docs/manual_usuario_oraculo_mistico_v1_0.pdf', '_blank'),
     'mi-oraculo': showMiOraculo,

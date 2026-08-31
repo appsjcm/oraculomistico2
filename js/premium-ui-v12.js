@@ -506,6 +506,12 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     const hasLibrary = body.querySelector('.library-grid, .diary-list');
     if (!hasTarot && !hasLibrary) return;
 
+    /* En una lectura ya hay una fila de acciones al pie con Guardar,
+       Copiar, Escuchar y PDF: esta barra repetia los cuatro. Cuando esa
+       fila existe, la barra sobra. Se conserva donde es el unico acceso,
+       como en la Biblioteca, que no lleva acciones al pie. */
+    if (body.querySelector('.reading-actions')) return;
+
     const bar = document.createElement('div');
     bar.className = 'premium-modal-toolbar';
     bar.innerHTML = `
