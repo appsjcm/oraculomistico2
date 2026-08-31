@@ -263,7 +263,7 @@ body.theme-light .oracle-avatar-copy small{color:#3d3054}
 
 
 /* v1.0.66 Avatar Premium */
-.oracle-avatar-host{--oracle-mouth-intensity:0;position:fixed;z-index:120;opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;transition:.28s ease}
+.oracle-avatar-host{--oracle-mouth-intensity:0;--oracle-prosody-emphasis:0;--oracle-prosody-pause:0;position:fixed;z-index:120;opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;transition:.28s ease}
 .oracle-avatar-host.pos-right{right:16px;left:auto}
 .oracle-avatar-host.pos-left{left:16px;right:auto}
 .oracle-avatar-host.size-small .oracle-avatar-window{width:min(300px,calc(100vw - 24px));grid-template-columns:100px 1fr}
@@ -275,6 +275,9 @@ linear-gradient(145deg,rgba(13,10,29,.98),rgba(28,18,55,.96));box-shadow:0 28px 
 .oracle-avatar-window::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 15%,rgba(242,204,101,.12),transparent 26%),radial-gradient(circle at 80% 75%,rgba(141,102,255,.14),transparent 24%);pointer-events:none}
 .oracle-avatar-host.attending .oracle-avatar-window::before{animation:oracleAvatarWindowWake .62s ease-out both}
 .oracle-avatar-host.paused .oracle-avatar-window::before{opacity:.62}
+.oracle-avatar-host.prosody-emphasis .oracle-avatar-window::before{animation:oracleAvatarProsodyGlow .36s ease-out both}
+.oracle-avatar-host.prosody-question .oracle-avatar-window::before{animation:oracleAvatarQuestionGlow .42s ease-out both}
+.oracle-avatar-host.prosody-pause .oracle-avatar-window::before{opacity:.42}
 .oracle-avatar-host[data-mouth-shape="medium"] .oracle-avatar-window{box-shadow:0 28px 50px rgba(0,0,0,.35),0 0 18px rgba(242,204,101,.10)}
 .oracle-avatar-host[data-mouth-shape="wide"] .oracle-avatar-window{box-shadow:0 28px 50px rgba(0,0,0,.35),0 0 26px rgba(242,204,101,.16)}
 .oracle-avatar-close{position:absolute;right:10px;top:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(255,255,255,.10);color:#fff;cursor:pointer;z-index:2}
@@ -403,14 +406,20 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 .oracle-avatar-realistic picture,.oracle-avatar-realistic img{display:block;width:100%;height:100%}
 .oracle-avatar-realistic img{object-fit:cover;object-position:center 22%;transform:scale(1.04);filter:saturate(.92) contrast(1.04) brightness(.9);transition:filter .35s ease,transform .45s ease}
 .oracle-avatar-realistic-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,rgba(8,7,19,.52) 100%),radial-gradient(circle at 50% 42%,transparent 34%,rgba(8,7,19,.18) 100%);pointer-events:none}
-.oracle-avatar-realistic-shade::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,rgba(255,246,214,calc(.05 + var(--oracle-mouth-intensity) * .08)),transparent 32%),linear-gradient(90deg,rgba(255,255,255,.06),transparent 18%,transparent 82%,rgba(90,67,180,.10));opacity:calc(.58 + var(--oracle-mouth-intensity) * .32)}
-.oracle-avatar-realistic-shade::after{content:"";position:absolute;left:20%;right:20%;bottom:12%;height:3px;border-radius:999px;background:rgba(242,204,101,calc(.18 + var(--oracle-mouth-intensity) * .42));box-shadow:0 0 calc(8px + var(--oracle-mouth-intensity) * 10px) rgba(242,204,101,.55);transform:scaleX(calc(.55 + var(--oracle-mouth-intensity) * .8));transform-origin:center}
+.oracle-avatar-realistic-shade::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 34%,rgba(255,246,214,calc(.05 + var(--oracle-mouth-intensity) * .08 + var(--oracle-prosody-emphasis) * .05)),transparent 32%),linear-gradient(90deg,rgba(255,255,255,.06),transparent 18%,transparent 82%,rgba(90,67,180,.10));opacity:calc(.58 + var(--oracle-mouth-intensity) * .32 + var(--oracle-prosody-emphasis) * .16 - var(--oracle-prosody-pause) * .18)}
+.oracle-avatar-realistic-shade::after{content:"";position:absolute;left:20%;right:20%;bottom:12%;height:3px;border-radius:999px;background:rgba(242,204,101,calc(.18 + var(--oracle-mouth-intensity) * .42 + var(--oracle-prosody-emphasis) * .2));box-shadow:0 0 calc(8px + var(--oracle-mouth-intensity) * 10px + var(--oracle-prosody-emphasis) * 8px) rgba(242,204,101,.55);transform:scaleX(calc(.55 + var(--oracle-mouth-intensity) * .8 + var(--oracle-prosody-emphasis) * .18 - var(--oracle-prosody-pause) * .18));transform-origin:center}
 .oracle-avatar-realistic::after{content:"";position:absolute;inset:0;border:1px solid rgba(242,204,101,.3);border-radius:inherit;box-shadow:inset 0 0 24px rgba(141,102,255,.2);pointer-events:none}
 .oracle-avatar-voice-ring{position:absolute;left:50%;bottom:8px;width:34px;height:4px;border-radius:999px;background:rgba(242,204,101,calc(.42 + var(--oracle-mouth-intensity) * .32));box-shadow:0 0 calc(10px + var(--oracle-mouth-intensity) * 12px) rgba(242,204,101,.65);transform:translateX(-50%) scaleX(calc(.65 + var(--oracle-mouth-intensity) * .72));opacity:calc(.52 + var(--oracle-mouth-intensity) * .38)}
 .oracle-avatar-stage>.oracle-avatar-aura,.oracle-avatar-stage>.oracle-avatar-stars,.oracle-avatar-stage>.oracle-avatar-symbol{z-index:2}
 .oracle-avatar-host.visible .oracle-avatar-realistic img{animation:oracleRealisticIdle 5.8s ease-in-out infinite}
 .oracle-avatar-host.speaking .oracle-avatar-realistic img{animation:oracleRealisticSpeak 1.35s ease-in-out infinite}
+.oracle-avatar-host.prosody-emphasis .oracle-avatar-realistic img{animation:oracleAvatarProsodyEmphasis .36s ease-out both}
+.oracle-avatar-host.prosody-question .oracle-avatar-realistic img{animation:oracleAvatarProsodyQuestion .42s ease-out both}
+.oracle-avatar-host.prosody-pause .oracle-avatar-voice-ring{opacity:.34;transform:translateX(-50%) scaleX(.5)}
 .oracle-avatar-host.speaking .oracle-avatar-voice-ring{animation:oracleVoiceRing .5s ease-in-out infinite alternate}
+.oracle-avatar-host.speaking.prosody-emphasis .oracle-avatar-realistic img{animation:oracleAvatarProsodyEmphasis .36s ease-out both}
+.oracle-avatar-host.speaking.prosody-question .oracle-avatar-realistic img{animation:oracleAvatarProsodyQuestion .42s ease-out both}
+.oracle-avatar-host.speaking.prosody-pause .oracle-avatar-voice-ring{animation:none;opacity:.34;transform:translateX(-50%) scaleX(.5)}
 .oracle-avatar-window.mood-love .oracle-avatar-realistic{animation:oracleMoodLove 3.2s ease-in-out infinite}
 .oracle-avatar-window.mood-warning .oracle-avatar-realistic{animation:oracleMoodFocus 2.8s ease-in-out infinite}
 .oracle-avatar-window.mood-blocked .oracle-avatar-realistic{animation:oracleMoodStill 3.6s ease-in-out infinite}
@@ -427,6 +436,10 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 @keyframes oracleVoiceRing{from{transform:translateX(-50%) scaleX(.65);opacity:.45}to{transform:translateX(-50%) scaleX(1.25);opacity:1}}
 @keyframes oracleAvatarAttend{0%{transform:translateY(14px) scale(.96);filter:saturate(.82) brightness(.86)}58%{transform:translateY(-2px) scale(1.012);filter:saturate(1.06) brightness(1.06)}100%{transform:translateY(0) scale(1);filter:none}}
 @keyframes oracleAvatarWindowWake{0%{opacity:.25;transform:translateX(-8%)}100%{opacity:1;transform:translateX(0)}}
+@keyframes oracleAvatarProsodyGlow{0%{opacity:.5;transform:scale(.98)}55%{opacity:1;transform:scale(1.018)}100%{opacity:.78;transform:scale(1)}}
+@keyframes oracleAvatarQuestionGlow{0%{opacity:.5;transform:translateY(0)}60%{opacity:.95;transform:translateY(-2px)}100%{opacity:.74;transform:translateY(0)}}
+@keyframes oracleAvatarProsodyEmphasis{0%{transform:scale(1.04) translateY(0)}56%{transform:scale(1.068) translateY(-2px) rotate(-.25deg)}100%{transform:scale(1.045) translateY(0)}}
+@keyframes oracleAvatarProsodyQuestion{0%{transform:scale(1.04) translateY(0) rotate(0)}60%{transform:scale(1.05) translateY(-1px) rotate(.75deg)}100%{transform:scale(1.04) translateY(0) rotate(0)}}
 @keyframes oracleMoodLove{0%,100%{transform:translateX(0) rotate(0)}50%{transform:translateX(1px) rotate(.45deg)}}
 @keyframes oracleMoodFocus{0%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(1px) rotate(-.35deg)}}
 @keyframes oracleMoodStill{0%,100%{transform:translateY(0)}50%{transform:translateY(1px)}}

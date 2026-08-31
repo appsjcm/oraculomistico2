@@ -41,6 +41,7 @@ let grabovoiGuide = { digitMeanings: {}, methods: [] };
 let oracleLipTimer = null;
 let oracleLipWordStart = -1;
 let oracleAvatarHideTimer = null;
+let oracleProsodyTimer = null;
 let voiceWakeLock = null;
 let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 let voiceSpeechSession = 0;
@@ -1827,6 +1828,24 @@ function setOracleAvatarState(host, state = 'idle') {
   if (state && state !== 'idle') host.classList.add(state);
   host.dataset.avatarState = state || 'idle';
 }
+function setOracleProsodyCue(cue = 'neutral', duration = 360) {
+  const host = document.getElementById('oracleVoiceAvatarHost');
+  if (!host) return;
+  if (oracleProsodyTimer) clearTimeout(oracleProsodyTimer);
+  host.classList.remove('prosody-pause', 'prosody-emphasis', 'prosody-question');
+  const cleanCue = ['pause', 'emphasis', 'question'].includes(cue) ? cue : 'neutral';
+  host.dataset.prosodyCue = cleanCue;
+  host.style.setProperty('--oracle-prosody-emphasis', cleanCue === 'emphasis' ? '1' : cleanCue === 'question' ? '.72' : '0');
+  host.style.setProperty('--oracle-prosody-pause', cleanCue === 'pause' ? '1' : '0');
+  if (cleanCue !== 'neutral') host.classList.add(`prosody-${cleanCue}`);
+  oracleProsodyTimer = setTimeout(() => {
+    host.classList.remove('prosody-pause', 'prosody-emphasis', 'prosody-question');
+    host.dataset.prosodyCue = 'neutral';
+    host.style.setProperty('--oracle-prosody-emphasis', '0');
+    host.style.setProperty('--oracle-prosody-pause', '0');
+    oracleProsodyTimer = null;
+  }, Math.max(160, Number(duration) || 360));
+}
 function applyOracleAvatarPrefs(host, prefs = getVoicePrefs()) {
   host.classList.remove('pos-left','pos-right','size-small','size-medium','size-large');
   host.classList.add(`pos-${prefs.avatarPosition || 'right'}`, `size-${prefs.avatarSize || 'medium'}`);
@@ -1844,6 +1863,7 @@ function showOracleVoiceAvatar(message = '') {
   host.innerHTML = buildOracleAvatarHTML(resolveOracleAvatarStyle(prefs), cleaned, theme, mood, speechMode);
   applyOracleAvatarPrefs(host, prefs);
   setOracleMouthShape('closed');
+  setOracleProsodyCue('neutral', 180);
   setOracleAvatarState(host, 'attending');
   host.classList.add('visible', 'speaking');
   setTimeout(() => {
@@ -2021,16 +2041,36 @@ function getSpokenWordAt(text = '', charIndex = 0) {
 function buildWordMouthSequence(word = '') {
   return pasosDeBoca(word);
 }
+function resolveOracleProsodyCue(text = '', charIndex = 0, spoken = null) {
+  const source = String(text || '');
+  const i = Math.max(0, Math.min(Number(charIndex) || 0, source.length));
+  const before = source.slice(Math.max(0, i - 4), i + 1);
+  const after = source.slice(i, Math.min(source.length, i + 4));
+  if (/[?¿]/.test(before + after)) return 'question';
+  if (/[!¡]/.test(before + after)) return 'emphasis';
+  if (/[.;:,…]/.test(before)) return 'pause';
+  const word = String((spoken || getSpokenWordAt(source, i)).word || '');
+  if (word.length >= 10) return 'emphasis';
+  return 'neutral';
+}
+function decorateMouthStepsWithWordCue(steps = [], word = '') {
+  if (!steps.length) return steps;
+  if (String(word || '').length >= 10) steps[0] = { ...steps[0], cue:'emphasis' };
+  return steps;
+}
 function syncOracleMouthToText(text = '', charIndex = 0, rate = 0.92) {
   const spoken = getSpokenWordAt(text, charIndex);
+  const cue = resolveOracleProsodyCue(text, charIndex, spoken);
   if (!spoken.word) {
+    setOracleProsodyCue(cue === 'neutral' ? 'pause' : cue, 320);
     stopOracleLipSync();
     return;
   }
   if (spoken.start === oracleLipWordStart && oracleLipTimer) return;
   stopOracleLipSync(false);
   oracleLipWordStart = spoken.start;
-  const pasos = buildWordMouthSequence(spoken.word);
+  const pasos = decorateMouthStepsWithWordCue(buildWordMouthSequence(spoken.word), spoken.word);
+  setOracleProsodyCue(cue, cue === 'pause' ? 380 : 460);
   /* Una silaba castellana ronda los 180 ms a velocidad normal. El tiempo
      se reparte segun el peso: el cierre bilabial dura menos que la vocal. */
   const velocidad = Math.max(Number(rate) || 0.92, 0.55);
@@ -2058,10 +2098,11 @@ function pasosDeTexto(texto) {
   String(texto || 'oráculo').split(/(\s+|[.,;:!?¡¿…]+)/).forEach(trozo => {
     if (!trozo) return;
     if (/^[\s.,;:!?¡¿…]+$/.test(trozo)) {
-      pasos.push({ forma: 'closed', peso: /[.;:!?…]/.test(trozo) ? 2.4 : 1 });
+      const cue = /[?¿]/.test(trozo) ? 'question' : /[!¡]/.test(trozo) ? 'emphasis' : /[.;:,…]/.test(trozo) ? 'pause' : 'neutral';
+      pasos.push({ forma: 'closed', peso: /[.;:!?…]/.test(trozo) ? 2.4 : 1, cue });
       return;
     }
-    pasosDeBoca(trozo).forEach(x => pasos.push(x));
+    decorateMouthStepsWithWordCue(pasosDeBoca(trozo), trozo).forEach(x => pasos.push(x));
   });
   return pasos.length ? pasos : [{ forma: 'closed', peso: 1 }];
 }
@@ -2074,6 +2115,7 @@ function startOracleLipSync(text = 'oráculo', rate = 0.92) {
   const advance = () => {
     const paso = pasos[index % pasos.length];
     setOracleMouthShape(paso.forma);
+    if (paso.cue && paso.cue !== 'neutral') setOracleProsodyCue(paso.cue, paso.cue === 'pause' ? 420 : 360);
     index += 1;
     oracleLipTimer = setTimeout(advance, Math.max(50, (150 * paso.peso) / velocidad));
   };
@@ -2098,7 +2140,9 @@ function startRemoteAudioLipSync(audio, text = '') {
       const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : estimatedDuration;
       const progress = Math.max(0, Math.min(0.999, (audio.currentTime || 0) / duration));
       const i = Math.min(pasosAudio.length - 1, Math.floor(progress * pasosAudio.length));
-      setOracleMouthShape(pasosAudio[Math.max(0, i)]?.forma || 'closed');
+      const paso = pasosAudio[Math.max(0, i)] || {};
+      setOracleMouthShape(paso.forma || 'closed');
+      if (paso.cue && paso.cue !== 'neutral') setOracleProsodyCue(paso.cue, paso.cue === 'pause' ? 420 : 360);
     }
     oracleLipTimer = setTimeout(tick, 65);
   };
@@ -2118,6 +2162,8 @@ function hideOracleVoiceAvatar() {
   const host = document.getElementById('oracleVoiceAvatarHost');
   if (!host) return;
   if (oracleAvatarHideTimer) clearTimeout(oracleAvatarHideTimer);
+  if (oracleProsodyTimer) clearTimeout(oracleProsodyTimer);
+  setOracleProsodyCue('neutral', 120);
   setOracleAvatarState(host, 'closing');
   host.classList.remove('speaking');
   oracleAvatarHideTimer = setTimeout(() => {

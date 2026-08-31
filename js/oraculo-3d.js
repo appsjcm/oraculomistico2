@@ -463,6 +463,15 @@ class OracleScene {
     return host?.dataset?.avatarState || 'idle';
   }
 
+  avatarProsody(host) {
+    const cue = host?.dataset?.prosodyCue || 'neutral';
+    const emphasisValue = Number.parseFloat(host?.style?.getPropertyValue('--oracle-prosody-emphasis') || '0');
+    const pauseValue = Number.parseFloat(host?.style?.getPropertyValue('--oracle-prosody-pause') || '0');
+    const emphasis = Number.isFinite(emphasisValue) ? Math.max(0, Math.min(1, emphasisValue)) : 0;
+    const pause = Number.isFinite(pauseValue) ? Math.max(0, Math.min(1, pauseValue)) : 0;
+    return { cue, emphasis, pause };
+  }
+
   avatarGestureOffset(now, mood) {
     if (!this.avatarGesture && now > this.nextAvatarGestureAt) {
       const pool = mood === 'warning' || mood === 'serious'
@@ -510,6 +519,7 @@ class OracleScene {
         const host = document.getElementById('oracleVoiceAvatarHost');
         const speaking = host?.classList.contains('speaking');
         const state = this.avatarState(host);
+        const prosody = this.avatarProsody(host);
         const mood = this.avatarMood();
         const profile = { ...this.avatarMotionProfile(mood) };
         if (state === 'paused') {
@@ -519,23 +529,27 @@ class OracleScene {
         } else if (state === 'attending') {
           profile.yaw *= 1.35; profile.pitch *= 1.25; profile.glow *= 1.25;
         }
+        if (prosody.pause) {
+          profile.yaw *= .52; profile.pitch *= .55; profile.roll *= .55; profile.bob *= .45;
+        }
         const gesture = state === 'closing' ? { x:0, y:0, z:0, lift:-.02 } : this.avatarGestureOffset(now, mood);
         const breath = Math.sin(t * profile.tempo * 1.35);
         const mouthIntensity = speaking ? this.avatarMouthIntensity(host) : 0;
-        const talkWave = speaking ? Math.max(0.5 + Math.sin(now * 0.018) * 0.5, mouthIntensity) : 0;
-        const emphasis = speaking && state !== 'paused' ? Math.max(Math.max(0, Math.sin(now * 0.006)) ** 4, mouthIntensity * .62) : 0;
+        const talkWave = speaking && !prosody.pause ? Math.max(0.5 + Math.sin(now * 0.018) * 0.5, mouthIntensity) : 0;
+        const emphasis = speaking && state !== 'paused' ? Math.max(Math.max(0, Math.sin(now * 0.006)) ** 4, mouthIntensity * .62, prosody.emphasis * .82) : 0;
         const attendingLift = state === 'attending' ? Math.max(0, Math.sin(now * 0.01)) * .018 : 0;
         const blink = Math.max(0, Math.sin(now * 0.0017 + 1.2)) ** 42;
+        const questionTilt = prosody.cue === 'question' ? .045 : 0;
         const targetY = this.asset.rotation[1] + this.pointer.x * .095 + Math.sin(t * profile.tempo * 1.6) * profile.yaw + gesture.y;
-        const targetX = this.asset.rotation[0] + this.pointer.y * .045 + breath * profile.pitch + gesture.x + emphasis * .035;
-        const targetZ = this.pointer.x * -.025 + Math.sin(t * profile.tempo * 1.1) * profile.roll + gesture.z;
+        const targetX = this.asset.rotation[0] + this.pointer.y * .045 + breath * profile.pitch + gesture.x + emphasis * .035 + questionTilt;
+        const targetZ = this.pointer.x * -.025 + Math.sin(t * profile.tempo * 1.1) * profile.roll + gesture.z - (prosody.cue === 'question' ? .025 : 0);
         this.model.rotation.y += (targetY - this.model.rotation.y) * 0.06;
         this.model.rotation.x += (targetX - this.model.rotation.x) * 0.065;
         this.model.rotation.z += (targetZ - this.model.rotation.z) * 0.052;
         this.model.position.y = this.baseModelY + breath * profile.bob + talkWave * 0.012 + gesture.lift + attendingLift;
         this.model.scale.setScalar(this.baseModelScale * (1 + breath * 0.004 + talkWave * 0.006 + emphasis * .008));
-        if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talkWave * profile.glow + emphasis * .25 - this.keyLight.intensity) * 0.12;
-        this.updateAvatarMorphs(talkWave, { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 });
+        if (this.keyLight) this.keyLight.intensity += (this.baseKeyIntensity + talkWave * profile.glow + emphasis * .25 + prosody.emphasis * .18 - this.keyLight.intensity) * 0.12;
+        this.updateAvatarMorphs(talkWave, { smile:profile.smile + emphasis * .16, blink, brow:profile.brow + emphasis * .08 + (prosody.cue === 'question' ? .18 : 0) });
       } else {
         this.model.rotation.y += this.quality.level === 'high' ? 0.0022 : 0.0012;
         this.model.rotation.x += (this.asset.rotation[0] + this.pointer.y * 0.04 + Math.sin(t) * 0.025 - this.model.rotation.x) * 0.04;
