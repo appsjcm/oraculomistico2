@@ -1679,7 +1679,7 @@ function resolveOracleAvatarStyle(prefs = getVoicePrefs()) {
 function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
   const mode = normalizeAvatarRenderMode(prefs);
   const quality = get3dPreference();
-  if (mode === '2d') return false;
+  if (mode !== '3d') return false;
   if (quality !== 'high') return false;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
   if (!window.WebGLRenderingContext) return false;
