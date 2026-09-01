@@ -49,8 +49,8 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-astroseparado-177">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-astrohoras-visible-178">
 
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
@@ -58,12 +58,12 @@
        cinco idiomas europeos. El extendido lo pide el navegador solo
        si alguna pagina usa sus caracteres. -->
   <link rel="preload" href="assets/vendor/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-astroseparado-177">
-  <link rel="stylesheet" href="styles/astro.css?v=1.0-astroseparado-177">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-astrohoras-visible-178">
+  <link rel="stylesheet" href="styles/astro.css?v=1.0-astrohoras-visible-178">
 
   <script>
     /* Al cambiar de versión ya no se desregistra el service worker ni se
@@ -72,22 +72,22 @@
        borra las cachés viejas al activarse, así que aquí basta con dejar
        constancia de la versión instalada. */
     (() => {
-      const build = '1.0-astroseparado-177';
+      const build = '1.0-astrohoras-visible-178';
       const key = 'oraculo.publicBuild';
       try { localStorage.setItem(key, build); } catch {}
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
-  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-astroseparado-177"></script>
-  <script defer src="assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js?v=1.0-astroseparado-177"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-shell.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-voz.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-astroseparado-177"></script>
-  <script defer src="js/v2-movil.js?v=1.0-astroseparado-177"></script>
+  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js?v=1.0-astrohoras-visible-178"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-shell.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-voz.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-astrohoras-visible-178"></script>
+  <script defer src="js/v2-movil.js?v=1.0-astrohoras-visible-178"></script>
 
 </head>
 <body>
@@ -186,7 +186,7 @@
         <button class="om-altar" data-module="astros" type="button" style="--om-altar-hue: 205">
           <span class="om-altar-icon" aria-hidden="true">☉</span>
           <span class="om-altar-name" data-i18n="astrology">Astros</span>
-          <span class="om-altar-desc" data-i18n="astrologySub">Carta astral y tirada del día</span>
+          <span class="om-altar-desc" data-i18n="astrologySub">Carta natal, horas y mes</span>
         </button>
         <button class="om-altar" data-module="suenos" type="button" style="--om-altar-hue: 265">
           <span class="om-altar-icon" aria-hidden="true">💭</span>
@@ -720,7 +720,7 @@
       <button class="module-card premium-card-highlight" data-module="tarot" type="button"><span>🃏</span><strong data-i18n="tarot">Tarot</strong><small data-i18n="tarotSub">Carta, tiradas y biblioteca</small></button>
       <button class="module-card" data-module="runas" type="button"><span>ᚱ</span><strong data-i18n="runes">Runas</strong><small data-i18n="runesSub">Runa rápida y tiradas</small></button>
       <button class="module-card" data-module="luna" type="button"><span>🌙</span><strong data-i18n="moon">Luna</strong><small data-i18n="moonSub">Lectura lunar guiada</small></button>
-      <button class="module-card" data-module="astros" type="button"><span>☉</span><strong data-i18n="astrology">Astros</strong><small data-i18n="astrologySub">Carta astral y tirada del día</small></button>
+      <button class="module-card" data-module="astros" type="button"><span>☉</span><strong data-i18n="astrology">Astros</strong><small data-i18n="astrologySub">Carta natal, horas y mes</small></button>
       <button class="module-card" data-module="suenos" type="button"><span>💭</span><strong data-i18n="dreams">Sueños</strong><small data-i18n="dreamsSub">Interpretación simbólica</small></button>
       <button class="module-card" data-module="numerologia" type="button"><span>🔢</span><strong data-i18n="numerology">Numerología</strong><small data-i18n="numerologySub">Perfil completo y sinastría</small></button>
       <button class="module-card" data-module="grabovoi" type="button"><span>📜</span><strong data-i18n="grabovoi">Grabovoi</strong><small data-i18n="grabovoiSub">Secuencias y formas de uso</small></button>

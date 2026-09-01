@@ -5264,14 +5264,14 @@ function astroSharedFormHTML(mode = 'natal') {
 function showAstros() {
   openModal({ icon:'☉', title:t('asTitle'), subtitle:t('asSub'), body:`
     <div class="result-card astro-hero">
-      <h3>${escapeHTML(t('asWheel'))}</h3>
-      <p>Elige una consulta. Cada apartado se abre por separado y puede generar su PDF profesional.</p>
+      <h3>Lecturas astrales separadas</h3>
+      <p>Elige lectura por horas, mes astral, carta natal o revolución solar. Cada apartado se abre por separado y puede generar su PDF profesional.</p>
       ${astroEngineNoticeHTML()}
     </div>
     <div class="panel-grid mt astro-mode-grid">
+      <button class="choice astro-mode-featured" data-act="astro-form-hour" type="button"><strong>Lectura por horas</strong><small>Elige fecha y franja, por ejemplo 20:00-21:00.</small></button>
+      <button class="choice astro-mode-featured" data-act="astro-form-month" type="button"><strong>Mes astral</strong><small>Resumen mensual con cuatro momentos del mes y PDF.</small></button>
       <button class="choice" data-act="astro-form-natal" type="button"><strong>Carta natal</strong><small>Rueda completa con posiciones, casas, aspectos y PDF.</small></button>
-      <button class="choice" data-act="astro-form-hour" type="button"><strong>Lectura por horas</strong><small>Elige fecha y franja, por ejemplo 20:00-21:00.</small></button>
-      <button class="choice" data-act="astro-form-month" type="button"><strong>Mes astral</strong><small>Resumen mensual con cuatro momentos del mes.</small></button>
       <button class="choice" data-act="astro-form-solar" type="button"><strong>Revolución solar</strong><small>Retorno anual con rueda y PDF profesional.</small></button>
     </div>
     <p class="notice mt">${escapeHTML(t('asNotice'))}</p>` });
