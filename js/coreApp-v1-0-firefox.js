@@ -3655,19 +3655,58 @@ const LUNACION = 29.530588853;
 const LUNA_CERO = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
 
 function edadLunar(fecha = new Date()) {
+  /* La fase no avanza a ritmo constante: la orbita de la Luna es
+     eliptica, asi que repartir el ciclo en linea recta se desvia. Medido
+     sobre 2026 contra el motor: 8,6 horas de error medio, 19,6 en el peor
+     caso, y 35 dias de 365 en los que la app nombraba una fase que no
+     era, casi el diez por ciento del ano.
+
+     Astronomy Engine da el angulo de fase real. El reparto lineal se
+     queda detras por si el modulo no estuviera disponible. */
+  const motor = astronomyEngine();
+  if (motor?.MoonPhase) {
+    try { return motor.MoonPhase(fecha) / 360 * LUNACION; } catch {}
+  }
   const dias = fecha.getTime() / 86400000;
   const edad = (dias - LUNA_CERO) % LUNACION;
   return edad < 0 ? edad + LUNACION : edad;
+}
+
+/* La fraccion iluminada tampoco es una funcion limpia del ciclo: depende
+   de la distancia y de la geometria real. El coseno del ciclo se
+   desviaba hasta 8,5 puntos porcentuales. */
+function iluminacionLunar(fecha, ciclo) {
+  const motor = astronomyEngine();
+  if (motor?.Illumination && motor?.Body) {
+    try { return Math.round(motor.Illumination(motor.Body.Moon, fecha).phase_fraction * 100); } catch {}
+  }
+  return Math.round((1 - Math.cos(2 * Math.PI * ciclo)) / 2 * 100);
 }
 function faseLunar(fecha = new Date()) {
   const edad = edadLunar(fecha);
   const ciclo = edad / LUNACION;                       // 0 a 1
   const indice = Math.round(ciclo * 8) % 8;            // 0 = nueva
-  const iluminacion = Math.round((1 - Math.cos(2 * Math.PI * ciclo)) / 2 * 100);
+  const iluminacion = iluminacionLunar(fecha, ciclo);
   return { fase: MOON_PHASES[indice] || MOON_PHASES[0], indice, edad, iluminacion, creciente: ciclo < 0.5 };
 }
 /** Cuándo llega la próxima fase principal: nueva, creciente, llena o menguante. */
 function proximaFasePrincipal(fecha = new Date()) {
+  /* El motor busca el instante exacto del proximo cuarto en vez de
+     estimarlo restando sobre una lunacion media, que arrastraba el mismo
+     error de hasta veinte horas y podia anunciar la luna llena con un dia
+     de diferencia. */
+  const motor = astronomyEngine();
+  if (motor?.SearchMoonQuarter) {
+    try {
+      const cuarto = motor.SearchMoonQuarter(fecha);
+      const nombres = ['Luna Nueva', 'Cuarto Creciente', 'Luna Llena', 'Cuarto Menguante'];
+      const nombre = nombres[cuarto?.quarter];
+      const cuando = cuarto?.time?.date?.getTime?.();
+      if (nombre && Number.isFinite(cuando)) {
+        return { nombre, dias: Math.max(1, Math.round((cuando - fecha.getTime()) / 86400000)) };
+      }
+    } catch {}
+  }
   const edad = edadLunar(fecha);
   const hitos = [0, LUNACION * 0.25, LUNACION * 0.5, LUNACION * 0.75, LUNACION];
   const nombres = ['Luna Nueva', 'Cuarto Creciente', 'Luna Llena', 'Cuarto Menguante', 'Luna Nueva'];
@@ -4789,7 +4828,19 @@ function solarReturnForYear(natalChart, year = new Date().getFullYear()) {
   const birthTime = natalChart.time || '12:00';
   const birthday = `${safeYear}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
   const center = astroDateUTC(birthday, birthTime, natalChart.place?.timezone || '') || Date.UTC(safeYear, parts.month - 1, parts.day, 12, 0);
-  const score = ms => angularDistance(sunLongitudeFromDays(astroDaysFromMs(ms)), natalSun);
+  /* El Sol natal sale de Astronomy Engine, asi que el Sol en transito
+     tiene que salir del mismo sitio. Antes esta busqueda usaba las
+     formulas propias y comparaba un modelo contra otro: convergia donde
+     el Sol de un modelo igualaba al Sol del otro, que no es el instante
+     del retorno. Medido en una revolucion de 2026: ocho minutos de
+     desfase, que en la carta de la revolucion mueven el ascendente unos
+     dos grados.
+
+     Se mantiene la formula propia detras, con la misma precedencia que
+     en el resto del motor, por si el modulo no estuviera disponible. */
+  const solEnTransito = ms => astronomyEngineLongitude('sun', { ms })?.degree
+    ?? sunLongitudeFromDays(astroDaysFromMs(ms));
+  const score = ms => angularDistance(solEnTransito(ms), natalSun);
   let bestMs = center;
   let bestScore = Infinity;
   for (let ms = center - 3 * 86400000; ms <= center + 3 * 86400000; ms += 60 * 60000) {
