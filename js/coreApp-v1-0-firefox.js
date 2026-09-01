@@ -6164,7 +6164,7 @@ ${t('dlAdvice')}: ${t('dlAdviceText')}`;
   openModal({ icon:'🌟', title:t('dailyMessage'), subtitle:t('dlSub'), body:`
     <div class="daily-oracle-grid">
       <div class="daily-oracle-card">${cardImage(card)}<strong>🃏 ${escapeHTML(card.name)}</strong><small>${escapeHTML(card.key || card.el || '')}</small></div>
-      <div class="daily-oracle-card"><div class="rune-big compact-rune">${rune.sym}</div><strong>ᚱ ${escapeHTML(rune.name)}</strong><small>${escapeHTML(clampText(rune.up, 70))}</small></div>
+      <div class="daily-oracle-card"><div class="daily-rune-art rune-stone ${rune.img ? 'has-art' : ''}">${runeImage(rune)}</div><strong>ᚱ ${escapeHTML(rune.name)}</strong><small>${escapeHTML(clampText(rune.up, 70))}</small></div>
       <div class="daily-oracle-card"><div class="moon-big">${phase.sym}</div><strong>🌙 ${escapeHTML(phase.name)}</strong><small>${escapeHTML(clampText(phase.meaning, 70))}</small></div>
     </div>
     <div class="result-card"><h3>${escapeHTML(t('dlSymbolic'))}</h3><p>${escapeHTML(text).replace(/\n/g,'<br>')}</p>${readingActions(text,'Mensaje del día')}</div>

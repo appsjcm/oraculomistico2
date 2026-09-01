@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astros-sin-horas-179';
+const CACHE_NAME = 'oraculo-v1-0-public-daily-rune-art-180';
 const APP_SHELL = [
   './',
   './index.html',
