@@ -796,7 +796,6 @@ async function exportAstroPDF(reading = lastReading) {
   const period = reading?.meta?.astroPeriod || null;
   const reportTitle = solar?.chart
     ? `Revolucion solar ${solar.year}`
-    : period?.kind === 'hour' ? 'Lectura astral por horas'
     : period?.kind === 'month' ? 'Informe astral mensual'
     : reading?.meta?.astroToday ? 'Tirada astral del dia'
     : 'Carta astral';
@@ -5201,14 +5200,6 @@ function astroFormDefaults() {
     houseSystem:getAstroHouseSystem()
   };
 }
-function astroHourLabel(hour = 20) {
-  const start = Math.max(0, Math.min(23, Number(hour) || 0));
-  const end = (start + 1) % 24;
-  return `${String(start).padStart(2, '0')}:00-${String(end).padStart(2, '0')}:00`;
-}
-function astroHourOptions(selected = 20) {
-  return Array.from({ length:24 }, (_, hour) => `<option value="${hour}" ${Number(selected) === hour ? 'selected' : ''}>${astroHourLabel(hour)}</option>`).join('');
-}
 function astroMonthValue(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -5220,25 +5211,19 @@ function astroSharedFormHTML(mode = 'natal') {
   const placeValue = escapeHTML(defaults.place?.label || '');
   const placeData = escapeHTML(defaults.place ? JSON.stringify(defaults.place) : '');
   const houseSystem = defaults.houseSystem;
-  const today = todayKey();
   const now = new Date();
-  const defaultHour = mode === 'hour' ? 20 : now.getHours();
   const titleByMode = {
     natal:'Carta natal',
-    hour:'Lectura por horas',
     month:'Mes astral',
     solar:'Revolución solar'
   };
   const actionByMode = {
     natal:['astro-chart', 'Crear carta astral'],
-    hour:['astro-hour-reading', 'Crear lectura por horas'],
     month:['astro-month-reading', 'Crear mes astral'],
     solar:['astro-solar-return', 'Crear revolución solar']
   };
   const [action, label] = actionByMode[mode] || actionByMode.natal;
-  const extra = mode === 'hour'
-    ? `<div class="field"><label for="astroTargetDate">Fecha de la consulta</label><input id="astroTargetDate" class="input" type="date" value="${today}"></div><div class="field"><label for="astroHourStart">Franja horaria</label><select id="astroHourStart" class="input">${astroHourOptions(defaultHour)}</select><small class="subtle">Puedes elegir, por ejemplo, de 20:00 a 21:00.</small></div>`
-    : mode === 'month'
+  const extra = mode === 'month'
       ? `<div class="field"><label for="astroMonth">Mes de la consulta</label><input id="astroMonth" class="input" type="month" value="${astroMonthValue(now)}"><small class="subtle">El informe resume cuatro momentos del mes.</small></div>`
       : mode === 'solar'
         ? `<div class="field"><label for="astroSolarYear">${escapeHTML(t('asSolarYear'))}</label><input id="astroSolarYear" class="input" type="number" min="1900" max="2100" step="1" value="${now.getFullYear()}"></div>`
@@ -5246,7 +5231,7 @@ function astroSharedFormHTML(mode = 'natal') {
   return `
     <div class="result-card astro-hero">
       <h3>${titleByMode[mode] || titleByMode.natal}</h3>
-      <p>${mode === 'hour' ? 'Elige una fecha y una franja concreta para ver el clima astral de esa hora.' : mode === 'month' ? 'Elige un mes y crea una lectura mensual clara, separada y exportable.' : mode === 'solar' ? 'Calcula el retorno solar del año elegido a partir de tus datos natales.' : escapeHTML(t('asIntro'))}</p>
+      <p>${mode === 'month' ? 'Elige un mes y crea una lectura mensual clara, separada y exportable.' : mode === 'solar' ? 'Calcula el retorno solar del año elegido a partir de tus datos natales.' : escapeHTML(t('asIntro'))}</p>
       ${astroEngineNoticeHTML()}
     </div>
     <div class="form-grid mt astro-form">
@@ -5265,11 +5250,10 @@ function showAstros() {
   openModal({ icon:'☉', title:t('asTitle'), subtitle:t('asSub'), body:`
     <div class="result-card astro-hero">
       <h3>Lecturas astrales separadas</h3>
-      <p>Elige lectura por horas, mes astral, carta natal o revolución solar. Cada apartado se abre por separado y puede generar su PDF profesional.</p>
+      <p>Elige mes astral, carta natal o revolución solar. Cada apartado se abre por separado y puede generar su PDF profesional.</p>
       ${astroEngineNoticeHTML()}
     </div>
     <div class="panel-grid mt astro-mode-grid">
-      <button class="choice astro-mode-featured" data-act="astro-form-hour" type="button"><strong>Lectura por horas</strong><small>Elige fecha y franja, por ejemplo 20:00-21:00.</small></button>
       <button class="choice astro-mode-featured" data-act="astro-form-month" type="button"><strong>Mes astral</strong><small>Resumen mensual con cuatro momentos del mes y PDF.</small></button>
       <button class="choice" data-act="astro-form-natal" type="button"><strong>Carta natal</strong><small>Rueda completa con posiciones, casas, aspectos y PDF.</small></button>
       <button class="choice" data-act="astro-form-solar" type="button"><strong>Revolución solar</strong><small>Retorno anual con rueda y PDF profesional.</small></button>
@@ -5277,7 +5261,7 @@ function showAstros() {
     <p class="notice mt">${escapeHTML(t('asNotice'))}</p>` });
 }
 function showAstroForm(mode = 'natal') {
-  const titles = { natal:'Carta natal', hour:'Lectura por horas', month:'Mes astral', solar:'Revolución solar' };
+  const titles = { natal:'Carta natal', month:'Mes astral', solar:'Revolución solar' };
   openModal({ icon:'☉', title:titles[mode] || titles.natal, subtitle:'Astros · consulta separada', body:astroSharedFormHTML(mode) });
 }
 function getAstroFormData() {
@@ -5293,8 +5277,6 @@ function getAstroFormData() {
     place,
     houseSystem:$('#astroHouseSystem')?.value || getAstroHouseSystem(),
     solarYear:Math.max(1900, Math.min(2100, Number($('#astroSolarYear')?.value) || new Date().getFullYear())),
-    targetDate:$('#astroTargetDate')?.value || todayKey(),
-    hourStart:Math.max(0, Math.min(23, Number($('#astroHourStart')?.value ?? 20))),
     month:$('#astroMonth')?.value || astroMonthValue(),
     intention:($('#astroIntention')?.value || localStorage.getItem(LS.intention) || profile.intention || 'Claridad').trim()
   };
@@ -5399,29 +5381,6 @@ function astroPeriodCards(chart, periodChart, intention = '', seedExtra = '') {
   ];
   return pool.map(card => ({ ...card, sign:card.planet.sign, symbol:astroGlyph(card.planet.symbol), element:card.planet.element }));
 }
-function hourlyAstroText(chart, hourChart, cards, data) {
-  const label = astroHourLabel(data.hourStart);
-  const stats = astroAspectStats(hourChart);
-  return `LECTURA ASTRAL POR HORAS · ${chart.name}
-Nacimiento: ${chart.date} · Hora natal: ${chart.time}
-Lugar: ${chart.place?.label || 'No indicado'}
-Consulta: ${data.targetDate} · Franja: ${label}
-Intención: ${data.intention || 'Claridad'}
-Motor: ${chart.engine}
-Sistema de casas: ${astroHouseSystemLabel(chart.houseSystem)}
-
-Base natal:
-Sol en ${chart.sun.name}. Luna en ${chart.moon.sign}. Ascendente en ${chart.asc.name}. Medio Cielo en ${chart.mc.name}.
-
-Clima de la franja:
-Sol en ${hourChart.sun.name}. Luna en ${hourChart.moon.sign}. Ascendente horario en ${hourChart.asc.name}. Medio Cielo horario en ${hourChart.mc.name}.
-Aspectos mayores de la franja: ${hourChart.aspects?.length || 0}. Fluidos: ${stats.counts.flow}. De ajuste: ${stats.counts.tension}. Foco: ${stats.counts.focus}.
-
-${cards.map(card => `${card.title}: ${card.symbol} ${card.planet.name} en ${card.sign}. ${card.text}. Consejo: ${astroAdviceForElement(card.element)}.`).join('\n\n')}
-
-Síntesis:
-Entre ${label}, la lectura favorece una acción breve, concreta y verificable. No predice el resultado; ayuda a elegir mejor el tono de esa hora.`;
-}
 function renderAstroPeriodReading(chart, periodChart, cards, text, title, subtitle) {
   openModal({ icon:'☉', title, subtitle, body:`
     <div class="astro-grid">
@@ -5431,23 +5390,6 @@ function renderAstroPeriodReading(chart, periodChart, cards, text, title, subtit
     <h3 class="section-title">${escapeHTML(t('stAspectos'))}</h3>
     ${astroAspectsHTML(periodChart)}
     <div class="result-card mt"><h3>${escapeHTML(t('stSintesisAstral'))}</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(lastReading?.text || text,'Astros')}</div>` });
-}
-async function hourlyAstroReading() {
-  const data = getAstroFormData();
-  if (!data.name || !data.date || !data.time || !data.place?.label) return toast(t('tsBirthMissing'));
-  data.place = await resolveAstroPlace(data.place, data.place?.label);
-  const chart = calculateAstroProfile(data.name, data.date, data.time, data.place, { houseSystem:data.houseSystem });
-  if (!chart) return toast(t('tsCheckDate'));
-  persistAstroData(data);
-  const hour = Math.max(0, Math.min(23, Number(data.hourStart) || 0));
-  const hourTime = `${String(hour).padStart(2, '0')}:30`;
-  const hourChart = calculateAstroProfile(data.name, data.targetDate, hourTime, data.place, { houseSystem:data.houseSystem });
-  const cards = astroPeriodCards(chart, hourChart, data.intention, astroHourLabel(hour));
-  const title = `Lectura astral por horas · ${data.name}`;
-  const subtitle = `${data.targetDate} · ${astroHourLabel(hour)} · ${data.place.label}`;
-  const text = hourlyAstroText(chart, hourChart, cards, data);
-  setLastReading({ type:'Astros', title, text, items:cards.map(card => ({ kind:'astro', name:`${card.title}: ${card.planet.name}`, subtitle:`${card.sign} · ${card.element}`, image:'', symbol:card.symbol, position:card.title })), meta:{ name:data.name, birthDate:data.date, birthTime:data.time, birthPlace:data.place, intention:data.intention, houseSystem:data.houseSystem, astro:chart, astroPeriod:{ kind:'hour', label:astroHourLabel(hour), date:data.targetDate, hourStart:hour, chart:hourChart } } });
-  renderAstroPeriodReading(chart, hourChart, cards, text, title, subtitle);
 }
 function parseAstroMonth(value = astroMonthValue()) {
   const match = /^(\d{4})-(\d{2})$/.exec(String(value || ''));
@@ -6421,11 +6363,9 @@ function handleAction(action) {
     'dream-reading': dreamReading,
     'astro-menu': showAstros,
     'astro-form-natal': () => showAstroForm('natal'),
-    'astro-form-hour': () => showAstroForm('hour'),
     'astro-form-month': () => showAstroForm('month'),
     'astro-form-solar': () => showAstroForm('solar'),
     'astro-chart': calcAstroChart,
-    'astro-hour-reading': hourlyAstroReading,
     'astro-month-reading': monthlyAstroReading,
     'astro-daily': dailyAstroReading,
     'astro-solar-return': solarReturnReading,
