@@ -1680,16 +1680,12 @@ function resolveOracleAvatarStyle(prefs = getVoicePrefs()) {
   if (preset.includes('masc')) return 'male';
   return 'female';
 }
-/* El avatar en 3D queda apagado por decision de Jordi: no le convence
-   como se ve. Se apaga desde aqui y no se toca el motor, que sigue
-   entero y se usa para las escenas de los modales. Volver a encenderlo
-   es poner esto en true.
-
-   Con el 3D apagado el avatar usa siempre el retrato 2D, que ademas es
-   el unico de los dos que mueve la boca: tiene tres fotogramas pintados
-   y sincronizacion por silabas. */
-const AVATAR_3D_DISPONIBLE = false;
-
+/* El avatar en 3D ya no existe: el motor entero se retiro del proyecto.
+   Esta funcion se queda como el unico sitio que responde a la pregunta,
+   porque hay varias llamadas repartidas que la hacen. Devuelve siempre
+   false y el avatar usa el retrato 2D, que ademas es el unico de los dos
+   que movia la boca: tres fotogramas pintados y sincronizacion por
+   silabas. */
 function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
   return false;
 }

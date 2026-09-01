@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astro-mobile-summary-182';
+const CACHE_NAME = 'oraculo-v1-0-public-licencias-183';
 const APP_SHELL = [
   './',
   './index.html',
@@ -20,6 +20,10 @@ const APP_SHELL = [
   './assets/vendor/fonts/fraunces-latin-ext.woff2',
   './assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js',
   './assets/vendor/astronomy-engine/2.1.19/LICENSE',
+  /* La OFL pide expresamente que su texto acompane a la fuente, y la app
+     funciona sin conexion: una licencia que no esta en la cache no
+     acompana a nada. */
+  './assets/vendor/fonts/OFL.txt',
   './js/coreApp-v1-0-firefox.js',
   './js/premium-ui-v12.js',
   './js/v2-shell.js',
