@@ -96,18 +96,18 @@
 
 .astro-grid {
   display: grid;
-  grid-template-columns: minmax(520px, .95fr) minmax(320px, 1.05fr);
+  grid-template-columns: minmax(600px, 1.05fr) minmax(320px, .95fr);
   gap: clamp(14px, 3vw, 24px);
   align-items: start;
 }
 
 .astro-wheel-wrap {
-  --wheel-size: clamp(280px, 68vw, 500px);
+  --wheel-size: clamp(340px, 58vw, 580px);
   box-sizing: border-box;
   display: grid;
   justify-items: center;
   gap: 13px;
-  width: min(100%, calc(var(--wheel-size) + 46px));
+  width: min(100%, calc(var(--wheel-size) + 58px));
   max-width: 100%;
   margin-inline: auto;
 }
@@ -121,6 +121,8 @@
   color: #302f37;
   box-shadow: 0 20px 48px rgba(0, 0, 0, .24);
   overflow: hidden;
+  overflow: clip;
+  contain: layout paint;
 }
 
 .astro-wheel-tools {
@@ -173,10 +175,12 @@
   background: #fffdf9;
   touch-action: none;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: auto;
   -webkit-user-select: none;
   user-select: none;
   cursor: zoom-in;
   contain: paint;
+  transform: translateZ(0);
 }
 
 .astro-wheel-zoomed .astro-wheel-viewport,
@@ -200,8 +204,9 @@
   aspect-ratio: 1;
   transform: translate3d(var(--astro-pan-x), var(--astro-pan-y), 0) scale(var(--astro-scale));
   transform-origin: center;
-  transition: transform .18s ease;
+  transition: transform .14s ease;
   will-change: transform;
+  backface-visibility: hidden;
 }
 
 .astro-wheel-zoomed .astro-wheel-viewport {
@@ -221,7 +226,7 @@ body.astro-wheel-fullscreen-open {
 }
 
 .astro-wheel-wrap.astro-wheel-fullscreen {
-  --wheel-size: min(88vw, 64svh, 620px);
+  --wheel-size: min(96vw, calc(100svh - 114px), 880px);
   position: fixed;
   inset:
     calc(env(safe-area-inset-top) + 10px)
@@ -234,7 +239,7 @@ body.astro-wheel-fullscreen-open {
   margin: 0;
   padding: clamp(12px, 3vw, 18px);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, auto) auto auto;
   align-items: center;
   justify-items: center;
   border-radius: 18px;
@@ -273,11 +278,7 @@ body.astro-wheel-fullscreen-open {
 }
 
 .astro-wheel-wrap.astro-wheel-fullscreen .astro-aspect-legend {
-  max-width: min(92vw, 640px);
-  max-height: 18svh;
-  overflow: auto;
-  padding-bottom: 2px;
-  -webkit-overflow-scrolling: touch;
+  display: none;
 }
 
 html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen {
@@ -326,13 +327,13 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
   background:
     radial-gradient(circle at 50% 10%, rgba(244, 207, 117, .18), transparent 28rem),
     rgba(0, 0, 0, .72);
-  backdrop-filter: blur(18px);
+  backdrop-filter: none;
 }
 
 .astro-wheel-modal-panel {
   position: relative;
   z-index: 1;
-  width: min(96vw, 820px);
+  width: min(calc(100vw - 20px), 1120px);
   max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
   display: grid;
   align-items: center;
@@ -341,7 +342,7 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
 }
 
 .astro-wheel-modal-root .astro-wheel-modal-copy {
-  --wheel-size: min(88vw, 66svh, 620px);
+  --wheel-size: min(96vw, calc(100svh - 114px), 880px);
   width: auto;
   max-width: none;
   margin: 0;
@@ -386,11 +387,7 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
 }
 
 .astro-wheel-modal-root .astro-aspect-legend {
-  max-width: min(92vw, 640px);
-  max-height: 18svh;
-  overflow: auto;
-  padding-bottom: 2px;
-  -webkit-overflow-scrolling: touch;
+  display: none;
 }
 
 html[data-appearance-mode="light"] .astro-wheel-modal-backdrop {
@@ -424,6 +421,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   border: 0;
   isolation: isolate;
   overflow: hidden;
+  clip-path: circle(50% at 50% 50%);
   background:
     radial-gradient(circle, transparent 0 7.2%, rgba(187, 187, 190, .62) 7.35% 7.7%, transparent 7.85%),
     radial-gradient(circle, transparent 0 25%, rgba(78, 78, 82, .22) 25.1% 25.3%, transparent 25.45%),
@@ -433,7 +431,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .modal-root.open:has(.astro-grid) .modal-panel {
-  width: min(1180px, calc(100vw - 22px));
+  width: min(1320px, calc(100vw - 18px));
 }
 
 .modal-root.open:has(.astro-grid) .modal-body {
@@ -441,7 +439,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 }
 
 .modal-root.open:has(.astro-grid) .astro-wheel-wrap {
-  --wheel-size: clamp(400px, 38vw, 490px);
+  --wheel-size: clamp(460px, 45vw, 580px);
 }
 
 .astro-aspect-web {
@@ -451,23 +449,24 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   overflow: hidden;
   pointer-events: none;
   border-radius: 50%;
+  clip-path: circle(45.4% at 50% 50%);
 }
 
 .astro-house-ray {
-  stroke: rgba(58, 55, 66, .32);
-  stroke-width: .32;
+  stroke: rgba(58, 55, 66, .44);
+  stroke-width: .44;
   vector-effect: non-scaling-stroke;
 }
 
 .astro-house-ray-main {
-  stroke: rgba(44, 41, 52, .72);
-  stroke-width: .55;
+  stroke: rgba(44, 41, 52, .86);
+  stroke-width: .72;
 }
 
 .astro-aspect-line {
-  stroke-width: .55;
+  stroke-width: .48;
   vector-effect: non-scaling-stroke;
-  opacity: .82;
+  opacity: .78;
 }
 
 .astro-aspect-conjunction,
@@ -482,7 +481,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
 .astro-aspect-square,
 .astro-aspect-opposition {
   stroke: rgba(189, 59, 117, .94);
-  stroke-width: .68;
+  stroke-width: .58;
 }
 
 .astro-aspect-opposition {
@@ -542,8 +541,8 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   background:
     repeating-conic-gradient(from -90deg, rgba(46, 44, 52, .58) 0 .25deg, transparent .25deg 2deg),
     repeating-conic-gradient(from -90deg, transparent 0 29.28deg, rgba(46, 44, 52, .82) 29.28deg 30deg);
-  -webkit-mask: radial-gradient(circle, transparent 0 78%, #000 78.6% 100%);
-  mask: radial-gradient(circle, transparent 0 78%, #000 78.6% 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0 76.8%, #000 77.6% 100%);
+  mask: radial-gradient(circle, transparent 0 76.8%, #000 77.6% 100%);
 }
 
 .astro-wheel::after {
@@ -977,7 +976,7 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   }
 
   .modal-root.open:has(.astro-grid) .astro-wheel-wrap {
-    --wheel-size: min(72vw, 430px);
+    --wheel-size: min(86vw, 560px);
   }
 }
 
@@ -999,13 +998,13 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
 
   .astro-wheel-wrap,
   .astro-wheel {
-    --wheel-size: min(72vw, 318px);
+    --wheel-size: min(86vw, 390px);
   }
 
   .astro-wheel-wrap {
     justify-self: center;
     margin-inline: auto;
-    width: min(100%, calc(var(--wheel-size) + 28px));
+    width: min(100%, calc(var(--wheel-size) + 24px));
   }
 
   .astro-wheel-paper {
@@ -1054,17 +1053,17 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   }
 
   .astro-planet-dot {
-    width: clamp(16px, 4.7vw, 22px);
-    height: clamp(16px, 4.7vw, 22px);
-    margin: calc(clamp(16px, 4.7vw, 22px) / -2);
-    font-size: clamp(.78rem, 3.4vw, 1.04rem);
+    width: clamp(18px, 5.2vw, 24px);
+    height: clamp(18px, 5.2vw, 24px);
+    margin: calc(clamp(18px, 5.2vw, 24px) / -2);
+    font-size: clamp(.82rem, 3.6vw, 1.12rem);
   }
 
   .astro-sign {
-    width: clamp(24px, 6.7vw, 36px);
-    height: clamp(24px, 6.7vw, 36px);
-    margin: calc(clamp(24px, 6.7vw, 36px) / -2);
-    font-size: clamp(1.12rem, 4.7vw, 1.86rem);
+    width: clamp(26px, 7vw, 38px);
+    height: clamp(26px, 7vw, 38px);
+    margin: calc(clamp(26px, 7vw, 38px) / -2);
+    font-size: clamp(1.18rem, 4.9vw, 1.95rem);
     transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.388)) rotate(calc(var(--angle) * -1));
   }
 
@@ -1091,7 +1090,7 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   }
 
   .astro-wheel-wrap.astro-wheel-fullscreen {
-    --wheel-size: min(92vw, 58svh, 540px);
+    --wheel-size: min(94vw, calc(100svh - 118px), 640px);
     inset:
       calc(env(safe-area-inset-top) + 6px)
       6px
@@ -1112,8 +1111,12 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
       calc(env(safe-area-inset-bottom) + 6px);
   }
 
+  .astro-wheel-modal-panel {
+    width: calc(100vw - 12px);
+  }
+
   .astro-wheel-modal-root .astro-wheel-modal-copy {
-    --wheel-size: min(92vw, 58svh, 540px);
+    --wheel-size: min(94vw, calc(100svh - 118px), 640px);
     padding: 10px;
   }
 
@@ -1126,7 +1129,7 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
 @media (max-width: 390px) {
   .astro-wheel-wrap,
   .astro-wheel {
-    --wheel-size: min(70vw, 288px);
+    --wheel-size: min(84vw, 340px);
   }
 
   .astro-axis-label {
@@ -1135,11 +1138,11 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
   }
 
   .astro-wheel-wrap.astro-wheel-fullscreen {
-    --wheel-size: min(92vw, 54svh, 480px);
+    --wheel-size: min(94vw, calc(100svh - 112px), 560px);
   }
 
   .astro-wheel-modal-root .astro-wheel-modal-copy {
-    --wheel-size: min(92vw, 54svh, 480px);
+    --wheel-size: min(94vw, calc(100svh - 112px), 560px);
   }
 }
 
