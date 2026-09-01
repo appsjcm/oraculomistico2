@@ -500,6 +500,7 @@ body.theme-light .oracle-avatar-window.mood-blocked .oracle-avatar-badge{color:#
 @keyframes oracleAvatar3dStageTalk{from{filter:saturate(.98) brightness(.98)}to{filter:saturate(1.08) brightness(1.07)}}
 @media(prefers-reduced-motion:reduce){.oracle-avatar-stage.avatar-3d-ready,.oracle-avatar-host.speaking .oracle-avatar-stage.avatar-3d-ready{animation:none}}
 
+
 /* v1.0.78 definitive avatar sizing */
 .oracle-avatar-host.size-small{width:min(250px,calc(100vw - 24px))}
 .oracle-avatar-host.size-medium{width:min(350px,calc(100vw - 24px))}

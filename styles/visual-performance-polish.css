@@ -252,38 +252,6 @@ html[data-appearance-mode="light"] .toast {
   margin-bottom: clamp(18px, 3vw, 30px);
 }
 
-.om-3d-strip {
-  grid-template-columns: repeat(4, minmax(110px, 158px));
-  justify-content: center;
-  align-items: end;
-  gap: clamp(10px, 2vw, 20px);
-  max-width: 780px;
-  margin-top: 10px;
-  margin-bottom: clamp(26px, 4vw, 42px);
-}
-
-.om-3d-strip .om-3d-stage {
-  width: clamp(112px, 12vw, 158px);
-  max-width: 158px;
-}
-
-.om-3d-stage:not(.om-3d-hero):not(.om-transition-3d) {
-  transform: translateZ(0);
-}
-
-.om-3d-hero {
-  transform: translateX(-50%) translateZ(0);
-}
-
-.om-transition-3d {
-  transform: translate(-50%, -50%) translateZ(0);
-}
-
-.om-3d-stage::before {
-  filter: blur(14px);
-  opacity: .62;
-}
-
 .om-altars {
   gap: clamp(12px, 1.7vw, 18px);
   align-items: stretch;
@@ -385,12 +353,6 @@ html[data-appearance-mode="light"] .toast {
   }
 }
 
-html[data-oraculo3d="low"] .om-3d-stage::before,
-body.performance-mode .om-3d-stage::before {
-  filter: blur(8px);
-  opacity: .38;
-}
-
 body.performance-mode .premium-topbar,
 body.performance-mode .modal-panel,
 body.performance-mode .om-btn-quiet,
@@ -417,18 +379,6 @@ body.performance-mode .result-card {
 
   .om-sanctuary {
     padding-top: 28px;
-  }
-
-  .om-3d-strip {
-    grid-template-columns: repeat(4, minmax(58px, 1fr));
-    gap: 6px;
-    max-width: 100%;
-    margin-bottom: 22px;
-  }
-
-  .om-3d-strip .om-3d-stage {
-    width: min(19vw, 84px);
-    min-width: 58px;
   }
 
   .om-altars {
@@ -458,13 +408,6 @@ body.performance-mode .result-card {
     grid-template-columns: 1fr;
   }
 
-  .om-3d-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .om-3d-strip .om-3d-stage {
-    width: min(34vw, 112px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1138,37 +1081,6 @@ button:disabled,
 }
 
 /* ------------------------------------------------------------------
-   Una sola cara en el avatar 3D
-
-   El lienzo 3D nace de fondo y solo pasa a primer plano si el modelo trae
-   morph targets faciales (avatar-3d-ready). Si no los trae se marca
-   avatar-3d-ambient, y ahi quedaban los dos a la vez: el retrato 2D
-   delante y el modelo detras semitransparente, que son dos mujeres
-   distintas. De ahi la segunda cara asomando.
-
-   Los dos GLB de avatar no tienen morph targets, ni uno, asi que ambiente
-   es su estado permanente. Primero se apago el lienzo, pero entonces el
-   avatar 3D no se veia nunca. Lo correcto es al reves: si se ha pedido el
-   avatar 3D, se ve el 3D y se aparta el retrato. La boca no se movera
-   porque estos modelos no pueden, pero se ve una sola cara y es la que se
-   ha pedido.
-   ------------------------------------------------------------------ */
-.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-3d-stage {
-  z-index: 3;
-  opacity: 1;
-  filter: none;
-}
-.oracle-avatar-stage.avatar-3d-ambient .oracle-avatar-realistic {
-  opacity: 0;
-}
-/* Mientras carga no asoma nadie: hasta que el modelo esta listo el lienzo
-   se queda a cero, en vez de al 18 % que dejaba una cara de fondo durante
-   toda la descarga. */
-.oracle-avatar-3d-stage {
-  opacity: 0;
-}
-
-/* ------------------------------------------------------------------
    La barra del modal, otra vez
 
    Se dejo de pintar cuando el modal ya traia la fila de acciones al pie,
@@ -1182,24 +1094,6 @@ button:disabled,
    ------------------------------------------------------------------ */
 .modal-body:has(.reading-actions) .premium-modal-toolbar {
   display: none;
-}
-
-/* ------------------------------------------------------------------
-   El escenario de la ceremonia
-
-   Medido: antes de la primera carta habia 374 px de escenario, de los que
-   204 eran el medallon decorativo, que ademas casi siempre sale en su
-   version 2D. En una pantalla de portatil eso deja la carta fuera de la
-   vista, y como el revelado ocurre abajo parece que no pasa nada. Se veia
-   en la grabacion: diecisiete segundos de medallon y banner.
-
-   El medallon se queda, que es parte del rito, pero a un tamano que no
-   empuje la carta fuera de la pantalla. Y el revelado ahora se acerca
-   solo, que es la otra mitad del arreglo.
-   ------------------------------------------------------------------ */
-.om-3d-stage.om-3d-ritual {
-  width: min(22vw, 108px);
-  min-width: 84px;
 }
 
 /* El tablero de barajar se marcaba con fade-out al terminar el reparto,
@@ -1224,39 +1118,6 @@ button:disabled,
    y para runas: las dos ceremonias marcan su resultado con result-appear. */
 .draw-experience:has(.result-appear) .ritual-banner {
   display: none;
-}
-
-/* ------------------------------------------------------------------
-   El lienzo del avatar tomaba el tamano del lienzo generico
-
-   Medido: el contenedor del avatar es de 116x260 y recorta lo que sobra,
-   pero el lienzo 3D salia de 260x260. Se dibujaba cuadrado y el padre le
-   cortaba 144 px por un lado: de ahi la cabeza desplazada y cortada.
-
-   No era la regla, que existe y es correcta, sino donde vive. La
-   excepcion del avatar esta en core-remodel y la regla generica
-   .om-3d-stage en oraculo-3d.css, que se carga despues. Misma
-   especificidad, gana la ultima, asi que la generica pisaba a la
-   excepcion. Se repite aqui, que es la ultima hoja, para que gane la
-   que debe.
-   ------------------------------------------------------------------ */
-.om-3d-stage.oracle-avatar-3d-stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  margin: 0;
-  aspect-ratio: auto;
-  /* La tarjeta redondea a 22 px y recorta, pero el lienzo es un elemento
-     reemplazado: si un navegador no lo recorta bien, dibuja una esquina
-     recta encima de la tarjeta y se ven dos rectangulos. Redondeandolo
-     tambien, ese caso no puede darse. */
-  border-radius: inherit;
-  overflow: hidden;
-}
-.om-3d-stage.oracle-avatar-3d-stage canvas {
-  border-radius: inherit;
 }
 
 /* ------------------------------------------------------------------
