@@ -1364,7 +1364,7 @@ function getVoicePrefs() {
   return { engine:'device', remoteVoice:'coral', preset:'mistica_femenina', language:'auto', localePreferenceVersion:3, voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset('mistica_femenina') };
 }
 function normalizeAvatarRenderMode(saved = {}) {
-  const mode = ['auto', '2d', '3d'].includes(saved.avatarRenderMode) ? saved.avatarRenderMode : 'auto';
+  const mode = ['auto', '2d'].includes(saved.avatarRenderMode) ? saved.avatarRenderMode : 'auto';
   if (Number(saved.avatarRenderModePreferenceVersion || 0) < 4 && mode === '2d') return 'auto';
   return mode;
 }
@@ -1626,7 +1626,6 @@ function collectVoicePrefsFromControls() {
 }
 function applyLiveAvatarControls() {
   if ($('#oracleAvatarRenderMode') || $('#voicePreset')) setVoicePrefs(collectVoicePrefsFromControls());
-  if ($('#effects3dSelect')) set3dPreference($('#effects3dSelect')?.value || get3dPreference());
 }
 function testVoiceSettings() {
   applyLiveAvatarControls();
@@ -1687,18 +1686,7 @@ function resolveOracleAvatarStyle(prefs = getVoicePrefs()) {
 const AVATAR_3D_DISPONIBLE = false;
 
 function shouldUseOracleAvatar3D(prefs = getVoicePrefs()) {
-  if (!AVATAR_3D_DISPONIBLE) return false;
-  const mode = normalizeAvatarRenderMode(prefs);
-  const quality = get3dPreference();
-  if (mode === '2d') return false;
-  if (mode !== '3d') return false;
-  if (quality === 'off') return false;
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return false;
-  if (!window.WebGLRenderingContext) return false;
-  /* El criterio vive en el motor 3D, que es quien conoce la calidad
-     detectada. Aqui solo se pregunta, para no tener dos reglas que puedan
-     separarse. Si el motor aun no ha cargado, se queda en 2D. */
-  return window.Oraculo3D?.avatarPuede3D?.() === true;
+  return false;
 }
 function resolveOracleAvatarTheme(message = '', reading = lastReading || {}) {
   const text = `${message || ''} ${reading?.type || ''} ${reading?.title || ''}`.toLowerCase();
@@ -1816,12 +1804,10 @@ function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está ca
   const portraitMedium = isMale ? 'img/avatars/oracle-male-mouth-medium.webp' : 'img/avatars/oracle-female-mouth-medium.webp';
   const portraitOpen = isMale ? 'img/avatars/oracle-male-mouth-open.webp' : 'img/avatars/oracle-female-mouth-open.webp';
   const readingVisuals = getOracleReadingVisuals();
-  const avatar3d = shouldUseOracleAvatar3D(prefs);
-  const avatar3dAsset = isMale ? 'avatarMale' : 'avatarFemale';
   return `
-    <div class="oracle-avatar-window ${isMale ? 'male' : 'female'} theme-${theme} mood-${mood} mode-${speechMode} ${avatar3d ? 'uses-avatar-3d' : ''} ${readingVisuals.length ? 'has-reading-visuals' : ''}">
+    <div class="oracle-avatar-window ${isMale ? 'male' : 'female'} theme-${theme} mood-${mood} mode-${speechMode} ${readingVisuals.length ? 'has-reading-visuals' : ''}">
       <button class="oracle-avatar-close" type="button" data-act="hide-avatar" aria-label="Cerrar avatar">×</button>
-      <div class="oracle-avatar-stage ${avatar3d ? 'has-avatar-3d' : ''}">
+      <div class="oracle-avatar-stage">
         <div class="oracle-avatar-aura"></div>
         <div class="oracle-avatar-stars"><span></span><span></span><span></span><span></span></div>
         <div class="oracle-avatar-realistic">
@@ -1833,7 +1819,6 @@ function buildOracleAvatarHTML(style = 'female', message = 'El oráculo está ca
           <div class="oracle-avatar-realistic-shade"></div>
           <div class="oracle-avatar-voice-ring" aria-hidden="true"></div>
         </div>
-        ${avatar3d ? `<div class="om-3d-stage oracle-avatar-3d-stage" data-oraculo-3d-asset="${avatar3dAsset}" aria-hidden="true"></div>` : ''}
       </div>
       <div class="oracle-avatar-copy">
         <div class="oracle-avatar-badge">${speechLabel} · ${getOracleMoodLabel(mood)}</div>
@@ -1897,7 +1882,6 @@ function showOracleVoiceAvatar(message = '') {
   setOracleProsodyCue('neutral', 180);
   setOracleAvatarState(host, 'attending');
   host.classList.add('visible', 'speaking');
-  if (shouldUseOracleAvatar3D(prefs)) requestAnimationFrame(() => window.Oraculo3D?.refresh?.());
   setTimeout(() => {
     if (host.classList.contains('visible')) setOracleAvatarState(host, 'idle');
   }, 640);
@@ -3374,12 +3358,9 @@ function openCeremonyIntro(kind = 'tarot') {
     </div>` });
 }
 function getAppVersionLabel() { return 'v1.0'; }
-function get3dPreference() { try { return localStorage.getItem(LS.effects3d) || 'auto'; } catch { return 'auto'; } }
+function get3dPreference() { return 'off'; }
 function set3dPreference(value = 'auto') {
-  const allowed = ['auto', 'high', 'balanced', 'reduced', 'off'];
-  const next = allowed.includes(value) ? value : 'auto';
-  try { localStorage.setItem(LS.effects3d, next); } catch {}
-  window.Oraculo3D?.setPreference?.(next);
+  try { localStorage.setItem(LS.effects3d, 'off'); } catch {}
 }
 function appHealthCheck() {
   const voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices().length : 0;
@@ -3499,7 +3480,6 @@ function animateTarotReading(cards, title = 'Lectura de Tarot', reversedRate = 0
   ceremonyVibrate([18, 40, 18]);
   openModal({ icon:'🃏', title, subtitle:t('cerSub'), body:`
     <div class="draw-experience spectacular-stage tarot-stage">
-      <div class="om-3d-stage om-3d-ritual" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div>
       <div class="ritual-particles">${Array.from({length:12}, (_,i)=>`<span style="--i:${i}"></span>`).join('')}</div>
       <div class="channeling card-glow ritual-banner"><span class="orb-pulse">🔮</span><div><h3>${escapeHTML(t('cerTitle'))}</h3><p>${escapeHTML(t('cerText'))}</p></div></div>
       <div id="tarotShuffleBoard" class="shuffle-board tarot-board deluxe-board"><div class="altar-ring"></div><img src="img/tarot-shuffle-hero.svg" alt="Mezcla de cartas del oráculo" class="shuffle-hero tarot-hero">${cards.map((c, i) => `<div class="card-back shuffle-card deluxe-card" style="--i:${i}"><div class="card-back-inner"><span class="back-logo">🔮</span><strong>${escapeHTML(t('stOraculo'))}</strong><small>${c.rev ? 'Invertida' : 'Directa'}</small></div></div>`).join('')}</div>
@@ -3597,7 +3577,6 @@ function showTarot() {
   const normalKeys = Object.keys(TAROT_SPREADS).filter(k => !TAROT_SPREADS[k].premium);
   const premiumKeys = Object.keys(TAROT_SPREADS).filter(k => TAROT_SPREADS[k].premium);
   openModal({ icon:'🃏', title:t('tarot'), subtitle:t('tarotSub'), body:`
-    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotTable" aria-label="Mesa de Lectura"></div>
     <div class="form-grid">${readingSubjectField()}<div class="field"><label for="tarotPrompt">${escapeHTML(t('tarotQ'))}</label>${inputWithMic('tarotPrompt', `placeholder="${escapeHTML(t('tarotQPh'))}"`)}</div></div>
     <div class="actions mt"><button class="btn primary" data-act="ceremony-tarot" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button><button class="btn" data-module="runas" type="button">ᚱ ${escapeHTML(t('runeSpreads'))}</button><button class="btn" data-act="tarot-library" type="button">📚 ${escapeHTML(t('deckLibrary'))}</button></div>
     <div class="spread-grid mt">${normalKeys.map(k => renderSpreadButton(k, TAROT_SPREADS[k])).join('\n\n')}</div>
@@ -3612,7 +3591,7 @@ function showTarotLibrary(filter = 'all') {
 }
 function showCardDetail(card) {
   setLastReading({ type: 'Tarot', title: card.name, text: `${card.up}\n\nInvertida: ${card.rv}`, items: [card.name] });
-  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="tarotCard" aria-label="Carta Arcana"></div><div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>${escapeHTML(t('stAlDerecho'))}</h3><p>${escapeHTML(card.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
+  openModal({ icon:'🃏', title:card.name, subtitle:card.key || card.el || 'Carta de Tarot', body:`<div class="reading-layout"><div>${cardImage(card)}</div><div class="result-card"><h3>${escapeHTML(t('stAlDerecho'))}</h3><p>${escapeHTML(card.up)}</p><h3>${escapeHTML(t('stInvertida'))}</h3><p>${escapeHTML(card.rv || 'Sin lectura invertida específica.')}</p>${readingActions(`${card.name}\n${card.up}`,'Tarot')}</div></div>` });
 }
 
 function animateRuneReading(runes, title = 'Lectura de Runas', reversedRate = 0.3) {
@@ -3658,7 +3637,7 @@ function drawRunes(count = 1, title = 'Runa rápida') {
   animateRuneReading(runes, title, reversedRate);
 }
 function showRunas() {
-  openModal({ icon:'ᚱ', title:t('runes'), subtitle:t('runesSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="runes" aria-label="${escapeHTML(t('a3dRunes'))}"></div><div class="form-grid">${readingSubjectField()}<div class="field"><label for="runeIntention">${escapeHTML(t('runeIntent'))}</label><input id="runeIntention" class="input" placeholder="${escapeHTML(t('runeIntentPh'))}"></div></div><div class="actions mb mt"><button class="btn primary" data-act="ceremony-runes" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ ${escapeHTML(t('runeOne'))}</strong><small>${escapeHTML(t('runeOneSub'))}</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ ${escapeHTML(t('runeThree'))}</strong><small>${escapeHTML(t('runeThreeSub'))}</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ ${escapeHTML(t('runeFive'))}</strong><small>${escapeHTML(t('runeFiveSub'))}</small></button><button class="choice" data-act="runes-library"><strong>📚 ${escapeHTML(t('runeLib'))}</strong><small>${escapeHTML(t('runeLibSub'))}</small></button></div>` });
+  openModal({ icon:'ᚱ', title:t('runes'), subtitle:t('runesSub'), body:`<div class="form-grid">${readingSubjectField()}<div class="field"><label for="runeIntention">${escapeHTML(t('runeIntent'))}</label><input id="runeIntention" class="input" placeholder="${escapeHTML(t('runeIntentPh'))}"></div></div><div class="actions mb mt"><button class="btn primary" data-act="ceremony-runes" type="button">✨ ${escapeHTML(t('guidedRitual'))}</button></div><div class="panel-grid"><button class="choice" data-act="rune-one"><strong>ᚱ ${escapeHTML(t('runeOne'))}</strong><small>${escapeHTML(t('runeOneSub'))}</small></button><button class="choice" data-act="runes-three"><strong>ᚠᚢᚦ ${escapeHTML(t('runeThree'))}</strong><small>${escapeHTML(t('runeThreeSub'))}</small></button><button class="choice" data-act="runes-five"><strong>ᚠᚢᚦᚨᚱ ${escapeHTML(t('runeFive'))}</strong><small>${escapeHTML(t('runeFiveSub'))}</small></button><button class="choice" data-act="runes-library"><strong>📚 ${escapeHTML(t('runeLib'))}</strong><small>${escapeHTML(t('runeLibSub'))}</small></button></div>` });
 }
 function showRunesLibrary() {
   openModal({ icon:'ᚱ', title:t('mdBibRunas'), subtitle:t('mdBibRunasS'), body:`<div class="library-grid">${RUNAS.map(r=>`<button class="mini-card rune-mini" data-open-rune="${escapeHTML(r.name)}">${r.img ? `<img src="${escapeHTML(thumbFor(r.img))}" alt="${escapeHTML(r.name)}" loading="lazy" decoding="async">` : `<span class="symbol">${r.sym}</span>`}<strong>${r.sym} ${escapeHTML(r.name)}</strong><small>${escapeHTML(clampText(r.up,70))}</small></button>`).join('\n\n')}</div>` });
@@ -3715,7 +3694,7 @@ function showLuna() {
   const phase = faseTraducida(cruda);
   const proxima = proximaFasePrincipal();
   const dias = semanaLunar();
-  const body = `<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="moon" aria-label="Luna Celestial"></div><div class="om-luna">
+  const body = `<div class="om-luna">
       <div class="om-luna-astro" role="img" aria-label="${escapeHTML(phase.name)}, ${iluminacion}% ${escapeHTML(t('lunLit'))}">
         <div class="om-luna-disco" style="--ilum:${iluminacion}%; --lado:${creciente ? 'right' : 'left'}"></div>
       </div>
@@ -3798,7 +3777,7 @@ function showSuenos() {
      lecturas ya guardadas y hay codigo que lo compara. Solo cambia la
      etiqueta que se ve. */
   const opc = (id, pares) => `<select id="${id}">${pares.map(([k, v]) => `<option value="${v}">${escapeHTML(t(k))}</option>`).join('')}</select>`;
-  openModal({ icon:'💭', title:t('drTitle'), subtitle:t('drSub'), body:`<div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dreamMirror" aria-label="${escapeHTML(t('a3dMirror'))}"></div><div class="form-grid"><div class="field"><label for="dreamText">${escapeHTML(t('drDescribe'))}</label>${textareaWithMic('dreamText', `placeholder="${escapeHTML(t('drDescribePh'))}"`)}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label for="dreamMood">${escapeHTML(t('drMood'))}</label>${opc('dreamMood', [['drCuriosity','Curiosidad'],['drCalm','Tranquilidad'],['drFear','Miedo'],['drJoy','Alegría'],['drConfusion','Confusión']])}</div><div class="field"><label for="dreamType">${escapeHTML(t('drType'))}</label>${opc('dreamType', [['drSymbolic','Simbólica'],['drEmotional','Emocional'],['drPractical','Práctica'],['drSpiritual','Espiritual suave']])}</div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(k=>`<button class="tab" data-add-symbol="${escapeHTML(simboloSueno(k).etiqueta)}">${escapeHTML(simboloSueno(k).etiqueta)}</button>`).join('')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">${escapeHTML(t('drGo'))}</button></div>` });
+  openModal({ icon:'💭', title:t('drTitle'), subtitle:t('drSub'), body:`<div class="form-grid"><div class="field"><label for="dreamText">${escapeHTML(t('drDescribe'))}</label>${textareaWithMic('dreamText', `placeholder="${escapeHTML(t('drDescribePh'))}"`)}</div>${readingSubjectField('dreamSubject')}</div><div class="form-grid mt"><div class="field"><label for="dreamMood">${escapeHTML(t('drMood'))}</label>${opc('dreamMood', [['drCuriosity','Curiosidad'],['drCalm','Tranquilidad'],['drFear','Miedo'],['drJoy','Alegría'],['drConfusion','Confusión']])}</div><div class="field"><label for="dreamType">${escapeHTML(t('drType'))}</label>${opc('dreamType', [['drSymbolic','Simbólica'],['drEmotional','Emocional'],['drPractical','Práctica'],['drSpiritual','Espiritual suave']])}</div></div><div class="tabs mt">${Object.keys(dreamSymbols).map(k=>`<button class="tab" data-add-symbol="${escapeHTML(simboloSueno(k).etiqueta)}">${escapeHTML(simboloSueno(k).etiqueta)}</button>`).join('')}</div><div class="actions"><button class="btn primary" data-act="dream-reading">${escapeHTML(t('drGo'))}</button></div>` });
 }
 function dreamReading() {
   const dream = $('#dreamText')?.value || '';
@@ -4009,7 +3988,6 @@ function showNumerologia() {
   const d = escapeHTML(getBirthDate());
   const tm = escapeHTML(getBirthTime());
   openModal({ icon:'🔢', title:t('nuTitle'), subtitle:t('nuSub'), body:`
-    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="Astrolabio Celestial"></div>
     <div class="numerology-intro result-card"><h3>${escapeHTML(t('nuPersonal'))}</h3><p>${escapeHTML(t('nuPersonalIntro'))}</p></div>
     <div class="form-grid mt"><div class="field"><label for="numName">${escapeHTML(t('nuName'))}</label>${inputWithMic('numName', `value="${n}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div><div class="field"><label for="numDate">${escapeHTML(t('nuBirth'))}</label><input id="numDate" class="input" type="date" value="${d}"></div><div class="field"><label for="numTime">${escapeHTML(t('nuBirthTime'))}</label><input id="numTime" class="input" type="time" value="${tm}" aria-describedby="numTimeHelp"><small id="numTimeHelp" class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div></div>
     <div class="actions mt"><button class="btn primary" data-act="calc-num">${escapeHTML(t('nuMake'))}</button></div>
@@ -5216,7 +5194,6 @@ function showAstros() {
   const houseSystem = getAstroHouseSystem();
   openModal({ icon:'☉', title:t('asTitle'), subtitle:t('asSub'), body:`
     <div class="result-card astro-hero">
-      <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="astrolabe" aria-label="${escapeHTML(t('a3dAstrolabe'))}"></div>
       <h3>${escapeHTML(t('asWheel'))}</h3>
       <p>${escapeHTML(t('asIntro'))}</p>
       ${astroEngineNoticeHTML()}
@@ -5912,7 +5889,6 @@ function showBiblioteca(filter = 'all') {
   else if (filter !== 'all') list = list.filter(d => String(d.type || '').toLowerCase().includes(filter.toLowerCase()));
   if (q) list = list.filter(d => `${d.title} ${d.type} ${d.text} ${d.note || ''}`.toLowerCase().includes(q));
   openModal({ icon:'📚', title:t('mdBibMistica'), subtitle:`${list.length} de ${diary.length} lecturas guardadas.`, body:`
-    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="library" aria-label="Biblioteca Arcana"></div>
     <div class="form-grid"><div class="field"><label for="diarySearch">${escapeHTML(t('stBuscarEnElDiario'))}</label><input class="input" id="diarySearch" value="${escapeHTML(q)}" placeholder="Buscar por carta, runa, tema o nota..."></div><div class="field"><label for="diaryFilter">${escapeHTML(t('stFiltrarTipo'))}</label><select id="diaryFilter">${types.map(t=>`<option value="${escapeHTML(t)}" ${t===filter?'selected':''}>${t==='all'?'Todo':t==='favorites'?'Favoritas':escapeHTML(t)}</option>`).join('')}</select></div></div>
     <div class="actions mt"><button class="btn" data-act="refresh-diary">Aplicar filtro</button><button class="btn" data-act="export-diary">Exportar texto</button><button class="btn" data-act="export-diary-pdf">Crear PDF</button><button class="btn" data-act="backup-data">Copia de seguridad</button><button class="btn danger" data-act="clear-diary">Vaciar biblioteca</button></div>
     <div class="diary-list mt">${list.map(item=>`<article class="diary-item ${item.favorite?'favorite':''}"><div class="split"><h3>${item.favorite?'⭐ ':''}${escapeHTML(item.title)}</h3><small>${new Date(item.date || Date.now()).toLocaleDateString()}</small></div><small class="pill">${escapeHTML(item.type || 'Lectura')}</small>${item.note ? `<p class="diary-note"><strong>${escapeHTML(t('stNota'))}</strong> ${escapeHTML(item.note)}</p>` : ''}<p>${escapeHTML(clampText(item.text,260))}</p><div class="actions mt"><button class="btn compact" data-fav-diary="${item.id}">${item.favorite?'Quitar ⭐':'Favorita ⭐'}</button><button class="btn compact" data-note-diary="${item.id}">Nota</button><button class="btn compact" data-copy-diary="${item.id}">Copiar</button><button class="btn compact" data-delete-diary="${item.id}">Borrar</button></div></article>`).join('\n\n') || `<p class="subtle">${escapeHTML(t('stTodaviaNoHayLecturasGuardadasCon'))}</p>`}</div>` });
@@ -5923,7 +5899,6 @@ function showSettings() {
   const prefs = storeGet(LS.prefs, {});
   const voice = getVoicePrefs();
   const ceremony = getCeremonyPrefs();
-  const effects3d = get3dPreference();
   openModal({ icon:'⚙️', title:t('mdAjustes'), subtitle:t('mdAjustesS'), body:`
     <div class="settings-stack">
     <details class="settings-section" open>
@@ -5967,7 +5942,6 @@ function showSettings() {
     <div class="settings-section-content">
     <div class="form-grid">
       <div class="field"><label for="oracleAvatarStyle">${escapeHTML(t('stEstiloDeAvatar'))}</label><select id="oracleAvatarStyle"><option value="auto" ${getVoicePrefs().avatarStyle==='auto'?'selected':''}>${escapeHTML(t('stAutomaticoSegunVoz'))}</option><option value="female" ${getVoicePrefs().avatarStyle==='female'?'selected':''}>${escapeHTML(t('stChicaOraculo'))}</option><option value="male" ${getVoicePrefs().avatarStyle==='male'?'selected':''}>${escapeHTML(t('stChicoOraculo'))}</option></select></div>
-      ${AVATAR_3D_DISPONIBLE ? `<div class="field"><label for="oracleAvatarRenderMode">${escapeHTML(t('stModeloAvatar'))}</label><select id="oracleAvatarRenderMode"><option value="auto" ${(voice.avatarRenderMode || 'auto')==='auto'?'selected':''}>${escapeHTML(t('stAvatarAuto3d'))}</option><option value="2d" ${voice.avatarRenderMode==='2d'?'selected':''}>${escapeHTML(t('stAvatar2dRealista'))}</option><option value="3d" ${voice.avatarRenderMode==='3d'?'selected':''}>${escapeHTML(t('stAvatar3dExperimental'))}</option></select><small>${escapeHTML(t('stAvatar3dNota'))}</small></div>` : ''}
       <div class="field"><label for="oracleAvatarEnabled">${escapeHTML(t('stMostrarAvatar'))}</label><select id="oracleAvatarEnabled"><option value="true" ${getVoicePrefs().avatarEnabled!==false?'selected':''}>${escapeHTML(t('stSiMostrarAlHablar'))}</option><option value="false" ${getVoicePrefs().avatarEnabled===false?'selected':''}>${escapeHTML(t('stNoMostrar'))}</option></select></div>
       <div class="field"><label for="oracleAvatarPosition">${escapeHTML(t('stPosicionDelAvatar'))}</label><select id="oracleAvatarPosition"><option value="right" ${getVoicePrefs().avatarPosition!=='left'?'selected':''}>${escapeHTML(t('stDerecha'))}</option><option value="left" ${getVoicePrefs().avatarPosition==='left'?'selected':''}>${escapeHTML(t('stIzquierda'))}</option></select></div>
       <div class="field"><label for="oracleAvatarSize">${escapeHTML(t('stTamanoDelAvatar'))}</label><select id="oracleAvatarSize"><option value="small" ${getVoicePrefs().avatarSize==='small'?'selected':''}>${escapeHTML(t('stPequeno'))}</option><option value="medium" ${getVoicePrefs().avatarSize!=='small' && getVoicePrefs().avatarSize!=='large'?'selected':''}>${escapeHTML(t('stMediano'))}</option><option value="large" ${getVoicePrefs().avatarSize==='large'?'selected':''}>${escapeHTML(t('stGrande'))}</option></select></div>
@@ -5985,7 +5959,6 @@ function showSettings() {
       <div class="field"><label for="pdfStyleSelect">${escapeHTML(t('stEstiloPdfPorDefecto'))}</label><select id="pdfStyleSelect"><option value="premium" ${getPdfStyle()==='premium'?'selected':''}>${escapeHTML(t('stPremiumMistico'))}</option><option value="light" ${getPdfStyle()==='light'?'selected':''}>${escapeHTML(t('stClaroElegante'))}</option><option value="summary" ${getPdfStyle()==='summary'?'selected':''}>${escapeHTML(t('stResumen1Pagina'))}</option></select></div>
       <div class="field"><label for="focusModeSelect">${escapeHTML(t('stModoFocoMenosAnimaciones'))}</label><select id="focusModeSelect"><option value="false" ${!isFocusMode()?'selected':''}>${escapeHTML(t('stAnimacionesCompletas'))}</option><option value="true" ${isFocusMode()?'selected':''}>${escapeHTML(t('stReducirAnimaciones'))}</option></select></div>
       <div class="field"><label for="performanceModeSelect">${escapeHTML(t('stModoRendimientoReal'))}</label><select id="performanceModeSelect"><option value="false" ${!isPerformanceMode()?'selected':''}>${escapeHTML(t('stNormal'))}</option><option value="true" ${isPerformanceMode()?'selected':''}>${escapeHTML(t('stRendimientoMovil'))}</option></select></div>
-      <div class="field om-3d-control"><label for="effects3dSelect">${escapeHTML(t('stEfectos3d'))}</label><select id="effects3dSelect"><option value="auto" ${effects3d==='auto'?'selected':''}>${escapeHTML(t('stAutomatico'))}</option><option value="high" ${effects3d==='high'?'selected':''}>${escapeHTML(t('stAlto'))}</option><option value="balanced" ${effects3d==='balanced'?'selected':''}>${escapeHTML(t('stEquilibrado'))}</option><option value="reduced" ${effects3d==='reduced'?'selected':''}>${escapeHTML(t('stReducido'))}</option><option value="off" ${effects3d==='off'?'selected':''}>${escapeHTML(t('stDesactivado'))}</option></select><small>${escapeHTML(t('stUsaFallback2dSiWebglFalla'))}</small></div>
     </div></div></details>
     </div>
 
@@ -6057,7 +6030,6 @@ ${t('dlAdvice')}: ${t('dlAdviceText')}`;
   /* El value de cada animo se queda en castellano: viaja en el diario. */
   const animos = [['dlCalm','Calma'],['dlHope','Ilusión'],['dlDoubt','Duda'],['dlStrength','Fuerza'],['dlTired','Cansancio'],['dlThanks','Gratitud']];
   openModal({ icon:'🌟', title:t('dailyMessage'), subtitle:t('dlSub'), body:`
-    <div class="om-3d-stage om-modal-3d" data-oraculo-3d-asset="dailyRelic" aria-label="${escapeHTML(t('a3dRelic'))}"></div>
     <div class="daily-oracle-grid">
       <div class="daily-oracle-card">${cardImage(card)}<strong>🃏 ${escapeHTML(card.name)}</strong><small>${escapeHTML(card.key || card.el || '')}</small></div>
       <div class="daily-oracle-card"><div class="rune-big compact-rune">${rune.sym}</div><strong>ᚱ ${escapeHTML(rune.name)}</strong><small>${escapeHTML(clampText(rune.up, 70))}</small></div>
@@ -6119,7 +6091,6 @@ function chatRuneHTML(item, index) {
 function showChatRitual() {
   openModal({ icon:'🕯️', title:t('chatTitle'), subtitle:t('chatSub'), body:`
     <div class="private-chat-wrap">
-      <div class="om-3d-stage om-oracle-chat-3d" data-oraculo-3d-asset="orb" aria-label="Orbe del Oráculo"></div>
       <div class="privacy-note">🔒 ${escapeHTML(t('chatPrivacy'))}</div>
       <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
       <div class="chat-quick-actions">
@@ -6304,7 +6275,7 @@ function handleAction(action) {
     'grab-more': () => { grabVisibleLimit += GRAB_INCREMENT; refrescarGrabList(); },
     'grab-all': () => { grabVisibleLimit = Number.MAX_SAFE_INTEGER; refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
-    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarRenderMode: $('#oracleAvatarRenderMode')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference($('#effects3dSelect')?.value || get3dPreference()); closeModal(); updateHome(); toast(t('settingsSaved')); },
+    'save-settings': () => { const v=$('#settingsName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); setAppLanguage($('#appLanguage')?.value || 'auto'); localStorage.setItem(LS.aiStyle, $('#aiStyle')?.value || 'mistica'); setVoicePrefs({ engine: $('#voiceEngine')?.value || 'device', remoteVoice: $('#remoteVoice')?.value || 'coral', voiceFilter: $('#voiceFilter')?.value || 'all', keepScreenAwake: $('#keepScreenAwake')?.value !== 'false', language: $('#voiceLanguage')?.value || 'auto', deviceVoiceURI: $('#deviceVoiceURI')?.value || '', preset: $('#voicePreset')?.value || 'mistica_femenina', avatarStyle: $('#oracleAvatarStyle')?.value || 'auto', avatarRenderMode: $('#oracleAvatarRenderMode')?.value || 'auto', avatarEnabled: $('#oracleAvatarEnabled')?.value !== 'false', avatarPosition: $('#oracleAvatarPosition')?.value || 'right', avatarSize: $('#oracleAvatarSize')?.value || 'medium', avatarMood: $('#oracleAvatarMood')?.value || 'auto', avatarSpeechMode: $('#oracleAvatarSpeechMode')?.value || 'auto', rate: Number($('#voiceRate')?.value || getVoicePreset($('#voicePreset')?.value || 'mistica_femenina').rate) }); setCeremonyPrefs({ speed: $('#ceremonySpeed')?.value || 'normal', sounds: $('#ceremonySounds')?.value === 'true', vibration: $('#ceremonyVibration')?.value === 'true' }); setTheme($('#themeSelect')?.value || getTheme()); setAppearanceMode($('#appearanceModeSelect')?.value || getAppearanceMode()); setPrivateMode($('#privateModeSelect')?.value === 'true'); setPdfStyle($('#pdfStyleSelect')?.value || getPdfStyle()); setFocusMode($('#focusModeSelect')?.value === 'true'); setPerformanceMode($('#performanceModeSelect')?.value === 'true'); set3dPreference('off'); closeModal(); updateHome(); toast(t('settingsSaved')); },
     'toggle-contrast': () => { const p=storeGet(LS.prefs,{}); p.highContrast=!p.highContrast; storeSet(LS.prefs,p); updateHome(); showSettings(); },
     'cycle-text-scale': () => { const p=storeGet(LS.prefs,{}); p.textScale=siguienteEscalaTexto(); delete p.largeText; storeSet(LS.prefs,p); aplicarEscalaTexto(); updateHome(); showSettings(); },
     'update-pwa': async () => { try { const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); } catch {} location.reload(); },
@@ -6336,7 +6307,6 @@ function handleAction(action) {
     'ai-reading': async () => {
       const base = getReadingText();
       if (!lastReading) return toast(t('tsNeedReading'));
-      window.Oraculo3D?.releaseMemory?.();
       if (localStorage.getItem(LS.puter) !== 'true') {
         setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoConectada'))}</h3><p>${escapeHTML(t('stConectaPuterIaParaProfundizarEsta'))}</p><div class="actions mt"><button class="btn primary compact" data-act="connect-ai" type="button">Conectar IA</button></div>`, 'warning');
         return;

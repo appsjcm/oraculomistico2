@@ -414,7 +414,6 @@
           <h2 id="omBibTitulo">${tr('bTitle')}</h2>
           <button class="om-sheet-close" data-bib="cerrar" type="button" aria-label="${esc(tr('close'))}">✕</button>
         </header>
-        <div class="om-3d-stage om-sheet-3d" data-oraculo-3d-asset="library" aria-label="Biblioteca Arcana"></div>
         <div class="om-bib-cats" role="tablist">
           ${CATEGORIAS.map(c => `<button class="om-bib-cat${categoria === c.id ? ' activo' : ''}" data-bib="categoria" data-valor="${c.id}" role="tab" aria-selected="${categoria === c.id}" type="button"><span aria-hidden="true">${c.icono}</span>${esc(tr(c.clave))}</button>`).join('')}
         </div>
