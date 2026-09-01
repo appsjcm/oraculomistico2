@@ -53,6 +53,27 @@
   color: rgba(255, 250, 239, .82);
 }
 
+.astro-mode-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.astro-mode-grid .choice {
+  min-height: 132px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 207, 117, .12), rgba(145, 194, 255, .07)),
+    rgba(255, 255, 255, .055);
+}
+
+.astro-mode-grid .choice strong {
+  color: rgb(246, 222, 154);
+  font-size: 1.02rem;
+}
+
+.astro-mode-grid .choice small {
+  line-height: 1.45;
+}
+
 .astro-place-field {
   grid-column: span 2;
 }
@@ -832,6 +853,17 @@ html[data-appearance-mode="light"] .astro-engine-note strong {
   color: #8c6518;
 }
 
+html[data-appearance-mode="light"] .astro-mode-grid .choice {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .88), rgba(255, 246, 224, .70));
+  border-color: rgba(64, 45, 76, .14);
+  color: #241b2e;
+}
+
+html[data-appearance-mode="light"] .astro-mode-grid .choice strong {
+  color: #241b2e;
+}
+
 .astro-return-bridge {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -988,7 +1020,8 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
 
 @media (max-width: 760px) {
   .astro-grid,
-  .astro-day-grid {
+  .astro-day-grid,
+  .astro-mode-grid {
     grid-template-columns: 1fr;
   }
 
