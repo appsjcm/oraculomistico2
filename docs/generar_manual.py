@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Genera el manual de usuario de Oraculo Mistico en PDF.
+Genera el manual de usuario de Oraculo Mistico, en PDF y en .docx.
 
 Se mantiene en el repositorio a proposito: el manual debe poder
-regenerarse cuando la app cambie, sin depender de un .docx suelto.
+regenerarse cuando la app cambie. Los dos formatos salen del mismo
+contenido, asi que no pueden acabar diciendo cosas distintas, que es lo
+que paso con el .docx que se escribio aparte y quedo dos meses atras.
 
     python docs/generar_manual.py
 
@@ -411,7 +413,7 @@ def construir():
         'Idiomas', 'La Mesa de Lectura: tarot', 'Runas', 'Luna', 'Sueños',
         'Numerología y sinastría', 'Astros', 'Grabovoi', 'Mensaje del día',
         'Chat ritual', 'Biblioteca Arcana y Mi Grimorio', 'Voz, avatar y lectura hablada',
-        'Apariencia, 3D y rendimiento', 'Accesibilidad', 'Exportar y copias de seguridad',
+        'Apariencia y rendimiento', 'Accesibilidad', 'Exportar y copias de seguridad',
         'La IA es opcional', 'Privacidad y datos', 'Instalar la app y uso sin conexión',
         'Si algo no funciona', 'Uso responsable',
     ]
@@ -430,6 +432,10 @@ def construir():
         ('LEFTPADDING', (0, 0), (0, -1), 0),
         ('LINEBELOW', (0, 0), (-1, -2), 0.4, colors.HexColor('#efe8d9')),
     ]))
+    # En el PDF el indice es una tabla porque asi se alinean los numeros.
+    # En el .docx no hay nada que alinear y una tabla con borde queda
+    # peor que una lista, asi que se marca para tratarla aparte.
+    t.es_indice = True
     F.append(t)
     F.append(PageBreak())
 
@@ -711,25 +717,25 @@ def construir():
         'elegir estilo, posición, tamaño y expresión, o desactivarlo por completo.'))
 
     # ---------- 16 ----------
-    F.append(h1('SECCIÓN 16', 'Apariencia, 3D y rendimiento'))
+    F.append(h1('SECCIÓN 16', 'Apariencia y rendimiento'))
     F.append(h2('Temas'))
     F.append(p(
         'Seis temas visuales: Dorado místico, Noche violeta, Bosque rúnico, Luna azul, '
         'Tarot clásico y Claro elegante. Además, un ajuste de luz que cambia entre noche y día.'))
-    F.append(h2('Escenas en tres dimensiones'))
+    F.append(h2('Tamaño del texto'))
     F.append(p(
-        'Algunas zonas del Santuario muestran objetos en 3D. Son pesados, así que la app es '
-        'prudente con ellos: carga como mucho una escena de alta calidad a la vez, descarga '
-        'lo que sale de pantalla y libera la memoria gráfica al cerrar.'))
+        'Desde Ajustes puedes agrandar el texto de toda la app en cuatro pasos. Cada toque '
+        'sube un escalón y, en el último, vuelve al tamaño normal. Afecta a todo: menús, '
+        'lecturas, fichas de carta y la barra de abajo.'))
+    F.append(h2('Modo rendimiento'))
     F.append(p(
-        'En <b>Ajustes → Efectos 3D</b> puedes elegir entre automático, alto, equilibrado, '
-        'reducido o desactivado. Si tu dispositivo no admite WebGL, o si pides menos '
-        'movimiento, la app cambia sola a una vista plana equivalente.'))
+        'Reduce animaciones y efectos para que la app vaya suelta en dispositivos modestos. '
+        'La app respeta además la preferencia del sistema de reducir movimiento: si la tienes '
+        'puesta, las animaciones se calman por sí solas, sin configurar nada.'))
     F.append(aviso(
         'Si el móvil va justo',
-        'Activa el <b>modo rendimiento</b> y pon los efectos 3D en <b>reducido</b> o '
-        '<b>desactivado</b>. La app respeta además la preferencia del sistema de reducir '
-        'movimiento: si la tienes puesta, las animaciones se calman por sí solas.'))
+        'Activa el <b>modo rendimiento</b> desde Ajustes. Junto con el <b>modo foco</b>, deja '
+        'la app en su versión más liviana sin perder ninguna función.'))
 
     # ---------- 17 ----------
     F.append(h1('SECCIÓN 17', 'Accesibilidad'))
@@ -823,7 +829,7 @@ def construir():
             ['Ves algo raro tras una actualización',
              'Ajustes → Limpiar caché y recargar. Es lo primero que conviene probar.'],
             ['La app va lenta o el móvil se calienta',
-             'Activa el modo rendimiento y pon los efectos 3D en reducido o desactivado.'],
+             'Activa el modo rendimiento desde Ajustes, y el modo foco si quieres menos animación.'],
             ['No se oye la voz',
              'Comprueba el volumen y el silencio del dispositivo, y prueba otra voz desde Ajustes.'],
             ['No aparecen voces en tu idioma',
@@ -860,6 +866,221 @@ def construir():
     return F
 
 
+# --------------------------------------------------------------------
+# El manual en .docx
+#
+# Habia un .docx suelto en docs/, escrito aparte y dos meses mas viejo
+# que el PDF. Hablaba de "Biblioteca Mistica" cuando la app ya la llama
+# Biblioteca Arcana, y no mencionaba Astros, ni los idiomas, ni la
+# accesibilidad. Un manual que se contradice con la app no es un manual.
+#
+# En vez de mantener dos textos a mano, el .docx sale ahora del mismo
+# construir() que el PDF, recorriendo las mismas piezas. Si el contenido
+# cambia, cambian los dos o no cambia ninguno.
+#
+# Se escribe el zip a mano porque python-docx no esta instalado y un
+# .docx no es mas que un zip con unos cuantos XML dentro. Solo se emite
+# lo que este manual usa: titulos, parrafos, listas, avisos y tablas.
+# --------------------------------------------------------------------
+
+def _xml_escape(texto):
+    return (texto.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
+
+
+def _entidades(texto):
+    """Traduce las entidades HTML que usa el contenido.
+
+    reportlab las entiende; el XML de Word no. Sin esto, el rombo y los
+    espacios duros de la portada salian escritos tal cual, con su
+    ampersand y su punto y coma a la vista."""
+    import html
+    return html.unescape(texto)
+
+
+def _tramos(texto):
+    """Convierte el marcado de reportlab en tramos (texto, negrita, cursiva).
+
+    El contenido usa <b>, <i> y <br/>, que es lo unico que hay que
+    entender. Cualquier otra etiqueta se ignora en vez de aparecer
+    escrita, que es lo que pasaria si se escapara sin mas."""
+    tramos, buf, negrita, cursiva, i = [], [], 0, 0, 0
+    def volcar():
+        if buf:
+            tramos.append((''.join(buf), negrita > 0, cursiva > 0))
+            del buf[:]
+    while i < len(texto):
+        if texto[i] == '<':
+            cierre = texto.find('>', i)
+            if cierre < 0:
+                buf.append(texto[i]); i += 1; continue
+            etiqueta = texto[i + 1:cierre].strip().lower().rstrip('/').strip()
+            volcar()
+            if etiqueta == 'b': negrita += 1
+            elif etiqueta == '/b': negrita = max(0, negrita - 1)
+            elif etiqueta == 'i': cursiva += 1
+            elif etiqueta == '/i': cursiva = max(0, cursiva - 1)
+            elif etiqueta == 'br': tramos.append(('\n', False, False))
+            i = cierre + 1
+        else:
+            buf.append(texto[i]); i += 1
+    volcar()
+    return tramos or [('', False, False)]
+
+
+def _parrafo_docx(texto, estilo='Cuerpo'):
+    piezas = ['<w:p><w:pPr><w:pStyle w:val="%s"/></w:pPr>' % estilo]
+    for trozo, negrita, cursiva in _tramos(texto):
+        if trozo == '\n':
+            piezas.append('<w:r><w:br/></w:r>'); continue
+        props = ''
+        if negrita: props += '<w:b/>'
+        if cursiva: props += '<w:i/>'
+        piezas.append('<w:r>%s<w:t xml:space="preserve">%s</w:t></w:r>' % (
+            '<w:rPr>%s</w:rPr>' % props if props else '', _xml_escape(_entidades(trozo))))
+    piezas.append('</w:p>')
+    return ''.join(piezas)
+
+
+def _recorrer(flowables, cuerpo):
+    """Baja por las piezas del documento y las va escribiendo.
+
+    KeepTogether y ListFlowable son envoltorios: se entra en ellos. Los
+    Spacer y los filetes no tienen equivalente util aqui y se saltan; el
+    espaciado lo pone el estilo del propio parrafo."""
+    # Las claves son el nombre con el que se creo cada ParagraphStyle, que
+    # es la abreviatura del primer argumento, no la clave del diccionario S.
+    ESTILOS = {'h1': 'Titulo1', 'h1n': 'Antetitulo', 'h2': 'Titulo2',
+               'nt': 'AvisoTitulo', 'n': 'Aviso', 'e': 'Entradilla',
+               'i': 'Indice', 'l': 'Vineta', 'c': 'Cuerpo',
+               'pm': 'PortadaMarca', 'pt': 'PortadaTitulo',
+               'ps': 'PortadaSub', 'pp': 'PortadaPie'}
+    for pieza in flowables:
+        nombre = type(pieza).__name__
+        if nombre == 'Paragraph':
+            estilo = ESTILOS.get(getattr(pieza.style, 'name', ''), 'Cuerpo')
+            cuerpo.append(_parrafo_docx(pieza.text, estilo))
+        elif nombre in ('KeepTogether', 'ListFlowable'):
+            _recorrer(getattr(pieza, '_content', None) or [], cuerpo)
+        elif nombre in ('LIIndenter', 'ListItem'):
+            # Cada punto de una lista viene envuelto en un LIIndenter que
+            # guarda su parrafo en _flowable, en singular.
+            hijo = getattr(pieza, '_flowable', None)
+            _recorrer([hijo] if hijo is not None else
+                      getattr(pieza, '_flowables', None) or [], cuerpo)
+        elif nombre == 'Table':
+            filas = pieza._cellvalues
+            if getattr(pieza, 'es_indice', False):
+                for numero, titulo in filas:
+                    cuerpo.append(_parrafo_docx('%s   %s' % (numero, titulo), 'Indice'))
+                continue
+            # Los avisos son una tabla de una sola columna: no son una
+            # tabla de verdad y quedan mejor como parrafos con su estilo.
+            if len(filas) == 2 and len(filas[0]) == 1:
+                _recorrer([filas[0][0], filas[1][0]], cuerpo)
+                continue
+            cuerpo.append(_tabla_docx(filas))
+        elif nombre == 'PageBreak':
+            cuerpo.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
+
+
+def _tabla_docx(filas):
+    piezas = ['<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/>'
+              '<w:tblW w:w="5000" w:type="pct"/></w:tblPr>']
+    for indice, fila in enumerate(filas):
+        piezas.append('<w:tr>')
+        for celda in fila:
+            texto = celda.text if type(celda).__name__ == 'Paragraph' else str(celda)
+            piezas.append('<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/></w:tcPr>%s</w:tc>'
+                          % _parrafo_docx(texto, 'TablaCabecera' if not indice else 'Tabla'))
+        piezas.append('</w:tr>')
+    piezas.append('</w:tbl><w:p><w:pPr><w:pStyle w:val="Cuerpo"/></w:pPr></w:p>')
+    return ''.join(piezas)
+
+
+_ESTILOS_DOCX = [
+    # nombre, fuente, medios puntos, negrita, color, espacio antes/despues,
+    # alineacion ('' izquierda, 'center', 'both' justificado)
+    ('Cuerpo', 'Georgia', 21, 0, '241B2E', 0, 120, 'both'),
+    ('Titulo1', 'Georgia', 40, 1, '8A6A2F', 360, 160, ''),
+    ('Titulo2', 'Georgia', 25, 1, '8A6A2F', 200, 80, ''),
+    ('Entradilla', 'Georgia', 23, 0, '4A4356', 0, 160, 'both'),
+    ('Indice', 'Georgia', 21, 0, '241B2E', 0, 40, ''),
+    ('Vineta', 'Georgia', 21, 0, '241B2E', 0, 60, ''),
+    ('AvisoTitulo', 'Georgia', 20, 1, '8A6A2F', 120, 40, ''),
+    ('Aviso', 'Georgia', 20, 0, '241B2E', 0, 160, 'both'),
+    ('TablaCabecera', 'Georgia', 19, 1, '8A6A2F', 40, 40, ''),
+    ('Tabla', 'Georgia', 19, 0, '241B2E', 40, 40, ''),
+    ('Antetitulo', 'Georgia', 17, 1, '8A6A2F', 320, 0, ''),
+    ('PortadaMarca', 'Georgia', 19, 1, '8A6A2F', 0, 400, 'center'),
+    ('PortadaTitulo', 'Georgia', 72, 1, '8A6A2F', 0, 120, 'center'),
+    ('PortadaSub', 'Georgia', 30, 0, '4A4356', 0, 80, 'center'),
+    ('PortadaPie', 'Georgia', 20, 0, '4A4356', 0, 80, 'center'),
+]
+
+
+def exportar_docx(flowables, destino):
+    import zipfile
+    cuerpo = []
+    _recorrer(flowables, cuerpo)
+
+    estilos = ''.join(
+        '<w:style w:type="paragraph" w:styleId="%s"><w:name w:val="%s"/>'
+        '<w:pPr><w:spacing w:before="%d" w:after="%d" w:line="288" w:lineRule="auto"/>%s</w:pPr>'
+        '<w:rPr><w:rFonts w:ascii="%s" w:hAnsi="%s"/><w:sz w:val="%d"/>%s'
+        '<w:color w:val="%s"/></w:rPr></w:style>'
+        % (n, n, antes, despues, '<w:jc w:val="%s"/>' % j if j else '',
+           f, f, sz, '<w:b/>' if b else '', c)
+        for n, f, sz, b, c, antes, despues, j in _ESTILOS_DOCX)
+
+    documento = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                 '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                 '<w:body>%s<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'
+                 '<w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418"/>'
+                 '</w:sectPr></w:body></w:document>') % ''.join(cuerpo)
+
+    piezas = {
+        '[Content_Types].xml':
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+            '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+            '</Types>',
+        '_rels/.rels':
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+            '</Relationships>',
+        'word/_rels/document.xml.rels':
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            '</Relationships>',
+        'word/styles.xml':
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            '<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/>'
+            '<w:tblPr><w:tblBorders>'
+            + ''.join('<w:%s w:val="single" w:sz="4" w:space="0" w:color="D9CBA8"/>' % b
+                      for b in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'))
+            + '</w:tblBorders></w:tblPr></w:style>' + estilos + '</w:styles>',
+        'docProps/core.xml':
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+            'xmlns:dc="http://purl.org/dc/elements/1.1/">'
+            '<dc:title>Oráculo Místico · Manual de usuario</dc:title>'
+            '<dc:creator>Oráculo Místico</dc:creator></cp:coreProperties>',
+        'word/document.xml': documento,
+    }
+    with zipfile.ZipFile(destino, 'w', zipfile.ZIP_DEFLATED) as z:
+        for ruta, contenido in piezas.items():
+            z.writestr(ruta, contenido.encode('utf-8'))
+    return len(cuerpo)
+
+
 def main():
     salida = os.path.join('docs', 'manual_usuario_oraculo_mistico_v1_0.pdf')
     doc = BaseDocTemplate(
@@ -879,9 +1100,16 @@ def main():
         PageTemplate(id='portada', frames=[marco_portada], onPage=portada),
         PageTemplate(id='interior', frames=[marco_interior], onPage=interior),
     ])
+    # construir() se llama dos veces a proposito: reportlab consume los
+    # flowables al maquetar y los deja inservibles para un segundo uso.
     doc.build(construir())
     tam = os.path.getsize(salida)
     print('generado: %s  (%.1f KB)' % (salida, tam / 1024.0))
+
+    salida_docx = salida[:-4] + '.docx'
+    piezas = exportar_docx(construir(), salida_docx)
+    tam = os.path.getsize(salida_docx)
+    print('generado: %s  (%.1f KB, %d bloques)' % (salida_docx, tam / 1024.0, piezas))
 
 
 if __name__ == '__main__':
