@@ -268,6 +268,13 @@
      lo ancho, o las etiquetas de la barra inferior se pisan, o se
      recortan. Se mide al ancho que tenga la ventana ahora. */
   function medirEspacio() {
+    /* Sin un ancho de ventana real no hay nada que medir: todo parece
+       desbordar. Pasa cuando la pagina corre en un panel oculto o en una
+       pestana de fondo. Mas vale decir que no se puede que dar un informe
+       falso, que es justo lo que hace inutil a una herramienta asi. */
+    if (!(innerWidth > 200)) {
+      return { noMedido: 'la ventana no tiene ancho util (' + innerWidth + ' px): ejecutalo con la pagina a la vista' };
+    }
     const previo = document.documentElement.getAttribute('data-text-scale');
     const filas = {};
     ESCALAS.forEach(e => {
@@ -341,7 +348,11 @@
             contraste[`${modo}${alto ? ' + alto contraste' : ''} · ${tema}`] = {
               ilegibles: r.fallos.length,
               flojos: r.flojos.length,
+              /* Se enseñan ejemplos de los dos, porque si solo se
+                 enseñaran los ilegibles una combinacion con solo flojos
+                 aparecia en la lista sin nada que mirar. */
               ejemplos: r.fallos.slice(0, 4),
+              ejemplosFlojos: r.flojos.slice(0, 3),
             };
           }
         }
@@ -365,7 +376,12 @@
     const informe = {
       anchoVentana: innerWidth,
       contraste: {
-        combinacionesConProblemas: Object.keys(contraste).length,
+        /* Ilegible y flojo no son lo mismo y no deben contarse juntos:
+           uno es texto que no se ve y el otro texto que se lee pero no
+           llega al minimo de la norma. Mezclarlos hace que un informe
+           con doce avisos parezca una emergencia cuando no lo es. */
+        combinacionesConTextoIlegible: Object.values(contraste).filter(v => v.ilegibles > 0).length,
+        combinacionesPorDebajoDeLaNorma: Object.values(contraste).filter(v => !v.ilegibles && v.flojos > 0).length,
         deUnTotalDe: MODOS.length * 2 * TEMAS.length,
         detalle: contraste,
       },
@@ -376,16 +392,22 @@
     /* Resumen legible, que es lo que se mira primero. */
     const lineas = [];
     lineas.push('Auditoría a ' + innerWidth + ' px de ancho');
-    lineas.push('  contraste : ' + informe.contraste.combinacionesConProblemas + ' de ' +
-      informe.contraste.deUnTotalDe + ' combinaciones con algo que mirar');
+    lineas.push('  ilegible  : ' + informe.contraste.combinacionesConTextoIlegible + ' de ' +
+      informe.contraste.deUnTotalDe + ' combinaciones con texto que no se ve');
+    lineas.push('  flojo     : ' + informe.contraste.combinacionesPorDebajoDeLaNorma +
+      ' combinaciones con texto legible pero por debajo de 4,5');
     lineas.push('  tamaño    : ' + (escala.quietos.length
       ? escala.quietos.length + ' selectores no crecen con el ajuste'
       : 'todos los selectores de muestra crecen'));
-    const conEspacio = Object.entries(espacio).filter(([, v]) =>
-      v.desbordaPagina || v.choquesEnLaBarra || v.etiquetasRecortadas.length);
-    lineas.push('  espacio   : ' + (conEspacio.length
-      ? conEspacio.map(([k]) => k + '%').join(', ') + ' con desbordes o solapes'
-      : 'sin desbordes ni solapes en los cuatro pasos'));
+    if (espacio.noMedido) {
+      lineas.push('  espacio   : sin medir, ' + espacio.noMedido);
+    } else {
+      const conEspacio = Object.entries(espacio).filter(([, v]) =>
+        v.desbordaPagina || v.choquesEnLaBarra || v.etiquetasRecortadas.length);
+      lineas.push('  espacio   : ' + (conEspacio.length
+        ? conEspacio.map(([k]) => k + '%').join(', ') + ' con desbordes o solapes'
+        : 'sin desbordes ni solapes en los cuatro pasos'));
+    }
     console.log(lineas.join('\n'));
 
     return informe;
