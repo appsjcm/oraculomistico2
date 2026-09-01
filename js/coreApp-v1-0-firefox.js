@@ -4583,9 +4583,28 @@ function localSiderealDegree(date = '', time = '12:00', place = null) {
   const apparent = mean + nutationLongitudeDegree(t) * cosDeg(trueObliquityDegree(t));
   return normalizeDegree(apparent + longitude);
 }
+/* El ascendente esta definido a cualquier latitud salvo justo en los
+   polos, donde la tangente se dispara. Antes se recortaba a 66 grados
+   para proteger a Placidus, que si deja de tener solucion pasado el
+   circulo polar, pero ese recorte se aplicaba tambien al ascendente y lo
+   dejaba mal: medido, en Tromso salia otro signo en el 30 % de las horas
+   del dia, en Utqiagvik en el 42 % y en Longyearbyen en el 64 %, con
+   desviaciones de hasta 180 grados, es decir el signo opuesto.
+
+   Ahora el ascendente usa la latitud de verdad y solo se limita junto a
+   los polos, donde ninguna carta tiene sentido. Quien protege a Placidus
+   es Placidus, mas abajo. */
+const LATITUD_MAXIMA_CARTA = 89.5;
+
+function latitudDeCarta(place, porDefecto = 0) {
+  const lat = Number(place?.lat);
+  if (!Number.isFinite(lat)) return porDefecto;
+  return Math.max(-LATITUD_MAXIMA_CARTA, Math.min(LATITUD_MAXIMA_CARTA, lat));
+}
+
 function fallbackAscendant(date = '', time = '12:00', name = '', place = null) {
   const lst = localSiderealDegree(date, time, place);
-  const lat = Number.isFinite(Number(place?.lat)) ? Math.max(-66, Math.min(66, Number(place.lat))) : 0;
+  const lat = latitudDeCarta(place, 0);
   const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
   let degree = normalizeDegree(180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
   if (!Number.isFinite(degree)) degree = normalizeDegree(lst + (astroHash(name) % 18));
@@ -4595,7 +4614,7 @@ function fallbackAscendant(date = '', time = '12:00', name = '', place = null) {
 function astronomicalAscendant(date = '', time = '12:00', place = null) {
   if (!hasAstroCoordinates(place)) return null;
   const lst = localSiderealDegree(date, time, place);
-  const lat = Math.max(-66, Math.min(66, Number(place.lat)));
+  const lat = latitudDeCarta(place);
   const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
   const raw = 180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps)));
   return Number.isFinite(raw) ? zodiacFromDegree(normalizeDegree(raw)) : null;
@@ -4637,7 +4656,15 @@ function calculatePlacidusHouses(asc, mc, date = '', time = '12:00', place = nul
   if (!asc || !mc || !hasAstroCoordinates(place)) return null;
   const dateInfo = astroDayCount(date, time, place);
   if (!dateInfo) return null;
-  const lat = Math.max(-66, Math.min(66, Number(place.lat)));
+  /* Placidus no tiene solucion pasado el circulo polar: hay casas que se
+     quedan sin cuspide. Antes se recortaba la latitud a 66 grados y se
+     devolvian unas cuspides calculadas para un sitio donde la persona no
+     nacio. Ahora se aparta y devuelve null, y calculateAstroHouses pasa
+     al reparto por cuadrantes, que si esta definido a cualquier latitud
+     porque solo triseca los arcos entre ascendente, fondo, descendente y
+     medio cielo. */
+  const lat = latitudDeCarta(place);
+  if (Math.abs(lat) > 66) return null;
   const eps = trueObliquityDegree(dateInfo.t);
   const ramc = localSiderealDegree(date, time, place);
   const cusp = house => {

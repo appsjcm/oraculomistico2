@@ -1283,3 +1283,67 @@ html[data-appearance-mode="dark"] body.theme-light textarea {
   line-height: 1;
   text-shadow: 0 2px 10px rgba(0, 0, 0, .75);
 }
+
+/* ------------------------------------------------------------------
+   El panel avanzado no seguia al modo claro
+
+   Ese panel viene plegado, asi que se le habia pasado a todas las
+   revisiones anteriores, incluidas las mias con el auditor: si no esta
+   desplegado, sus textos no existen en el DOM y no se miden.
+
+   Dentro hay varios colores fijos de la epoca en que la app era solo
+   oscura: oro claro para los rotulos de seccion y crema para los datos
+   de las tarjetas. En modo claro eso es claro sobre claro. Medido con el
+   panel abierto: "El Santuario" en 1,24 y "Martes" en 1,11.
+
+   Se les da la variable que les corresponde en vez de un valor fijo, asi
+   que a partir de ahora siguen al modo y al tema solos.
+   ------------------------------------------------------------------ */
+html[data-appearance-mode="light"] .premium-section-kicker {
+  color: var(--gold);
+}
+html[data-appearance-mode="light"] .premium-stat-card strong,
+html[data-appearance-mode="light"] .mini-card strong {
+  color: var(--text);
+}
+html[data-appearance-mode="light"] .premium-engine-stats span {
+  color: var(--muted);
+}
+html[data-appearance-mode="light"] .engine-filter,
+html[data-appearance-mode="light"] .premium-native-spread-actions button,
+html[data-appearance-mode="light"] .premium-inline-actions button {
+  color: var(--text);
+}
+html[data-appearance-mode="light"] .premium-engine-search input::placeholder {
+  color: var(--muted);
+}
+
+/* Ir corrigiendo tarjeta por tarjeta era una carrera perdida: el panel
+   tiene decenas de sitios con el mismo patron. Se ataca la familia
+   entera, que es siempre lo mismo, un strong o una insignia con crema u
+   oro fijos, y se devuelve la excepcion a mano.
+
+   La excepcion es una sola y es legitima: el texto que va encima de la
+   ilustracion de la carta, que es una imagen oscura. Ahi el texto claro
+   es el correcto, y ademas el auditor no puede evaluarlo porque no ve el
+   color de una imagen de fondo. */
+html[data-appearance-mode="light"] .om-advanced strong,
+html[data-appearance-mode="light"] .om-advanced .badge,
+html[data-appearance-mode="light"] .om-advanced .premium-onboarding-step span,
+html[data-appearance-mode="light"] .om-advanced .premium-vault-card span,
+html[data-appearance-mode="light"] .om-advanced .premium-workspace-card span,
+html[data-appearance-mode="light"] .om-advanced .premium-library-card.mini span {
+  color: var(--text);
+}
+html[data-appearance-mode="light"] .om-advanced .premium-engine-stats article strong {
+  color: var(--gold);
+}
+html[data-appearance-mode="light"] .om-advanced .premium-engine-stats span {
+  color: var(--muted);
+}
+/* La excepcion: sobre la ilustracion de la carta manda la imagen, no el
+   modo. Va despues para ganar a la regla de arriba. */
+html[data-appearance-mode="light"] .premium-real-card.has-art strong,
+html[data-appearance-mode="light"] .premium-real-card.has-art .card-meta span {
+  color: #fff8e8;
+}

@@ -59,7 +59,21 @@ Un auditor que solo sabe decir «todo bien» no sirve de nada.
   imagen. Los hallazgos sobre esos fondos se marcan con
   `fondoEstimado: true`: el número es aproximado y conviene mirarlo con
   los ojos antes de tocar nada.
-- No mide imágenes de fondo reales ni texto sobre fotografías.
+- **No mide texto sobre imágenes.** Si el fondo es una fotografía —una
+  `<img>` detrás, o un `background-image: url(...)`— no hay forma de
+  saber su color desde `getComputedStyle`, así que el auditor lo compone
+  contra el fondo de la página y da un fallo que no existe.
+
+  Caso conocido: con el panel avanzado desplegado, las etiquetas sobre
+  la ilustración de las cartas (`Mayores`, `Arcano Mayor`, …) salen en
+  torno a 1,3 en modo claro. **Son correctas**: texto claro sobre una
+  ilustración oscura. Hay una regla explícita en
+  `visual-performance-polish.css` que las mantiene claras a propósito.
+
+  Se probó a excluirlas automáticamente detectando `url()` en la cadena
+  de ancestros y salió peor: excluía 265 elementos de golpe, silenciando
+  hallazgos reales. Vale más una excepción documentada que una
+  herramienta que se calla.
 - El umbral de "ilegible" está en 3 sobre 1 y el de la norma para texto
   normal en 4,5.
 
