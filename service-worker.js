@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-astroseparado-177';
+const CACHE_NAME = 'oraculo-v1-0-public-astrohoras-visible-178';
 const APP_SHELL = [
   './',
   './index.html',
