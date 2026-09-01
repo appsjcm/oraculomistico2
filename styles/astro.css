@@ -370,6 +370,20 @@ html[data-appearance-mode="light"] .astro-wheel-wrap.astro-wheel-fullscreen .ast
   touch-action: pan-y;
 }
 
+.astro-wheel-modal-close {
+  justify-self: end;
+  min-height: 42px;
+  margin: 0 0 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(214, 188, 96, .42);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .88);
+  color: #302f37;
+  font-weight: 850;
+  line-height: 1;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
+}
+
 .astro-wheel-modal-root .astro-wheel-modal-copy {
   --wheel-size: min(96vw, calc(100svh - 114px), 880px);
   width: auto;
@@ -439,6 +453,11 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-tools bu
 
 html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption {
   color: rgba(36, 27, 46, .72);
+}
+
+html[data-appearance-mode="light"] .astro-wheel-modal-close {
+  background: rgba(255, 255, 255, .94);
+  color: #241b2e;
 }
 
 .astro-wheel {
@@ -721,6 +740,17 @@ html[data-appearance-mode="light"] .astro-wheel-modal-root .astro-wheel-caption 
   color: rgba(98, 96, 102, .72);
   font-size: clamp(.8rem, 2.4vw, 1rem);
   line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.astro-wheel-hint {
+  max-width: var(--wheel-size);
+  margin: -4px 0 0;
+  color: rgba(98, 96, 102, .64);
+  font-size: .76rem;
+  font-weight: 750;
+  line-height: 1.32;
   text-align: center;
   text-wrap: balance;
 }
@@ -1048,6 +1078,15 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
     width: min(100%, calc(var(--wheel-size) + 24px));
   }
 
+  .modal-root.open:has(.astro-grid) .astro-reading-summary {
+    order: -1;
+    margin-top: 0;
+  }
+
+  .modal-root.open:has(.astro-grid) .astro-reading-text {
+    margin-top: 12px;
+  }
+
   .astro-wheel-paper {
     padding: 10px;
     border-radius: 8px;
@@ -1154,6 +1193,12 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
 
   .astro-wheel-modal-panel {
     width: calc(100vw - 12px);
+  }
+
+  .astro-wheel-modal-close {
+    justify-self: center;
+    width: min(100%, 320px);
+    margin-bottom: 8px;
   }
 
   .astro-wheel-modal-root .astro-wheel-modal-copy {
