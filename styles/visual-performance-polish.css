@@ -718,6 +718,31 @@ html[data-appearance-mode="light"] {
     0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
 }
 
+#gearBtn.gear {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+  border-radius: 999px;
+}
+
+#gearBtn.gear > span,
+.premium-settings-fab > span {
+  display: block;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.premium-settings-fab {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
 .om-appearance-toggle,
 .icon-pill,
 .btn,
