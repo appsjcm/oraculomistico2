@@ -54,7 +54,10 @@ body::before {
   /* Al 50% el texto secundario daba 3,23:1 sobre las tarjetas claras.
      Es el que describe cada acceso del Santuario, asi que no es texto
      accesorio: se sube hasta que pasa el minimo. */
-  --om-ivory-3: rgba(36, 27, 46, .64);
+  /* El .64 dejaba las palabras clave de la carta en 4,39 sobre su
+     fondo, justo por debajo del 4,5 que pide la norma. Con .70 pasa sin
+     que el tono deje de ser el secundario que era. */
+  --om-ivory-3: rgba(36, 27, 46, .70);
   --om-on-gold: #241b2e;
   --om-polish-panel: rgba(255, 255, 255, .72);
   --om-polish-panel-deep: rgba(255, 250, 242, .84);
@@ -1303,4 +1306,54 @@ html[data-appearance-mode="dark"] body.theme-light {
   --text: #fff7ea;
   --muted: rgba(255, 247, 234, .72);
   --gold: #c9922f;
+}
+
+/* ------------------------------------------------------------------
+   El dorso de las cartas tiene color propio, no el del modo
+
+   .card-back se pinta siempre con el mismo degradado oscuro,
+   #241345 a #0b0e25, en claro y en oscuro. Pero su texto usaba las
+   variables del modo: --text para el cuerpo, --gold para el titulo y
+   --muted para el pie. En modo claro esas variables son tinta oscura,
+   asi que quedaba oscuro sobre oscuro y no se leia nada. Medido en el
+   barajado: el titulo en 2,6 y el pie en 1,06.
+
+   Una superficie de color fijo necesita tinta fija. Se le dan los
+   valores del modo oscuro, que son los que le corresponden por su
+   fondo, y asi da igual el modo y el tema que haya puestos.
+   ------------------------------------------------------------------ */
+.card-back-inner {
+  color: #fff7ea;
+}
+.card-back strong {
+  color: #f2cc65;
+}
+.card-back small {
+  color: rgba(255, 247, 234, .72);
+}
+
+/* El tema Claro tambien fuerza superficies blancas sin mirar el modo:
+   tarjetas de resultado, modales, opciones y entradas del diario a
+   blanco del 86 %, con color var(--text) encima. En Noche esa variable
+   es crema, asi que quedaba crema sobre blanco. Medido en una lectura:
+   el texto en 1,17 y el boton de IA en 1,29.
+
+   Es la otra mitad de lo mismo que ya se corrigio con las variables: en
+   Noche manda el modo tambien para las superficies, y el tema aporta su
+   acento. Los campos de texto van aparte porque el original les fija
+   tinta oscura junto al fondo blanco, y ahi hay que cambiar las dos
+   cosas a la vez o se quedan en oscuro sobre oscuro. */
+html[data-appearance-mode="dark"] body.theme-light .modal-card,
+html[data-appearance-mode="dark"] body.theme-light .result-card,
+html[data-appearance-mode="dark"] body.theme-light .choice,
+html[data-appearance-mode="dark"] body.theme-light .diary-item {
+  background: var(--panel);
+  color: var(--text);
+}
+html[data-appearance-mode="dark"] body.theme-light .input,
+html[data-appearance-mode="dark"] body.theme-light select,
+html[data-appearance-mode="dark"] body.theme-light textarea {
+  background: rgba(255, 255, 255, .08);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, .14);
 }
