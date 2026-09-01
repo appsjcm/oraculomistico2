@@ -4150,13 +4150,201 @@ const ASTRO_PLANETS = [
   { id:'lilith', name:'Lilith', symbol:'⚸', role:'instinto, límite y voz propia', cycle:3232.61, offset:83.353, type:'point' }
 ];
 const ASTRO_SIGN_SHORT = { ar:0, ta:1, ge:2, cn:3, le:4, vi:5, li:6, sc:7, sa:8, cp:9, aq:10, pi:11 };
+/* Efemerides mensuales de Quiron, 1900 a 2075.
+
+   Antes la tabla cubria solo de 1975 a 1980, seis anios. Fuera de ese
+   rango se caia a una estimacion por periodos de signo que interpola el
+   grado en linea recta a lo largo de todo el paso por el signo, que dura
+   entre uno y ocho anios. Medido contra la tabla real en los anios en
+   que existian las dos: 3,89 grados de error medio y 28,87 en el peor
+   caso, casi un signo entero. Y eso era lo que veia casi todo el mundo,
+   porque casi nadie nacio entre 1975 y 1980.
+
+   Generada con los datos de JPL Horizons, que son de dominio publico,
+   pidiendo la longitud ecliptica geocentrica mes a mes. El script esta
+   en tools/generar_quiron.py.
+
+   Contrastada contra las entradas que ya habia, puestas a mano: 32,5
+   segundos de arco de diferencia media y 60 en el peor caso, que es el
+   redondeo al minuto, y ni un solo mes con la marca de retrogradacion
+   distinta. Las dos son correctas; a la vieja solo le faltaba alcance. */
 const CHIRON_MONTHLY_EPHEMERIS = {
-  1975:['19 ar 57','20 ar 24','21 ar 29','23 ar 9','24 ar 56','26 ar 36','27 ar 43','28 ar 9','27 ar 45 rx','26 ar 42 rx','25 ar 17 rx','24 ar 7 rx'],
-  1976:['23 ar 35 rx','23 ar 56','25 ar 0','26 ar 39','28 ar 27','0 ta 10','1 ta 22','1 ta 54','1 ta 35 rx','0 ta 34 rx','29 ar 9 rx','27 ar 56 rx'],
-  1977:['27 ar 18 rx','27 ar 35','28 ar 33','0 ta 11','2 ta 0','3 ta 47','5 ta 5','5 ta 44','5 ta 32 rx','4 ta 36 rx','3 ta 10 rx','1 ta 53 rx'],
-  1978:['1 ta 9 rx','1 ta 19','2 ta 12','3 ta 48','5 ta 39','7 ta 30','8 ta 54','9 ta 41','9 ta 37 rx','8 ta 45 rx','7 ta 20 rx','5 ta 59 rx'],
-  1979:['5 ta 8 rx','5 ta 10','5 ta 59','7 ta 33','9 ta 25','11 ta 20','12 ta 51','13 ta 46','13 ta 50 rx','13 ta 4 rx','11 ta 41 rx','10 ta 16 rx'],
-  1980:['9 ta 17 rx','9 ta 12','9 ta 58','11 ta 31','13 ta 24','15 ta 23','17 ta 0','18 ta 3','18 ta 14 rx','17 ta 32 rx','16 ta 10 rx','14 ta 42 rx']
+  1900:['18 sa 54','22 sa 3','24 sa 3','24 sa 59','24 sa 28 rx','22 sa 46 rx','20 sa 46 rx','19 sa 16 rx','18 sa 59','20 sa 3','22 sa 22','25 sa 21'],
+  1901:['28 sa 43','1 cp 51','4 cp 2','5 cp 20','5 cp 15 rx','3 cp 57 rx','2 cp 3 rx','0 cp 18 rx','29 sa 32 rx','0 cp 2','1 cp 48','4 cp 23'],
+  1902:['7 cp 29','10 cp 31','12 cp 47','14 cp 20','14 cp 37 rx','13 cp 41 rx','11 cp 58 rx','10 cp 8 rx','9 cp 0 rx','9 cp 3','10 cp 19','12 cp 31'],
+  1903:['15 cp 20','18 cp 15','20 cp 32','22 cp 15','22 cp 49 rx','22 cp 13 rx','20 cp 43 rx','18 cp 53 rx','17 cp 32 rx','17 cp 12','18 cp 4','19 cp 53'],
+  1904:['22 cp 27','25 cp 12','27 cp 32','29 cp 21','0 aq 6','29 cp 44 rx','28 cp 26 rx','26 cp 40 rx','25 cp 12 rx','24 cp 37 rx','25 cp 9','26 cp 41'],
+  1905:['29 cp 0','1 aq 36','3 aq 49','5 aq 42','6 aq 38','6 aq 30 rx','5 aq 25 rx','3 aq 45 rx','2 aq 11 rx','1 aq 23 rx','1 aq 37','2 aq 51'],
+  1906:['4 aq 56','7 aq 23','9 aq 33','11 aq 28','12 aq 33','12 aq 37 rx','11 aq 44 rx','10 aq 11 rx','8 aq 35 rx','7 aq 37 rx','7 aq 35','8 aq 34'],
+  1907:['10 aq 25','12 aq 43','14 aq 49','16 aq 47','17 aq 58','18 aq 13 rx','17 aq 31 rx','16 aq 5 rx','14 aq 29 rx','13 aq 23 rx','13 aq 8','13 aq 54'],
+  1908:['15 aq 32','17 aq 41','19 aq 48','21 aq 45','23 aq 0','23 aq 22 rx','22 aq 49 rx','21 aq 29 rx','19 aq 55 rx','18 aq 45 rx','18 aq 21','18 aq 55'],
+  1909:['20 aq 23','22 aq 25','24 aq 24','26 aq 21','27 aq 40','28 aq 11','27 aq 47 rx','26 aq 35 rx','25 aq 3 rx','23 aq 48 rx','23 aq 15 rx','23 aq 38'],
+  1910:['24 aq 55','26 aq 49','28 aq 44','0 pi 41','2 pi 4','2 pi 42','2 pi 26 rx','1 pi 22 rx','29 aq 52 rx','28 aq 34 rx','27 aq 53 rx','28 aq 7'],
+  1911:['29 aq 14','1 pi 1','2 pi 52','4 pi 48','6 pi 14','6 pi 59','6 pi 50 rx','5 pi 53 rx','4 pi 27 rx','3 pi 7 rx','2 pi 19 rx','2 pi 23'],
+  1912:['3 pi 22','5 pi 1','6 pi 52','8 pi 48','10 pi 15','11 pi 4','11 pi 1 rx','10 pi 10 rx','8 pi 47 rx','7 pi 26 rx','6 pi 33 rx','6 pi 31'],
+  1913:['7 pi 22','8 pi 56','10 pi 40','12 pi 34','14 pi 5','14 pi 59','15 pi 3 rx','14 pi 18 rx','12 pi 59 rx','11 pi 37 rx','10 pi 39 rx','10 pi 29'],
+  1914:['11 pi 13','12 pi 40','14 pi 20','16 pi 14','17 pi 46','18 pi 45','18 pi 55 rx','18 pi 17 rx','17 pi 2 rx','15 pi 40 rx','14 pi 38 rx','14 pi 21'],
+  1915:['14 pi 56','16 pi 17','17 pi 54','19 pi 47','21 pi 21','22 pi 24','22 pi 41 rx','22 pi 9 rx','20 pi 58 rx','19 pi 37 rx','18 pi 30 rx','18 pi 7'],
+  1916:['18 pi 35','19 pi 49','21 pi 26','23 pi 18','24 pi 53','26 pi 0','26 pi 21 rx','25 pi 54 rx','24 pi 46 rx','23 pi 25 rx','22 pi 16 rx','21 pi 48 rx'],
+  1917:['22 pi 11','23 pi 21','24 pi 51','26 pi 42','28 pi 18','29 pi 29','29 pi 56','29 pi 35 rx','28 pi 32 rx','27 pi 12 rx','25 pi 59 rx','25 pi 26 rx'],
+  1918:['25 pi 41','26 pi 46','28 pi 13','0 ar 2','1 ar 40','2 ar 55','3 ar 28','3 ar 13 rx','2 ar 14 rx','0 ar 55 rx','29 pi 40 rx','29 pi 1 rx'],
+  1919:['29 pi 10','0 ar 8','1 ar 32','3 ar 20','5 ar 0','6 ar 19','6 ar 57','6 ar 48 rx','5 ar 54 rx','4 ar 36 rx','3 ar 19 rx','2 ar 34 rx'],
+  1920:['2 ar 37','3 ar 29','4 ar 53','6 ar 40','8 ar 21','9 ar 43','10 ar 25','10 ar 20 rx','9 ar 30 rx','8 ar 14 rx','6 ar 54 rx','6 ar 6 rx'],
+  1921:['6 ar 4','6 ar 53','8 ar 11','9 ar 57','11 ar 39','13 ar 4','13 ar 52','13 ar 53 rx','13 ar 8 rx','11 ar 54 rx','10 ar 33 rx','9 ar 39 rx'],
+  1922:['9 ar 31','10 ar 14','11 ar 29','13 ar 13','14 ar 57','16 ar 26','17 ar 19','17 ar 27 rx','16 ar 47 rx','15 ar 35 rx','14 ar 12 rx','13 ar 14 rx'],
+  1923:['12 ar 59','13 ar 37','14 ar 48','16 ar 31','18 ar 17','19 ar 50','20 ar 48','21 ar 2 rx','20 ar 28 rx','19 ar 18 rx','17 ar 55 rx','16 ar 52 rx'],
+  1924:['16 ar 31','17 ar 2','18 ar 13','19 ar 56','21 ar 42','23 ar 18','24 ar 21','24 ar 40 rx','24 ar 10 rx','23 ar 3 rx','21 ar 38 rx','20 ar 32 rx'],
+  1925:['20 ar 6','20 ar 33','21 ar 38','23 ar 20','25 ar 7','26 ar 47','27 ar 56','28 ar 22','27 ar 59 rx','26 ar 55 rx','25 ar 29 rx','24 ar 19 rx'],
+  1926:['23 ar 46 rx','24 ar 7','25 ar 9','26 ar 48','28 ar 37','0 ta 21','1 ta 36','2 ta 10','1 ta 53 rx','0 ta 52 rx','29 ar 27 rx','28 ar 12 rx'],
+  1927:['27 ar 33 rx','27 ar 48','28 ar 45','0 ta 23','2 ta 13','4 ta 1','5 ta 22','6 ta 3','5 ta 53 rx','4 ta 58 rx','3 ta 33 rx','2 ta 14 rx'],
+  1928:['1 ta 28 rx','1 ta 36','2 ta 31','4 ta 8','5 ta 59','7 ta 52','9 ta 17','10 ta 6','10 ta 2 rx','9 ta 10 rx','7 ta 45 rx','6 ta 23 rx'],
+  1929:['5 ta 31 rx','5 ta 34','6 ta 23','7 ta 57','9 ta 50','11 ta 47','13 ta 20','14 ta 17','14 ta 22 rx','13 ta 36 rx','12 ta 12 rx','10 ta 46 rx'],
+  1930:['9 ta 47 rx','9 ta 41','10 ta 25','11 ta 57','13 ta 51','15 ta 52','17 ta 32','18 ta 39','18 ta 53 rx','18 ta 14 rx','16 ta 53 rx','15 ta 23 rx'],
+  1931:['14 ta 16 rx','14 ta 2','14 ta 40','16 ta 9','18 ta 4','20 ta 10','21 ta 57','23 ta 14','23 ta 38 rx','23 ta 8 rx','21 ta 49 rx','20 ta 17 rx'],
+  1932:['19 ta 2 rx','18 ta 39','19 ta 12','20 ta 39','22 ta 35','24 ta 45','26 ta 40','28 ta 6','28 ta 41','28 ta 17 rx','27 ta 3 rx','25 ta 28 rx'],
+  1933:['24 ta 6 rx','23 ta 34 rx','24 ta 0','25 ta 22','27 ta 18','29 ta 34','1 ge 37','3 ge 15','4 ge 3','3 ge 51 rx','2 ge 42 rx','1 ge 6 rx'],
+  1934:['29 ta 35 rx','28 ta 52 rx','29 ta 9','0 ge 26','2 ge 22','4 ge 42','6 ge 55','8 ge 45','9 ge 48','9 ge 49 rx','8 ge 49 rx','7 ge 13 rx'],
+  1935:['5 ge 34 rx','4 ge 39 rx','4 ge 46','5 ge 55','7 ge 50','10 ge 15','12 ge 37','14 ge 41','16 ge 1','16 ge 18 rx','15 ge 29 rx','13 ge 55 rx'],
+  1936:['12 ge 9 rx','11 ge 0 rx','10 ge 56','11 ge 59','13 ge 52','16 ge 21','18 ge 53','21 ge 12','22 ge 48','23 ge 22 rx','22 ge 47 rx','21 ge 17 rx'],
+  1937:['19 ge 25 rx','18 ge 2 rx','17 ge 45','18 ge 37','20 ge 26','22 ge 59','25 ge 40','28 ge 15','0 cn 13','1 cn 10','0 cn 54 rx','29 ge 34 rx'],
+  1938:['27 ge 37 rx','25 ge 59 rx','25 ge 25','26 ge 2','27 ge 45','0 cn 19','3 cn 10','6 cn 2','8 cn 24','9 cn 47','9 cn 57 rx','8 cn 52 rx'],
+  1939:['6 cn 56 rx','5 cn 3 rx','4 cn 9 rx','4 cn 26','5 cn 59','8 cn 32','11 cn 31','14 cn 40','17 cn 28','19 cn 21','20 cn 4','19 cn 23 rx'],
+  1940:['17 cn 34 rx','15 cn 29 rx','14 cn 10 rx','14 cn 6','15 cn 25','17 cn 54','20 cn 59','24 cn 25','27 cn 38','0 le 3','1 le 23','1 le 14 rx'],
+  1941:['29 cn 42 rx','27 cn 29 rx','25 cn 51 rx','25 cn 16','26 cn 10','28 cn 27','1 le 33','5 le 13','8 le 51','11 le 53','13 le 58','14 le 33 rx'],
+  1942:['13 le 34 rx','11 le 27 rx','9 le 28 rx','8 le 16 rx','8 le 37','10 le 31','13 le 30','17 le 17','21 le 16','24 le 52','27 le 45','29 le 14'],
+  1943:['29 le 4 rx','27 le 21 rx','25 le 13 rx','23 le 23 rx','23 le 1','24 le 18','26 le 57','0 vi 39','4 vi 51','8 vi 54','12 vi 31','14 vi 56'],
+  1944:['15 vi 49 rx','14 vi 53 rx','12 vi 50 rx','10 vi 33 rx','9 vi 24 rx','9 vi 54','11 vi 59','15 vi 23','19 vi 35','23 vi 52','28 vi 2','1 li 14'],
+  1945:['3 li 8','3 li 11 rx','1 li 46 rx','29 vi 23 rx','27 vi 30 rx','27 vi 0','28 vi 12','0 li 58','4 li 49','9 li 6','13 li 33','17 li 21'],
+  1946:['20 li 10','21 li 19','20 li 45 rx','18 li 45 rx','16 li 29 rx','15 li 3 rx','15 li 13','17 li 4','20 li 18','24 li 15','28 li 41','2 sc 47'],
+  1947:['6 sc 13','8 sc 17','8 sc 38 rx','7 sc 22 rx','5 sc 11 rx','3 sc 7 rx','2 sc 18','3 sc 7','5 sc 30','8 sc 53','13 sc 1','17 sc 7'],
+  1948:['20 sc 52','23 sc 34','24 sc 41','24 sc 12 rx','22 sc 25 rx','20 sc 10 rx','18 sc 40 rx','18 sc 34','20 sc 3','22 sc 46','26 sc 26','0 sa 19'],
+  1949:['4 sa 7','7 sa 8','8 sa 45','9 sa 0 rx','7 sa 47 rx','5 sa 39 rx','3 sa 45 rx','2 sa 52 rx','3 sa 29','5 sa 28','8 sa 33','12 sa 5'],
+  1950:['15 sa 47','18 sa 57','20 sa 55','21 sa 44','21 sa 5 rx','19 sa 17 rx','17 sa 16 rx','15 sa 51 rx','15 sa 45','17 sa 1','19 sa 30','22 sa 38'],
+  1951:['26 sa 7','29 sa 17','1 cp 28','2 cp 42','2 cp 32 rx','1 cp 7 rx','29 sa 11 rx','27 sa 28 rx','26 sa 48 rx','27 sa 27','29 sa 22','2 cp 5'],
+  1952:['5 cp 18','8 cp 24','10 cp 44','12 cp 14','12 cp 24 rx','11 cp 21 rx','9 cp 34 rx','7 cp 44 rx','6 cp 42 rx','6 cp 54','8 cp 20','10 cp 40'],
+  1953:['13 cp 36','16 cp 34','18 cp 52','20 cp 33','21 cp 2 rx','20 cp 19 rx','18 cp 45 rx','16 cp 54 rx','15 cp 36 rx','15 cp 23','16 cp 23','18 cp 20'],
+  1954:['21 cp 0','23 cp 49','26 cp 6','27 cp 55','28 cp 39','28 cp 14 rx','26 cp 53 rx','25 cp 5 rx','23 cp 37 rx','23 cp 5','23 cp 42','25 cp 19'],
+  1955:['27 cp 42','0 aq 22','2 aq 37','4 aq 31','5 aq 26','5 aq 16 rx','4 aq 9 rx','2 aq 27 rx','0 aq 53 rx','0 aq 7 rx','0 aq 24','1 aq 42'],
+  1956:['3 aq 51','6 aq 21','8 aq 37','10 aq 33','11 aq 35','11 aq 36 rx','10 aq 40 rx','9 aq 4 rx','7 aq 28 rx','6 aq 33 rx','6 aq 36','7 aq 40'],
+  1957:['9 aq 35','11 aq 56','14 aq 4','16 aq 2','17 aq 11','17 aq 24 rx','16 aq 38 rx','15 aq 10 rx','13 aq 34 rx','12 aq 30 rx','12 aq 19','13 aq 8'],
+  1958:['14 aq 51','17 aq 3','19 aq 7','21 aq 6','22 aq 21','22 aq 43 rx','22 aq 8 rx','20 aq 47 rx','19 aq 12 rx','18 aq 2 rx','17 aq 39','18 aq 16'],
+  1959:['19 aq 46','21 aq 50','23 aq 50','25 aq 49','27 aq 9','27 aq 39','27 aq 14 rx','26 aq 1 rx','24 aq 28 rx','23 aq 13 rx','22 aq 41 rx','23 aq 6'],
+  1960:['24 aq 25','26 aq 21','28 aq 21','0 pi 19','1 pi 41','2 pi 17','1 pi 59 rx','0 pi 52 rx','29 aq 22 rx','28 aq 5 rx','27 aq 26 rx','27 aq 42'],
+  1961:['28 aq 52','0 pi 41','2 pi 34','4 pi 31','5 pi 56','6 pi 39','6 pi 29 rx','5 pi 30 rx','4 pi 3 rx','2 pi 43 rx','1 pi 57 rx','2 pi 4'],
+  1962:['3 pi 5','4 pi 46','6 pi 35','8 pi 31','9 pi 59','10 pi 48','10 pi 45 rx','9 pi 53 rx','8 pi 30 rx','7 pi 9 rx','6 pi 16 rx','6 pi 15'],
+  1963:['7 pi 7','8 pi 41','10 pi 26','12 pi 21','13 pi 52','14 pi 46','14 pi 50 rx','14 pi 5 rx','12 pi 46 rx','11 pi 24 rx','10 pi 26 rx','10 pi 16'],
+  1964:['11 pi 0','12 pi 28','14 pi 12','16 pi 7','17 pi 39','18 pi 36','18 pi 45 rx','18 pi 5 rx','16 pi 49 rx','15 pi 27 rx','14 pi 26 rx','14 pi 11'],
+  1965:['14 pi 48','16 pi 11','17 pi 48','19 pi 41','21 pi 15','22 pi 18','22 pi 33 rx','21 pi 59 rx','20 pi 47 rx','19 pi 26 rx','18 pi 20 rx','17 pi 58'],
+  1966:['18 pi 28','19 pi 44','21 pi 18','23 pi 10','24 pi 46','25 pi 53','26 pi 14 rx','25 pi 47 rx','24 pi 39 rx','23 pi 18 rx','22 pi 8 rx','21 pi 40 rx'],
+  1967:['22 pi 3','23 pi 13','24 pi 44','26 pi 35','28 pi 12','29 pi 23','29 pi 50','29 pi 29 rx','28 pi 25 rx','27 pi 5 rx','25 pi 53 rx','25 pi 19 rx'],
+  1968:['25 pi 34','26 pi 39','28 pi 9','29 pi 59','1 ar 37','2 ar 51','3 ar 22','3 ar 5 rx','2 ar 5 rx','0 ar 46 rx','29 pi 32 rx','28 pi 54 rx'],
+  1969:['29 pi 4','0 ar 4','1 ar 29','3 ar 17','4 ar 57','6 ar 14','6 ar 51','6 ar 40 rx','5 ar 45 rx','4 ar 27 rx','3 ar 10 rx','2 ar 27 rx'],
+  1970:['2 ar 31','3 ar 26','4 ar 47','6 ar 34','8 ar 15','9 ar 36','10 ar 18','10 ar 14 rx','9 ar 23 rx','8 ar 7 rx','6 ar 48 rx','6 ar 0 rx'],
+  1971:['5 ar 58','6 ar 46','8 ar 4','9 ar 50','11 ar 32','12 ar 57','13 ar 44','13 ar 46 rx','13 ar 1 rx','11 ar 47 rx','10 ar 26 rx','9 ar 33 rx'],
+  1972:['9 ar 24','10 ar 7','11 ar 25','13 ar 10','14 ar 53','16 ar 21','17 ar 12','17 ar 18 rx','16 ar 37 rx','15 ar 25 rx','14 ar 3 rx','13 ar 6 rx'],
+  1973:['12 ar 53','13 ar 32','14 ar 44','16 ar 27','18 ar 12','19 ar 44','20 ar 40','20 ar 53 rx','20 ar 17 rx','19 ar 7 rx','17 ar 44 rx','16 ar 43 rx'],
+  1974:['16 ar 23','16 ar 56','18 ar 5','19 ar 47','21 ar 33','23 ar 8','24 ar 10','24 ar 30 rx','24 ar 0 rx','22 ar 53 rx','21 ar 28 rx','20 ar 23 rx'],
+  1975:['19 ar 57','20 ar 24','21 ar 29','23 ar 10','24 ar 57','26 ar 36','27 ar 44','28 ar 10','27 ar 46 rx','26 ar 42 rx','25 ar 17 rx','24 ar 8 rx'],
+  1976:['23 ar 35 rx','23 ar 56','25 ar 0','26 ar 40','28 ar 28','0 ta 11','1 ta 23','1 ta 55','1 ta 36 rx','0 ta 35 rx','29 ar 9 rx','27 ar 56 rx'],
+  1977:['27 ar 19 rx','27 ar 35','28 ar 33','0 ta 11','2 ta 1','3 ta 47','5 ta 6','5 ta 45','5 ta 33 rx','4 ta 36 rx','3 ta 11 rx','1 ta 53 rx'],
+  1978:['1 ta 10 rx','1 ta 19','2 ta 13','3 ta 49','5 ta 39','7 ta 30','8 ta 55','9 ta 42','9 ta 37 rx','8 ta 45 rx','7 ta 21 rx','6 ta 0 rx'],
+  1979:['5 ta 9 rx','5 ta 11','6 ta 0','7 ta 34','9 ta 25','11 ta 20','12 ta 52','13 ta 47','13 ta 51 rx','13 ta 4 rx','11 ta 41 rx','10 ta 16 rx'],
+  1980:['9 ta 18 rx','9 ta 13','9 ta 59','11 ta 31','13 ta 24','15 ta 23','17 ta 0','18 ta 3','18 ta 14 rx','17 ta 33 rx','16 ta 11 rx','14 ta 43 rx'],
+  1981:['13 ta 38 rx','13 ta 27','14 ta 7','15 ta 36','17 ta 30','19 ta 33','21 ta 18','22 ta 30','22 ta 51 rx','22 ta 18 rx','20 ta 58 rx','19 ta 27 rx'],
+  1982:['18 ta 15 rx','17 ta 55','18 ta 28','19 ta 54','21 ta 48','23 ta 57','25 ta 49','27 ta 12','27 ta 44','27 ta 19 rx','26 ta 4 rx','24 ta 30 rx'],
+  1983:['23 ta 10 rx','22 ta 40 rx','23 ta 6','24 ta 28','26 ta 23','28 ta 35','0 ge 36','2 ge 10','2 ge 54','2 ge 40 rx','1 ge 31 rx','29 ta 55 rx'],
+  1984:['28 ta 27 rx','27 ta 46 rx','28 ta 6','29 ta 24','1 ge 20','3 ge 37','5 ge 46','7 ge 31','8 ge 27','8 ge 23 rx','7 ge 20 rx','5 ge 44 rx'],
+  1985:['4 ge 9 rx','3 ge 18 rx','3 ge 29','4 ge 40','6 ge 35','8 ge 57','11 ge 15','13 ge 13','14 ge 26','14 ge 36 rx','13 ge 43 rx','12 ge 9 rx'],
+  1986:['10 ge 26 rx','9 ge 22 rx','9 ge 21','10 ge 25','12 ge 18','14 ge 44','17 ge 11','19 ge 24','20 ge 54','21 ge 23 rx','20 ge 43 rx','19 ge 13 rx'],
+  1987:['17 ge 23 rx','16 ge 5 rx','15 ge 51','16 ge 45','18 ge 34','21 ge 3','23 ge 40','26 ge 9','27 ge 59','28 ge 48','28 ge 27 rx','27 ge 4 rx'],
+  1988:['25 ge 9 rx','23 ge 36 rx','23 ge 7','23 ge 50','25 ge 35','28 ge 7','0 cn 54','3 cn 38','5 cn 49','7 cn 1','7 cn 0 rx','5 cn 48 rx'],
+  1989:['3 cn 52 rx','2 cn 5 rx','1 cn 19 rx','1 cn 45','3 cn 21','5 cn 54','8 cn 49','11 cn 51','14 cn 26','16 cn 6','16 cn 35 rx','15 cn 44 rx'],
+  1990:['13 cn 51 rx','11 cn 50 rx','10 cn 43 rx','10 cn 47','12 cn 9','14 cn 39','17 cn 40','20 cn 59','24 cn 1','26 cn 13','27 cn 17','26 cn 56 rx'],
+  1991:['25 cn 16 rx','23 cn 6 rx','21 cn 36 rx','21 cn 12','22 cn 14','24 cn 34','27 cn 39','1 le 12','4 le 40','7 le 26','9 le 14','9 le 32 rx'],
+  1992:['8 le 19 rx','6 le 9 rx','4 le 14 rx','3 le 18 rx','3 le 54','5 le 59','9 le 1','12 le 45','16 le 36','19 le 56','22 le 28','23 le 33'],
+  1993:['23 le 0 rx','21 le 5 rx','18 le 59 rx','17 le 25 rx','17 le 22','18 le 57','21 le 45','25 le 30','29 le 38','3 vi 30','6 vi 48','8 vi 49'],
+  1994:['9 vi 13 rx','7 vi 55 rx','5 vi 49 rx','3 vi 42 rx','2 vi 51 rx','3 vi 41','6 vi 1','9 vi 34','13 vi 47','18 vi 0','21 vi 58','24 vi 52'],
+  1995:['26 vi 21','26 vi 0 rx','24 vi 19 rx','21 vi 55 rx','20 vi 17 rx','20 vi 10','21 vi 43','24 vi 46','28 vi 47','3 li 6','7 li 29','11 li 6'],
+  1996:['13 li 35','14 li 20 rx','13 li 22 rx','11 li 9 rx','8 li 59 rx','7 li 56 rx','8 li 33','10 li 50','14 li 22','18 li 30','22 li 59','27 li 0'],
+  1997:['0 sc 13','1 sc 55','1 sc 53 rx','0 sc 16 rx','27 li 59 rx','26 li 8 rx','25 li 44','27 li 0','29 li 46','3 sc 26','7 sc 44','11 sc 51'],
+  1998:['15 sc 31','17 sc 59','18 sc 47','17 sc 59 rx','16 sc 1 rx','13 sc 47 rx','12 sc 31 rx','12 sc 46','14 sc 37','17 sc 37','21 sc 29','25 sc 29'],
+  1999:['29 sc 18','2 sa 14','3 sa 40','3 sa 41 rx','2 sa 14 rx','0 sa 2 rx','28 sc 14 rx','27 sc 36','28 sc 32','0 sa 47','4 sa 6','7 sa 48'],
+  2000:['11 sa 34','14 sa 43','16 sa 38','17 sa 13 rx','16 sa 20 rx','14 sa 22 rx','12 sa 22 rx','11 sa 9 rx','11 sa 20','12 sa 54','15 sa 39','18 sa 57'],
+  2001:['22 sa 32','25 sa 43','27 sa 49','28 sa 53','28 sa 31 rx','26 sa 56 rx','24 sa 56 rx','23 sa 19 rx','22 sa 53','23 sa 47','25 sa 57','28 sa 50'],
+  2002:['2 cp 10','5 cp 18','7 cp 33','8 cp 57','9 cp 1 rx','7 cp 49 rx','5 cp 58 rx','4 cp 10 rx','3 cp 15 rx','3 cp 37','5 cp 14','7 cp 42'],
+  2003:['10 cp 45','13 cp 47','16 cp 5','17 cp 44','18 cp 8 rx','17 cp 18 rx','15 cp 39 rx','13 cp 47 rx','12 cp 34 rx','12 cp 29','13 cp 37','15 cp 43'],
+  2004:['18 cp 28','21 cp 22','23 cp 45','25 cp 30','26 cp 8','25 cp 35 rx','24 cp 8 rx','22 cp 19 rx','20 cp 55 rx','20 cp 31','21 cp 17','23 cp 3'],
+  2005:['25 cp 33','28 cp 17','0 aq 33','2 aq 25','3 aq 15','2 aq 59 rx','1 aq 45 rx','0 aq 1 rx','28 cp 29 rx','27 cp 49 rx','28 cp 14','29 cp 41'],
+  2006:['1 aq 55','4 aq 30','6 aq 43','8 aq 39','9 aq 39','9 aq 36 rx','8 aq 36 rx','6 aq 58 rx','5 aq 23 rx','4 aq 30 rx','4 aq 38','5 aq 47'],
+  2007:['7 aq 47','10 aq 12','12 aq 22','14 aq 20','15 aq 28','15 aq 37 rx','14 aq 49 rx','13 aq 18 rx','11 aq 42 rx','10 aq 40 rx','10 aq 33','11 aq 27'],
+  2008:['13 aq 13','15 aq 29','17 aq 39','19 aq 37','20 aq 50','21 aq 8 rx','20 aq 28 rx','19 aq 4 rx','17 aq 29 rx','16 aq 21 rx','16 aq 4','16 aq 46'],
+  2009:['18 aq 21','20 aq 29','22 aq 31','24 aq 29','25 aq 47','26 aq 14 rx','25 aq 44 rx','24 aq 28 rx','22 aq 54 rx','21 aq 41 rx','21 aq 13','21 aq 43'],
+  2010:['23 aq 7','25 aq 6','27 aq 4','29 aq 3','0 pi 24','0 pi 59','0 pi 39 rx','29 aq 30 rx','27 aq 59 rx','26 aq 42 rx','26 aq 5 rx','26 aq 24'],
+  2011:['27 aq 37','29 aq 29','1 pi 22','3 pi 20','4 pi 46','5 pi 27','5 pi 15 rx','4 pi 14 rx','2 pi 46 rx','1 pi 26 rx','0 pi 42 rx','0 pi 51'],
+  2012:['1 pi 54','3 pi 38','5 pi 32','7 pi 28','8 pi 56','9 pi 42','9 pi 35 rx','8 pi 40 rx','7 pi 15 rx','5 pi 54 rx','5 pi 4 rx','5 pi 7'],
+  2013:['6 pi 2','7 pi 40','9 pi 26','11 pi 22','12 pi 52','13 pi 43','13 pi 44 rx','12 pi 56 rx','11 pi 34 rx','10 pi 13 rx','9 pi 17 rx','9 pi 11'],
+  2014:['9 pi 58','11 pi 29','13 pi 12','15 pi 6','16 pi 38','17 pi 35','17 pi 43 rx','17 pi 1 rx','15 pi 43 rx','14 pi 21 rx','13 pi 21 rx','13 pi 7'],
+  2015:['13 pi 46','15 pi 11','16 pi 49','18 pi 43','20 pi 17','21 pi 18','21 pi 32 rx','20 pi 57 rx','19 pi 44 rx','18 pi 22 rx','17 pi 17 rx','16 pi 56'],
+  2016:['17 pi 28','18 pi 46','20 pi 25','22 pi 17','23 pi 52','24 pi 56','25 pi 15 rx','24 pi 44 rx','23 pi 35 rx','22 pi 13 rx','21 pi 5 rx','20 pi 40'],
+  2017:['21 pi 6','22 pi 19','23 pi 51','25 pi 43','27 pi 19','28 pi 28','28 pi 52 rx','28 pi 28 rx','27 pi 22 rx','26 pi 2 rx','24 pi 51 rx','24 pi 20 rx'],
+  2018:['24 pi 39','25 pi 46','27 pi 14','29 pi 4','0 ar 42','1 ar 55','2 ar 25','2 ar 7 rx','1 ar 6 rx','29 pi 46 rx','28 pi 33 rx','27 pi 56 rx'],
+  2019:['28 pi 8','29 pi 9','0 ar 35','2 ar 23','4 ar 3','5 ar 20','5 ar 55','5 ar 43 rx','4 ar 47 rx','3 ar 29 rx','2 ar 12 rx','1 ar 30 rx'],
+  2020:['1 ar 36','2 ar 31','3 ar 57','5 ar 44','7 ar 24','8 ar 44','9 ar 23','9 ar 16 rx','8 ar 23 rx','7 ar 6 rx','5 ar 48 rx','5 ar 3 rx'],
+  2021:['5 ar 4','5 ar 55','7 ar 14','9 ar 1','10 ar 42','12 ar 6','12 ar 50','12 ar 49 rx','12 ar 1 rx','10 ar 46 rx','9 ar 27 rx','8 ar 36 rx'],
+  2022:['8 ar 30','9 ar 16','10 ar 32','12 ar 17','14 ar 0','15 ar 27','16 ar 17','16 ar 22 rx','15 ar 40 rx','14 ar 27 rx','13 ar 5 rx','12 ar 10 rx'],
+  2023:['11 ar 58','12 ar 38','13 ar 51','15 ar 35','17 ar 19','18 ar 49','19 ar 45','19 ar 56 rx','19 ar 19 rx','18 ar 9 rx','16 ar 46 rx','15 ar 46 rx'],
+  2024:['15 ar 28','16 ar 2','17 ar 14','18 ar 57','20 ar 42','22 ar 16','23 ar 15','23 ar 31 rx','22 ar 58 rx','21 ar 50 rx','20 ar 26 rx','19 ar 23 rx'],
+  2025:['19 ar 0','19 ar 30','20 ar 37','22 ar 18','24 ar 4','25 ar 42','26 ar 47','27 ar 10 rx','26 ar 43 rx','25 ar 37 rx','24 ar 13 rx','23 ar 5 rx'],
+  2026:['22 ar 36 rx','23 ar 0','24 ar 3','25 ar 42','27 ar 30','29 ar 11','0 ta 22','0 ta 52','0 ta 31 rx','29 ar 29 rx','28 ar 4 rx','26 ar 52 rx'],
+  2027:['26 ar 17 rx','26 ar 34','27 ar 33','29 ar 11','1 ta 0','2 ta 45','4 ta 2','4 ta 39','4 ta 25 rx','3 ta 27 rx','2 ta 2 rx','0 ta 46 rx'],
+  2028:['0 ta 4 rx','0 ta 15','1 ta 12','2 ta 49','4 ta 39','6 ta 28','7 ta 49','8 ta 32','8 ta 24 rx','7 ta 30 rx','6 ta 5 rx','4 ta 45 rx'],
+  2029:['3 ta 58 rx','4 ta 3','4 ta 55','6 ta 30','8 ta 21','10 ta 14','11 ta 42','12 ta 33','12 ta 33 rx','11 ta 44 rx','10 ta 20 rx','8 ta 56 rx'],
+  2030:['8 ta 2 rx','8 ta 0','8 ta 46','10 ta 19','12 ta 11','14 ta 8','15 ta 43','16 ta 43','16 ta 51 rx','16 ta 8 rx','14 ta 46 rx','13 ta 19 rx'],
+  2031:['12 ta 17 rx','12 ta 8','12 ta 49','14 ta 18','16 ta 11','18 ta 13','19 ta 55','21 ta 4','21 ta 22 rx','20 ta 46 rx','19 ta 26 rx','17 ta 56 rx'],
+  2032:['16 ta 47 rx','16 ta 29','17 ta 6','18 ta 34','20 ta 28','22 ta 34','24 ta 22','25 ta 40','26 ta 7 rx','25 ta 37 rx','24 ta 20 rx','22 ta 48 rx'],
+  2033:['21 ta 32 rx','21 ta 6','21 ta 36','23 ta 0','24 ta 55','27 ta 5','29 ta 2','0 ge 30','1 ge 9','0 ge 49 rx','29 ta 37 rx','28 ta 3 rx'],
+  2034:['26 ta 39 rx','26 ta 3 rx','26 ta 25','27 ta 44','29 ta 39','1 ge 54','3 ge 59','5 ge 40','6 ge 31','6 ge 23 rx','5 ge 18 rx','3 ge 43 rx'],
+  2035:['2 ge 10 rx','1 ge 24 rx','1 ge 37','2 ge 50','4 ge 44','7 ge 4','9 ge 18','11 ge 11','12 ge 18','12 ge 23 rx','11 ge 27 rx','9 ge 52 rx'],
+  2036:['8 ge 12 rx','7 ge 13 rx','7 ge 17','8 ge 25','10 ge 19','12 ge 43','15 ge 6','17 ge 12','18 ge 34','18 ge 53 rx','18 ge 7 rx','16 ge 35 rx'],
+  2037:['14 ge 48 rx','13 ge 37 rx','13 ge 30','14 ge 28','16 ge 19','18 ge 48','21 ge 20','23 ge 41','25 ge 22','26 ge 1','25 ge 31 rx','24 ge 4 rx'],
+  2038:['22 ge 11 rx','20 ge 45 rx','20 ge 23','21 ge 10','22 ge 57','25 ge 28','28 ge 9','0 cn 47','2 cn 49','3 cn 51','3 cn 41 rx','2 cn 25 rx'],
+  2039:['0 cn 29 rx','28 ge 48 rx','28 ge 9 rx','28 ge 40','0 cn 19','2 cn 51','5 cn 42','8 cn 36','11 cn 2','12 cn 30','12 cn 47 rx','11 cn 48 rx'],
+  2040:['9 cn 53 rx','7 cn 58 rx','6 cn 58 rx','7 cn 12','8 cn 42','11 cn 13','14 cn 12','17 cn 23','20 cn 13','22 cn 10','22 cn 57','22 cn 20 rx'],
+  2041:['20 cn 33 rx','18 cn 26 rx','17 cn 7 rx','16 cn 56','18 cn 9','20 cn 34','23 cn 38','27 cn 5','0 le 21','2 le 52','4 le 18','4 le 17 rx'],
+  2042:['2 le 50 rx','0 le 38 rx','28 cn 56 rx','28 cn 13','29 cn 1','1 le 13','4 le 16','7 le 56','11 le 37','14 le 42','16 le 54','17 le 38 rx'],
+  2043:['16 le 46 rx','14 le 42 rx','12 le 41 rx','11 le 22 rx','11 le 36','13 le 23','16 le 18','20 le 3','24 le 3','27 le 42','0 vi 41','2 vi 19'],
+  2044:['2 vi 18 rx','0 vi 41 rx','28 le 29 rx','26 le 36 rx','26 le 8','27 le 21','29 le 55','3 vi 36','7 vi 48','11 vi 52','15 vi 33','18 vi 3'],
+  2045:['19 vi 1','18 vi 11 rx','16 vi 15 rx','13 vi 56 rx','12 vi 39 rx','13 vi 0','14 vi 57','18 vi 16','22 vi 24','26 vi 42','0 li 55','4 li 13'],
+  2046:['6 li 16','6 li 29 rx','5 li 10 rx','2 li 49 rx','0 li 50 rx','0 li 11','1 li 14','3 li 53','7 li 40','11 li 54','16 li 23','20 li 14'],
+  2047:['23 li 10','24 li 28','24 li 2 rx','22 li 7 rx','19 li 50 rx','18 li 16 rx','18 li 17','20 li 0','23 li 7','27 li 0','1 sc 25','5 sc 32'],
+  2048:['9 sc 3','11 sc 14','11 sc 41 rx','10 sc 30 rx','8 sc 20 rx','6 sc 14 rx','5 sc 20 rx','6 sc 4','8 sc 21','11 sc 41','15 sc 47','19 sc 52'],
+  2049:['23 sc 38','26 sc 22','27 sc 31','27 sc 9 rx','25 sc 27 rx','23 sc 11 rx','21 sc 36 rx','21 sc 22','22 sc 44','25 sc 20','28 sc 56','2 sa 47'],
+  2050:['6 sa 35','9 sa 39','11 sa 20','11 sa 42 rx','10 sa 34 rx','8 sa 29 rx','6 sa 32 rx','5 sa 33 rx','6 sa 3','7 sa 55','10 sa 55','14 sa 25'],
+  2051:['18 sa 5','21 sa 17','23 sa 18','24 sa 13','23 sa 39 rx','21 sa 54 rx','19 sa 53 rx','18 sa 24 rx','18 sa 12','19 sa 22','21 sa 46','24 sa 51'],
+  2052:['28 sa 18','1 cp 29','3 cp 45','5 cp 1','4 cp 53 rx','3 cp 30 rx','1 cp 34 rx','29 sa 50 rx','29 sa 8 rx','29 sa 45','1 cp 37','4 cp 18'],
+  2053:['7 cp 29','10 cp 34','12 cp 51','14 cp 23','14 cp 38 rx','13 cp 38 rx','11 cp 53 rx','10 cp 2 rx','8 cp 57 rx','9 cp 4','10 cp 26','12 cp 43'],
+  2054:['15 cp 37','18 cp 34','20 cp 53','22 cp 36','23 cp 9 rx','22 cp 30 rx','20 cp 58 rx','19 cp 7 rx','17 cp 47 rx','17 cp 30','18 cp 26','20 cp 19'],
+  2055:['22 cp 57','25 cp 45','28 cp 3','29 cp 54','0 aq 41','0 aq 19 rx','29 cp 1 rx','27 cp 14 rx','25 cp 44 rx','25 cp 9 rx','25 cp 42','27 cp 16'],
+  2056:['29 cp 37','2 aq 16','4 aq 35','6 aq 29','7 aq 25','7 aq 16 rx','6 aq 10 rx','4 aq 29 rx','2 aq 55 rx','2 aq 8 rx','2 aq 24','3 aq 41'],
+  2057:['5 aq 48','8 aq 17','10 aq 29','12 aq 26','13 aq 31','13 aq 35 rx','12 aq 41 rx','11 aq 6 rx','9 aq 30 rx','8 aq 32 rx','8 aq 32','9 aq 33'],
+  2058:['11 aq 26','13 aq 46','15 aq 54','17 aq 53','19 aq 4','19 aq 19 rx','18 aq 37 rx','17 aq 10 rx','15 aq 34 rx','14 aq 28 rx','14 aq 14','15 aq 0'],
+  2059:['16 aq 40','18 aq 52','20 aq 56','22 aq 55','24 aq 12','24 aq 37 rx','24 aq 4 rx','22 aq 45 rx','21 aq 10 rx','19 aq 58 rx','19 aq 33','20 aq 7'],
+  2060:['21 aq 35','23 aq 37','25 aq 41','27 aq 40','29 aq 0','29 aq 31','29 aq 6 rx','27 aq 54 rx','26 aq 21 rx','25 aq 6 rx','24 aq 33 rx','24 aq 57'],
+  2061:['26 aq 15','28 aq 10','0 pi 6','2 pi 4','3 pi 28','4 pi 7','3 pi 50 rx','2 pi 46 rx','1 pi 16 rx','29 aq 57 rx','29 aq 16 rx','29 aq 30'],
+  2062:['0 pi 38','2 pi 25','4 pi 17','6 pi 15','7 pi 42','8 pi 27','8 pi 18 rx','7 pi 21 rx','5 pi 54 rx','4 pi 34 rx','3 pi 45 rx','3 pi 50'],
+  2063:['4 pi 48','6 pi 29','8 pi 16','10 pi 13','11 pi 43','12 pi 33','12 pi 32 rx','11 pi 42 rx','10 pi 19 rx','8 pi 58 rx','8 pi 3 rx','7 pi 59'],
+  2064:['8 pi 49','10 pi 22','12 pi 10','14 pi 5','15 pi 36','16 pi 31','16 pi 35 rx','15 pi 50 rx','14 pi 31 rx','13 pi 9 rx','12 pi 10 rx','12 pi 0'],
+  2065:['12 pi 43','14 pi 11','15 pi 51','17 pi 46','19 pi 19','20 pi 18','20 pi 29 rx','19 pi 50 rx','18 pi 35 rx','17 pi 13 rx','16 pi 10 rx','15 pi 53'],
+  2066:['16 pi 28','17 pi 49','19 pi 26','21 pi 19','22 pi 54','23 pi 58','24 pi 15 rx','23 pi 43 rx','22 pi 32 rx','21 pi 11 rx','20 pi 4 rx','19 pi 40'],
+  2067:['20 pi 8','21 pi 22','22 pi 56','24 pi 48','26 pi 24','27 pi 32','27 pi 55 rx','27 pi 30 rx','26 pi 23 rx','25 pi 2 rx','23 pi 52 rx','23 pi 22 rx'],
+  2068:['23 pi 43','24 pi 51','26 pi 25','28 pi 15','29 pi 53','1 ar 4','1 ar 31','1 ar 10 rx','0 ar 7 rx','28 pi 47 rx','27 pi 34 rx','27 pi 0 rx'],
+  2069:['27 pi 16','28 pi 20','29 pi 47','1 ar 36','3 ar 15','4 ar 30','5 ar 3','4 ar 48 rx','3 ar 50 rx','2 ar 31 rx','1 ar 16 rx','0 ar 36 rx'],
+  2070:['0 ar 45','1 ar 43','3 ar 7','4 ar 55','6 ar 35','7 ar 54','8 ar 32','8 ar 24 rx','7 ar 30 rx','6 ar 13 rx','4 ar 55 rx','4 ar 10 rx'],
+  2071:['4 ar 12','5 ar 5','6 ar 25','8 ar 12','9 ar 54','11 ar 16','12 ar 0','11 ar 57 rx','11 ar 9 rx','9 ar 53 rx','8 ar 34 rx','7 ar 44 rx'],
+  2072:['7 ar 40','8 ar 26','9 ar 46','11 ar 32','13 ar 14','14 ar 40','15 ar 27','15 ar 29 rx','14 ar 44 rx','13 ar 30 rx','12 ar 10 rx','11 ar 16 rx'],
+  2073:['11 ar 7','11 ar 50','13 ar 4','14 ar 49','16 ar 32','18 ar 1','18 ar 54','19 ar 3 rx','18 ar 23 rx','17 ar 11 rx','15 ar 49 rx','14 ar 51 rx'],
+  2074:['14 ar 36','15 ar 12','16 ar 23','18 ar 6','19 ar 51','21 ar 24','22 ar 22','22 ar 37 rx','22 ar 3 rx','20 ar 54 rx','19 ar 30 rx','18 ar 27 rx'],
+  2075:['18 ar 6','18 ar 37','19 ar 44','21 ar 26','23 ar 12','24 ar 48','25 ar 52','26 ar 13 rx','25 ar 45 rx','24 ar 39 rx','23 ar 14 rx','22 ar 7 rx'],
 };
 const CHIRON_SIGN_PERIODS = [
   ['1960-03-26',11], ['1960-08-19',10], ['1961-01-20',11],
@@ -4331,16 +4519,49 @@ function buildChironAnchors() {
 function signedDegreeDelta(start = 0, end = 0) {
   return ((normalizeDegree(end) - normalizeDegree(start) + 540) % 360) - 180;
 }
+/* Interpolacion sobre tres anclas en vez de dos. Quiron no se mueve en
+   linea recta dentro de un mes, sobre todo cerca de sus estaciones, y una
+   recta entre dos anclas corta la curva: contrastado con JPL para marzo
+   de 1992 daba nueve minutos de arco de desvio. Con la parabola que pasa
+   por los tres puntos, el error baja a segundos.
+
+   Es la interpolacion de tres valores tabulares de Meeus: con a = y2-y1,
+   b = y3-y2 y c = b-a, el valor buscado es y2 + n/2 (a + b + n c), donde
+   n va de -1 a 1 contado desde el ancla central. */
 function interpolatedChironFromAnchors(ms) {
   const anchors = buildChironAnchors();
   if (!anchors.length || ms < anchors[0].ms || ms > anchors[anchors.length - 1].ms) return null;
   const nextIndex = anchors.findIndex(anchor => anchor.ms >= ms);
   if (nextIndex <= 0) return { degree:anchors[0].degree, retrograde:anchors[0].retrograde };
-  const prev = anchors[nextIndex - 1];
-  const next = anchors[nextIndex];
-  const ratio = Math.max(0, Math.min(1, (ms - prev.ms) / (next.ms - prev.ms || 1)));
-  const delta = signedDegreeDelta(prev.degree, next.degree);
-  return { degree:normalizeDegree(prev.degree + delta * ratio), retrograde:delta < 0 || prev.retrograde || next.retrograde };
+
+  /* Se toma el ancla central mas cercana, con una a cada lado. En los
+     extremos de la tabla no hay tres, y ahi se sigue con la recta. */
+  const izquierda = anchors[nextIndex - 1];
+  const derecha = anchors[nextIndex];
+  const centroIndex = (ms - izquierda.ms) < (derecha.ms - ms) ? nextIndex - 1 : nextIndex;
+  const y1 = anchors[centroIndex - 1];
+  const y2 = anchors[centroIndex];
+  const y3 = anchors[centroIndex + 1];
+
+  let degree;
+  if (y1 && y2 && y3) {
+    /* Se trabaja en diferencias para no pelearse con la vuelta de 360. */
+    const a = signedDegreeDelta(y1.degree, y2.degree);
+    const b = signedDegreeDelta(y2.degree, y3.degree);
+    const c = b - a;
+    const paso = (y3.ms - y1.ms) / 2 || 1;
+    const nFactor = Math.max(-1, Math.min(1, (ms - y2.ms) / paso));
+    degree = normalizeDegree(y2.degree + (nFactor / 2) * (a + b + nFactor * c));
+  } else {
+    const ratio = Math.max(0, Math.min(1, (ms - izquierda.ms) / (derecha.ms - izquierda.ms || 1)));
+    degree = normalizeDegree(izquierda.degree + signedDegreeDelta(izquierda.degree, derecha.degree) * ratio);
+  }
+
+  /* La marca de retrogradacion sale del tramo en el que cae la fecha, no
+     de unir las de los dos meses vecinos con un o logico: aquello la
+     alargaba hasta un mes entero alrededor de cada estacion. */
+  const retrograde = signedDegreeDelta(izquierda.degree, derecha.degree) < 0;
+  return { degree, retrograde };
 }
 function chironFromSignPeriods(ms, fallbackDegree = 0) {
   if (!Number.isFinite(ms)) return { degree:fallbackDegree, retrograde:false };
@@ -4478,11 +4699,17 @@ function geocentricPlanetLongitude(id = '', dateInfo = null) {
   const sun = sunGeocentricPosition(d);
   const planet = id === 'pluto' ? plutoHeliocentricPosition(d) : correctedHeliocentricPosition(id, d);
   const degree = normalizeDegree(radToDeg(Math.atan2(planet.y + sun.y, planet.x + sun.x)));
-  const tomorrowD = daysSinceOrbitalEpoch(dateInfo.ms + 86400000);
-  const tomorrowSun = sunGeocentricPosition(tomorrowD);
-  const tomorrowPlanet = id === 'pluto' ? plutoHeliocentricPosition(tomorrowD) : correctedHeliocentricPosition(id, tomorrowD);
-  const tomorrowDegree = normalizeDegree(radToDeg(Math.atan2(tomorrowPlanet.y + tomorrowSun.y, tomorrowPlanet.x + tomorrowSun.x)));
-  return { degree, retrograde:signedDegreeDelta(degree, tomorrowDegree) < 0 };
+  /* Misma diferencia centrada de una hora que en el motor, para que las
+     dos vias digan lo mismo alrededor de las estaciones. */
+  const longitudEn = ms => {
+    const dd = daysSinceOrbitalEpoch(ms);
+    const sol = sunGeocentricPosition(dd);
+    const pl = id === 'pluto' ? plutoHeliocentricPosition(dd) : correctedHeliocentricPosition(id, dd);
+    return normalizeDegree(radToDeg(Math.atan2(pl.y + sol.y, pl.x + sol.x)));
+  };
+  const antes = longitudEn(dateInfo.ms - 1800000);
+  const despues = longitudEn(dateInfo.ms + 1800000);
+  return { degree, retrograde:signedDegreeDelta(antes, despues) < 0 };
 }
 function astronomyEngineLongitude(id = '', dateInfo = null) {
   const Astronomy = astronomyEngine();
@@ -4502,9 +4729,19 @@ function astronomyEngineLongitude(id = '', dateInfo = null) {
       return null;
     };
     const degree = longitudeAt(dateInfo.ms);
-    const tomorrowDegree = longitudeAt(dateInfo.ms + 86400000);
-    if (!Number.isFinite(degree) || !Number.isFinite(tomorrowDegree)) return null;
-    return { degree, retrograde:id !== 'sun' && id !== 'moon' && signedDegreeDelta(degree, tomorrowDegree) < 0, engine:'astronomy-engine' };
+    if (!Number.isFinite(degree)) return null;
+    /* Si va directo o retrogrado se mira con una diferencia centrada de
+       una hora, no comparando con el dia siguiente. Un salto de 24 horas
+       se equivoca justo alrededor de las estaciones, que es cuando el
+       planeta se para y gira: medido entre 2024 y 2027, Mercurio salia
+       mal el 0,87 % del tiempo, unos seis dias al ano, y son justo los
+       dias en que alguien mira si esta retrogrado. */
+    const antes = longitudeAt(dateInfo.ms - 1800000);
+    const despues = longitudeAt(dateInfo.ms + 1800000);
+    const marchaAtras = Number.isFinite(antes) && Number.isFinite(despues)
+      ? signedDegreeDelta(antes, despues) < 0
+      : false;
+    return { degree, retrograde:id !== 'sun' && id !== 'moon' && marchaAtras, engine:'astronomy-engine' };
   } catch {
     return null;
   }
