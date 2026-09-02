@@ -803,6 +803,10 @@ async function exportAstroPDF(reading = lastReading) {
   const fileName = safeFileName(`${reportTitle}-${subject}`);
   let y = 0;
   const wrapped = (value, width) => doc.splitTextToSize(cleanPdfText(value), width);
+  const extractEmbeddedAI = (value = '') => {
+    const match = String(value || '').match(/Interpretaci[oó]n IA:\s*([\s\S]*)$/i) || String(value || '').match(/Interpretacion IA\s*([\s\S]*)$/i);
+    return cleanPdfText(match?.[1] || '');
+  };
   const addHeader = (section = reportTitle) => {
     doc.setFillColor(...violet);
     doc.rect(0, 0, W, 24, 'F');
@@ -865,6 +869,29 @@ async function exportAstroPDF(reading = lastReading) {
     doc.text(textLines.slice(0, Math.floor((h - 9) / 4.6)), margin + 6, y + 8);
     y += h + 7;
   };
+  const addLongTextSection = (heading, body, options = {}) => {
+    const content = cleanPdfText(body);
+    if (!content) return;
+    sectionTitle(heading);
+    const lines = wrapped(content, W - margin * 2 - 14);
+    let index = 0;
+    while (index < lines.length) {
+      if (y > H - 48) newPage(heading);
+      const room = H - y - 28;
+      const take = Math.max(5, Math.min(lines.length - index, Math.floor((room - 14) / 4.5)));
+      const chunk = lines.slice(index, index + take);
+      const h = 13 + chunk.length * 4.5;
+      doc.setFillColor(...(options.accent ? [248, 239, 214] : soft));
+      doc.setDrawColor(...(options.accent ? gold : line));
+      doc.roundedRect(margin, y, W - margin * 2, h, 4, 4, 'FD');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.7);
+      doc.setTextColor(...ink);
+      doc.text(chunk, margin + 7, y + 8);
+      y += h + 6;
+      index += take;
+    }
+  };
   const addTable = (heading, headers, rows, widths) => {
     const cleanRows = rows.map(row => row.map(cell => cleanPdfText(cell))).filter(row => row.some(Boolean));
     if (!cleanRows.length) return;
@@ -921,7 +948,7 @@ async function exportAstroPDF(reading = lastReading) {
     ];
     sectionTitle('Sintesis profesional');
     addInfoBox(summary, { accent:true, maxH:48, section:'Sintesis profesional' });
-    const body = cleanPdfText(reading?.ai || cleanInterpretation(reading?.text || '')).replace(/Posiciones:[\s\S]*$/i, '').trim();
+    const body = cleanPdfText(cleanInterpretation(reading?.text || '')).replace(/Interpretaci[oó]n IA:\s*[\s\S]*$/i, '').replace(/Interpretacion IA\s*[\s\S]*$/i, '').replace(/Posiciones:[\s\S]*$/i, '').trim();
     if (body) addInfoBox(wrapped(body, W - margin * 2 - 12).slice(0, 12), { maxH:64, maxLinesPerItem:1, section:'Sintesis profesional' });
   };
   toast(t('tsMakingPdf'));
@@ -966,6 +993,8 @@ async function exportAstroPDF(reading = lastReading) {
     `${aspect.orb} grados · ${astroAspectOrbLabel(aspect.orb)}`
   ]), [54, 82, 44]);
   addSynthesis();
+  const aiBody = cleanPdfText(reading?.ai || extractEmbeddedAI(reading?.text));
+  if (aiBody) addLongTextSection('Interpretacion IA', aiBody, { accent:true });
   addFooter();
   doc.save(`${fileName}-profesional.pdf`);
   unlockAchievement('first_pdf');
@@ -3072,7 +3101,8 @@ function downloadErrorLog() { downloadTextFile('oraculo-errores.json', JSON.stri
 function showPdfOptions() {
   if (!lastReading) return toast(t('tsNeedReading'));
   if (getAstroPdfChart(lastReading)) {
-    return openModal({ icon:'☉', title:t('mdPdfAstral'), subtitle:t('mdPdfAstralS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe astral profesional</strong><small>Rueda grande, posiciones, casas, aspectos y síntesis.</small></button></div>` });
+    const aiNote = lastReading.ai ? 'Incluye también la interpretación IA.' : 'Puedes ampliar con IA antes de crear el PDF.';
+    return openModal({ icon:'☉', title:t('mdPdfAstral'), subtitle:t('mdPdfAstralS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe astral profesional</strong><small>Rueda grande, posiciones, casas, aspectos, síntesis e IA cuando exista. ${aiNote}</small></button></div>` });
   }
   if (isPersonalNumerologyReading()) {
     return openModal({ icon:'📄', title:t('mdPdfNum'), subtitle:t('mdPdfNumS'), body:`<div class="panel-grid"><button class="choice" data-act="pdf-style-premium"><strong>Informe profesional</strong><small>Diseño claro, tabla de números y síntesis breve.</small></button></div>` });
@@ -6828,11 +6858,11 @@ function handleAction(action) {
     'save-reading': () => saveReading(),
     'copy-reading': () => copyText(getReadingText()),
     'share-reading': () => shareText(getReadingText(), lastReading?.title),
-    'pdf-reading': () => exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()),
+    'pdf-reading': () => exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText(), lastReading),
     'pdf-options': showPdfOptions,
-    'pdf-style-premium': () => { setPdfStyle('premium'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
-    'pdf-style-light': () => { setPdfStyle('light'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
-    'pdf-style-summary': () => { setPdfStyle('summary'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText()); },
+    'pdf-style-premium': () => { setPdfStyle('premium'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText(), lastReading); },
+    'pdf-style-light': () => { setPdfStyle('light'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText(), lastReading); },
+    'pdf-style-summary': () => { setPdfStyle('summary'); exportPDF(lastReading?.title || 'Oráculo Místico', getReadingText(), lastReading); },
     'save-daily-reflection': saveDailyReflection,
     'daily-history': showDailyHistory,
     'achievements': showAchievements,
