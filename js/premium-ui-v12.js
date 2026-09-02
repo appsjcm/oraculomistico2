@@ -1,6 +1,20 @@
 /* Atajo al i18n del motor. No es un sistema nuevo: delega en el
    mismo diccionario, y si aun no ha cargado devuelve la clave. */
 function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
+/* Este fichero son varios bloques cerrados y cada uno tiene sus cosas.
+   Habia un escapeHTML, pero dentro del ultimo bloque, asi que los de
+   arriba no lo alcanzaban y pintaban sin escapar. Este vive fuera de
+   todos y lo alcanza cualquiera.
+
+   Hacia falta: la intencion que escribe la persona se metia tal cual en
+   el innerHTML del distintivo de la portada. Escribiendo como intencion
+   una etiqueta con un manejador de evento, el navegador la ejecutaba.
+   Comprobado antes y despues con la misma carga. */
+function OEsc(v = '') {
+  return String(v).replace(/[&<>'"]/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  }[ch]));
+}
 /* Oráculo Místico · Premium UI v2
    JS ligero y no invasivo: no cambia la lógica del tarot.
 */
@@ -220,9 +234,12 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     }
 
     if (chip) {
+      /* El valor lo escribe la persona: se escapa. La cadena traducida
+         se compone con el valor ya dentro, asi que se escapa el
+         resultado entero, no solo el valor. */
       chip.innerHTML = value
-        ? `🧭 <span>${OI('pmIntentionSet', { v: value })}</span>`
-        : `🧭 <span data-i18n="intentionFree">${OI('intentionFree')}</span>`;
+        ? `🧭 <span>${OEsc(OI('pmIntentionSet', { v: value }))}</span>`
+        : `🧭 <span data-i18n="intentionFree">${OEsc(OI('intentionFree'))}</span>`;
     }
   }
 
@@ -685,7 +702,12 @@ function OI(k, v) { return window.OraculoI18n?.t?.(k, v) ?? k; }
     items.forEach(item => {
       const el = document.createElement('div');
       el.className = 'premium-activity-item';
-      el.innerHTML = `<strong>${item.title}</strong><small>${item.desc}<br>${item.stamp}</small>`;
+      /* Hoy estos tres valores los pone la propia app -nombres de tema,
+         atributos data- y no hay forma de colar texto ajeno. Se escapan
+         igual: pasan por localStorage y basta que alguien pase aqui el
+         titulo de una lectura, que lleva el nombre de la persona, para
+         que deje de ser cierto. */
+      el.innerHTML = `<strong>${OEsc(item.title)}</strong><small>${OEsc(item.desc)}<br>${OEsc(item.stamp)}</small>`;
       root.appendChild(el);
     });
   }
