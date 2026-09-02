@@ -623,7 +623,16 @@ html[data-text-scale="140"] .brand strong { font-size: min(1rem, 4.6vw); }
      10,9 a 13,4 px y en pantalla ancha llegan al 15,2 que les toca. En
      320 px apenas pueden crecer, pero eso es geometria: cinco columnas en
      320 px dan celdas de 53 px y ahi no cabe mas letra. */
-  font-size: min(.68rem, calc((min(560px, 100vw - 22px) - 32px) / 27));
+  /* El divisor era 27 y salia de estimar cuanto ocupa "Biblioteca" a ojo.
+     Medido de verdad, subiendo la letra de cuarto en cuarto de pixel
+     hasta que la etiqueta toca el borde de su celda: caben 10,5 px a 320
+     de ancho, 12,75 a 375 y 14,5 a 414. Con 27 salian 9,85, 11,89 y
+     13,33, o sea que sobraba un siete por ciento sin usar. Con 25,5 dan
+     10,43, 12,59 y 14,12, y el margen que queda sigue siendo positivo en
+     las tres. Mas arriba no se puede: cinco columnas iguales en 375 px
+     dan celdas de 66 px y "Biblioteca" no cabe con mas letra. Probado
+     tambien partirla con guion, y Chrome no parte palabras tan cortas. */
+  font-size: min(.68rem, calc((min(560px, 100vw - 22px) - 32px) / 25.5));
 }
 /* Cinturon: pase lo que pase, una etiqueta no invade la celda vecina. */
 .premium-bottom-nav button { overflow: hidden; }

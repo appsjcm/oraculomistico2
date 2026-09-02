@@ -264,6 +264,55 @@
     return { tabla, quietos };
   }
 
+  /* Un elemento flex se puede quedar por debajo de su contenido sin que
+     nada avise. Pasa cuando lleva overflow: en cuanto un elemento flex
+     tiene overflow, su min-height deja de valer "auto" y pasa a valer
+     cero, así que el navegador lo encoge todo lo que haga falta para que
+     entren sus hermanos.
+
+     Esto lo escribo porque me pasó: en la Biblioteca la fila de
+     categorías se quedó en 10 px de alto con botones de 40, y de ellos
+     solo asomaba el borde de arriba. El auditor no lo vio, porque
+     miraba desbordes hacia fuera y este era un encogimiento hacia
+     dentro. Lo encontré a mano. Que no vuelva a hacer falta.
+
+     Se deja fuera el recorte por número de líneas, que es una decisión
+     de diseño y no un accidente, y lo que ya está oculto. */
+  function medirAplastados() {
+    const fuera = [];
+    for (const el of document.querySelectorAll('body *')) {
+      const padre = el.parentElement;
+      if (!padre) continue;
+      const cp = getComputedStyle(padre);
+      if (!/flex/.test(cp.display) || !/column/.test(cp.flexDirection)) continue;
+
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+      if (cs.webkitLineClamp && cs.webkitLineClamp !== 'none') continue;
+      if (cs.flexShrink === '0') continue;
+
+      const r = el.getBoundingClientRect();
+      if (r.height <= 0) continue;
+      /* Una lista larga con su propio scroll está encogida a propósito:
+         para eso tiene scroll. Lo que delata al fallo es que el hueco se
+         quede por debajo de lo que ocupa una sola fila de su contenido. */
+      const hijo = el.firstElementChild;
+      const altoDeUnaFila = hijo ? hijo.getBoundingClientRect().height : 0;
+      if (!(altoDeUnaFila > 0)) continue;
+      if (r.height >= altoDeUnaFila - 1) continue;
+
+      fuera.push({
+        elemento: el.tagName + '.' + [...el.classList].slice(0, 2).join('.'),
+        alto: Number(r.height.toFixed(1)),
+        contenido: el.scrollHeight,
+        unaFilaMide: Number(altoDeUnaFila.toFixed(1)),
+        dentroDe: padre.tagName + '.' + [...padre.classList].slice(0, 2).join('.'),
+      });
+    }
+    return fuera.slice(0, 8);
+  }
+
   /* Al agrandar, lo que se rompe es el espacio: la página desborda a
      lo ancho, o las etiquetas de la barra inferior se pisan, o se
      recortan. Se mide al ancho que tenga la ventana ahora. */
@@ -295,6 +344,22 @@
         .filter(s => s && seRecorta(s))
         .map(s => s.textContent.trim());
 
+      /* Pasar del borde derecho solo es un problema si no hay forma de
+         llegar hasta ahí. Dentro de un carrusel horizontal es lo normal:
+         en la Biblioteca las categorías no caben en 375 px y las últimas
+         quedan fuera a propósito, se alcanzan pasando el dedo. Antes
+         salían en el informe en las cuatro escalas, siempre, sin que
+         pasara nada; y un aviso que sale siempre acaba ignorándose. */
+      const dentroDeUnCarrusel = x => {
+        let n = x.parentElement;
+        while (n && n !== document.documentElement) {
+          const ov = getComputedStyle(n).overflowX;
+          if (ov === 'auto' || ov === 'scroll') return true;
+          n = n.parentElement;
+        }
+        return false;
+      };
+
       const desbordan = [...document.querySelectorAll('body *')].filter(x => {
         const cs = getComputedStyle(x);
         if (cs.visibility === 'hidden') return false;
@@ -302,7 +367,8 @@
         /* Los decorados de fondo se salen a propósito. */
         if (/om-nebula|om-aura|om-glow|om-sky/.test(x.className || '')) return false;
         const r = x.getBoundingClientRect();
-        return r.width > 0 && r.right > innerWidth + 1;
+        if (!(r.width > 0 && r.right > innerWidth + 1)) return false;
+        return !dentroDeUnCarrusel(x);
       }).map(x => x.tagName + '.' + [...x.classList].slice(0, 2).join('.'));
 
       filas[e] = {
@@ -368,6 +434,7 @@
 
     const escala = medirEscala();
     const espacio = medirEspacio();
+    const aplastados = medirAplastados();
 
     congelar.remove();
     if (guardado.escala) document.documentElement.setAttribute('data-text-scale', guardado.escala);
@@ -387,6 +454,7 @@
       },
       tamanoDeTexto: escala,
       espacio,
+      aplastados,
     };
 
     /* Resumen legible, que es lo que se mira primero. */
@@ -396,6 +464,9 @@
       informe.contraste.deUnTotalDe + ' combinaciones con texto que no se ve');
     lineas.push('  flojo     : ' + informe.contraste.combinacionesPorDebajoDeLaNorma +
       ' combinaciones con texto legible pero por debajo de 4,5');
+    lineas.push('  aplastado : ' + (aplastados.length
+      ? aplastados.length + ' elementos encogidos por debajo de su contenido'
+      : 'ninguno'));
     lineas.push('  tamaño    : ' + (escala.quietos.length
       ? escala.quietos.length + ' selectores no crecen con el ajuste'
       : 'todos los selectores de muestra crecen'));

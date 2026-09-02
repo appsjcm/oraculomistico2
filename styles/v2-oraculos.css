@@ -553,6 +553,15 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   display: flex; gap: 6px; overflow-x: auto;
   padding: 0 var(--om-s-5) var(--om-s-2);
   scrollbar-width: none;
+  /* Sin esto la fila de categorias se quedaba en diez pixeles de alto y
+     de los botones solo asomaba el borde de arriba. El panel es un flex
+     en columna y esta fila lleva overflow, y en cuanto un elemento flex
+     tiene overflow su min-height deja de valer "auto" y pasa a valer
+     cero, asi que el navegador lo aplasta todo lo que haga falta para
+     que quepa la lista de fichas, que mide doce mil pixeles. Una barra
+     de herramientas no se encoge: que se encoja la lista, que para eso
+     tiene su propio scroll. */
+  flex: 0 0 auto;
 }
 .om-bib-cats::-webkit-scrollbar { display: none; }
 .om-bib-cat {
