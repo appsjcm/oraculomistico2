@@ -3530,6 +3530,7 @@ function importBackupFromFile(file) {
          campos, asi que cada uno se mira por separado y lo que no venga
          se queda como esta. */
       if (Array.isArray(data.dailyJournal)) storeSet(LS.dailyJournal, data.dailyJournal);
+      if (Array.isArray(data.nativeVault)) storeSet('oraculo.nativeTarotEngine.v12.vault', data.nativeVault);
       if (data.achievements && typeof data.achievements === 'object') storeSet(LS.achievements, data.achievements);
       if (data.appLanguage) setAppLanguage(data.appLanguage);
       if (data.appearanceMode) setAppearanceMode(data.appearanceMode);
@@ -3706,7 +3707,13 @@ function backupData() {
     appearanceMode:getAppearanceMode(),
     intention:localStorage.getItem(LS.intention) || '',
     aiStyle:localStorage.getItem(LS.aiStyle) || '',
-    focusMode:isFocusMode()
+    focusMode:isFocusMode(),
+    /* Dentro de los paneles avanzados hay un segundo almacen de tiradas
+       guardadas, aparte del Grimorio y con su propia clave. Hasta treinta
+       entradas que no salian en la copia: quien guardase ahi y cambiara
+       de telefono las perdia. La clave se pone literal porque la define
+       premium-ui, no este fichero. */
+    nativeVault:storeGet('oraculo.nativeTarotEngine.v12.vault', [])
   };
   downloadTextFile('oraculo-mistico-backup.json', JSON.stringify(data,null,2));
   unlockAchievement('first_backup');
