@@ -1356,3 +1356,39 @@ html[data-appearance-mode="light"] .premium-real-card.has-art strong,
 html[data-appearance-mode="light"] .premium-real-card.has-art .card-meta span {
   color: #fff8e8;
 }
+
+/* ------------------------------------------------------------------
+   El chat, en modo claro
+   ------------------------------------------------------------------
+   El chat se dibujó cuando la app era solo oscura y se quedaron puestas
+   dos cosas pensadas para fondo negro: un velo de negro al 18 % sobre la
+   lista de mensajes y unos bordes de blanco al 9-10 %.
+
+   El velo oscurece el panel claro de rgb(255,252,246) a rgb(213,208,196),
+   y ahí la etiqueta del orador se queda en 4,47 sobre 1, por debajo del
+   4,5 que pide la norma para 16 px en negrita. En el tema Bosque baja a
+   3,62. Compuesta la pila entera evaluando el degradado en la posición
+   del texto, no promediándolo. Con el velo al 9 % sube a 5,43 y el
+   escalón con el panel se sigue viendo.
+
+   Los bordes blancos sobre claro no se ven: compuesto, rgba(255,255,255,.1)
+   sobre rgb(234,228,215) da 236, que es el mismo tono que hay al lado. La
+   burbuja se quedaba sin contorno y solo la sostenía la sombra. */
+html[data-appearance-mode="light"] .chat-messages {
+  background: rgba(0, 0, 0, .09);
+  border-color: rgba(74, 50, 8, .18);
+}
+html[data-appearance-mode="light"] .chat-bubble {
+  border-color: rgba(74, 50, 8, .16);
+  box-shadow: 0 10px 24px rgba(74, 50, 8, .10);
+}
+
+/* Con el velo al 9 % los seis temas ya pasan, pero el tema Claro se
+   queda en 4,39, a un pelo del 4,5. En vez de tocar el acento del tema
+   entero, que se usa en muchos sitios, se oscurece solo aquí: el nombre
+   del orador toma el oro del tema mezclado con la tinta del texto. Sigue
+   siendo el color del tema, un poco más hondo. El peor de los seis pasa
+   así de 5,34 a 6,73. */
+html[data-appearance-mode="light"] .chat-bubble strong {
+  color: color-mix(in srgb, var(--gold) 80%, var(--om-ivory, #241b2e));
+}
