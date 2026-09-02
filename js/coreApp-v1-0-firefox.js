@@ -646,6 +646,17 @@ function getPdfReadingHighlight(reading = lastReading) {
       detail:`${getReadingSubjectName(reading) || reading.title || 'Lectura astral'} · ${meta.birthDate || astro.date || ''} ${meta.birthTime || astro.time || ''}`.trim()
     };
   }
+  if (reading?.type === 'Mega tirada' && meta.mega) {
+    const number = meta.mega.numberFocus?.number || '';
+    const period = MEGA_PERIODS[meta.period]?.label || meta.periodKey || 'Periodo';
+    const rune = meta.mega.rune?.name || '';
+    const moon = meta.mega.phase?.name || '';
+    return {
+      label:'Informe completo',
+      value:`${period}${number ? ` · ${number}` : ''}`,
+      detail:`${getReadingSubjectName(reading) || reading.title || 'Mega tirada'} · ${rune}${rune && moon ? ' · ' : ''}${moon}`.trim()
+    };
+  }
   if (reading?.type === 'Grabovoi' && meta.grabovoiCode) {
     return {
       label:'Código consultado',
@@ -2956,10 +2967,208 @@ function showFirstReading() {
 
 function showMap() {
   const modules = [
-    ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
+    ['mega','✦','Mega tirada'], ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
   openModal({ icon:'🗺️', title:t('mdMapa'), subtitle:t('mdMapaS'), body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
+}
+
+const MEGA_PERIODS = {
+  day: { label:'Día', title:'Mega tirada del día', tarot:3, positions:['Clima', 'Reto', 'Consejo'] },
+  week: { label:'Semana', title:'Mega tirada de la semana', tarot:5, positions:['Entrada', 'Movimiento', 'Vínculo', 'Trabajo interior', 'Cierre'] },
+  year: { label:'Año', title:'Mega tirada del año', tarot:7, positions:['Puerta del año', 'Tema central', 'Reto', 'Apoyo', 'Sombra', 'Expansión', 'Cierre'] }
+};
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function isoWeekKey(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+function megaPeriodKey(period = 'day', year = new Date().getFullYear()) {
+  if (period === 'year') return String(year);
+  if (period === 'week') return isoWeekKey();
+  return localDateKey();
+}
+function seededDraw(list = [], count = 1, seed = 1) {
+  const pool = [...list];
+  let state = Number(seed) || 1;
+  const next = () => {
+    state = Math.imul(state ^ (state >>> 15), 2246822507);
+    state = Math.imul(state ^ (state >>> 13), 3266489909);
+    return (state ^= state >>> 16) >>> 0;
+  };
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = next() % (i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.max(1, Math.min(count, pool.length)));
+}
+function megaPeriodAnchor(period = 'day', year = new Date().getFullYear()) {
+  const now = new Date();
+  if (period === 'year') return { date:`${year}-07-01`, time:'12:00', label:String(year) };
+  if (period === 'week') return { date:localDateKey(now), time:'12:00', label:isoWeekKey(now) };
+  return { date:localDateKey(now), time:`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`, label:localDateKey(now) };
+}
+function megaNumerologyFocus(profile, period = 'day') {
+  if (!profile) return null;
+  const now = new Date();
+  const personalMonth = reduceNum(profile.personalYear + now.getMonth() + 1);
+  const personalDay = reduceNum(personalMonth + now.getDate());
+  if (period === 'year') return { label:'Año personal', number:profile.personalYear, meaning:numerologyMeaning(profile.personalYear) };
+  if (period === 'week') return { label:'Mes personal como tono semanal', number:personalMonth, meaning:numerologyMeaning(personalMonth) };
+  return { label:'Día personal', number:personalDay, meaning:numerologyMeaning(personalDay) };
+}
+function showMegaReading(period = 'day') {
+  const selected = MEGA_PERIODS[period] ? period : 'day';
+  const profile = getProfile();
+  const name = escapeHTML(localStorage.getItem(LS.name) || '');
+  const date = escapeHTML(getBirthDate() || profile.birth || '');
+  const time = escapeHTML(getBirthTime() || profile.birthTime || '12:00');
+  const place = getBirthPlace() || profile.birthPlace || null;
+  const placeValue = escapeHTML(place?.label || '');
+  const placeData = place ? escapeHTML(JSON.stringify(place)) : '';
+  const intention = escapeHTML(localStorage.getItem(LS.intention) || profile.intention || 'Claridad');
+  const houseSystem = getAstroHouseSystem();
+  const year = new Date().getFullYear();
+  openModal({ icon:'✦', title:'Mega tirada', subtitle:'Tarot · runa · luna · astros · numerología', body:`
+    <div class="mega-intro result-card">
+      <h3>Informe simbólico completo</h3>
+      <p>Elige día, semana o año. La lectura une las cartas, una runa guía, la fase lunar, una base astral y la numerología personal en un solo informe exportable.</p>
+    </div>
+    <div class="panel-grid mt mega-period-grid">
+      ${Object.entries(MEGA_PERIODS).map(([key, cfg]) => `<button class="choice ${selected === key ? 'active' : ''}" data-act="mega-${key}" type="button"><strong>${escapeHTML(cfg.title)}</strong><small>${cfg.tarot} cartas · runa · luna · astros · número guía</small></button>`).join('')}
+    </div>
+    <div class="form-grid mt astro-form">
+      <div class="field"><label for="megaPeriod">Periodo</label><select id="megaPeriod" class="input">${Object.entries(MEGA_PERIODS).map(([key, cfg]) => `<option value="${key}" ${selected === key ? 'selected' : ''}>${escapeHTML(cfg.label)}</option>`).join('')}</select></div>
+      <div class="field"><label for="megaYear">Año de referencia</label><input id="megaYear" class="input" type="number" min="1900" max="2100" value="${year}"><small class="subtle">Solo se usa en la tirada anual.</small></div>
+      <div class="field"><label for="megaName">${escapeHTML(t('nuName'))}</label>${inputWithMic('megaName', `value="${name}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
+      <div class="field"><label for="megaDate">${escapeHTML(t('nuBirth'))}</label><input id="megaDate" class="input" type="date" value="${date}"></div>
+      <div class="field"><label for="megaTime">${escapeHTML(t('nuBirthTime'))}</label><input id="megaTime" class="input" type="time" value="${time}"><small class="subtle">${escapeHTML(t('nuBirthTimePh'))}</small></div>
+      <div class="field astro-place-field"><label for="astroPlace">${escapeHTML(t('asPlace'))}</label>${inputWithMic('astroPlace', `value="${placeValue}" placeholder="${escapeHTML(t('asPlacePh'))}" autocomplete="off" aria-describedby="astroPlaceHelp"`)}<input id="astroPlaceData" type="hidden" value="${placeData}"><small id="astroPlaceHelp" class="subtle">${escapeHTML(t('asPlaceHelp'))}</small><div id="astroPlaceSuggestions" class="astro-city-suggestions" aria-live="polite"></div></div>
+      <div class="field"><label for="megaIntention">${escapeHTML(t('asIntent'))}</label>${inputWithMic('megaIntention', `value="${intention}" placeholder="${escapeHTML(t('asIntentPh'))}"`)}</div>
+      <div class="field"><label for="megaHouseSystem">${escapeHTML(t('asHouses'))}</label><select id="megaHouseSystem" class="input"><option value="placidus" ${houseSystem === 'placidus' ? 'selected' : ''}>${escapeHTML(t('asHousesPlacidus'))}</option><option value="equal" ${houseSystem === 'equal' ? 'selected' : ''}>${escapeHTML(t('asHousesEqual'))}</option><option value="whole" ${houseSystem === 'whole' ? 'selected' : ''}>${escapeHTML(t('asHousesWhole'))}</option></select></div>
+    </div>
+    <div class="actions mt"><button class="btn primary" data-act="mega-reading" type="button">Crear mega tirada</button></div>
+    <p class="notice mt">La IA es opcional: primero se crea el informe local y después puedes pulsar “Profundizar IA” para ampliarlo e incluirlo en el PDF.</p>` });
+}
+function getMegaFormData() {
+  let place = null;
+  try { place = JSON.parse($('#astroPlaceData')?.value || 'null'); } catch {}
+  const placeLabel = ($('#astroPlace')?.value || place?.label || getBirthPlace()?.label || '').trim();
+  if (!place && placeLabel) place = { label:placeLabel };
+  return {
+    period:MEGA_PERIODS[$('#megaPeriod')?.value] ? $('#megaPeriod')?.value : 'day',
+    year:Math.max(1900, Math.min(2100, Number($('#megaYear')?.value) || new Date().getFullYear())),
+    name:($('#megaName')?.value || localStorage.getItem(LS.name) || '').trim(),
+    date:$('#megaDate')?.value || getBirthDate() || '',
+    time:$('#megaTime')?.value || getBirthTime() || '12:00',
+    place,
+    intention:($('#megaIntention')?.value || localStorage.getItem(LS.intention) || 'Claridad').trim(),
+    houseSystem:$('#megaHouseSystem')?.value || getAstroHouseSystem()
+  };
+}
+function megaTarotLine(item, index) {
+  const meaning = item.rev ? (item.card.rv || item.card.up) : item.card.up;
+  return `${index + 1}. ${item.position}: ${item.card.name}${item.rev ? ' invertida' : ''}. ${meaning}`;
+}
+function megaAstroSummary(natalChart, periodChart) {
+  if (!natalChart || !periodChart) return 'Astros: sin datos completos de nacimiento o lugar; la lectura mantiene tarot, runa, luna y numerología.';
+  const stats = astroAspectStats(periodChart);
+  const tight = stats.tightest;
+  return `Base natal: Sol en ${natalChart.sun.name}, Luna en ${natalChart.moon.sign}, Ascendente en ${natalChart.asc.name} y Medio Cielo en ${natalChart.mc.name}.
+Clima del periodo: Sol en ${periodChart.sun.name}, Luna en ${periodChart.moon.sign}, Ascendente de referencia en ${periodChart.asc.name}.
+Aspectos del periodo: ${periodChart.aspects.length} mayores visibles${tight ? `; el más exacto es ${tight.name} entre ${tight.a} y ${tight.b}, orbe ${tight.orb}°` : ''}. Consejo elemental: ${astroAdviceForElement(periodChart.moon.element)}.`;
+}
+async function createMegaReading() {
+  const data = getMegaFormData();
+  if (!data.name || !data.date) return toast('Indica nombre y fecha de nacimiento para crear la mega tirada.');
+  data.place = await resolveAstroPlace(data.place, data.place?.label);
+  if (data.name) localStorage.setItem(LS.name, data.name);
+  if (data.date) setBirthDate(data.date);
+  if (data.time) setBirthTime(data.time);
+  if (data.place?.label) setBirthPlace(data.place);
+  if (data.houseSystem) setAstroHouseSystem(data.houseSystem);
+  if (data.intention) localStorage.setItem(LS.intention, data.intention);
+
+  const cfg = MEGA_PERIODS[data.period];
+  const periodKey = megaPeriodKey(data.period, data.year);
+  const seed = astroHash(`${data.name}|${data.date}|${data.time}|${data.place?.label || ''}|${data.intention}|${data.period}|${periodKey}`);
+  const reversedRate = .28;
+  const tarot = seededDraw(ALL_TAROT, cfg.tarot, seed).map((card, index) => {
+    const revSeed = astroHash(`${seed}|${card.codigo || card.name}|${index}`);
+    return { card, position:cfg.positions[index] || `Carta ${index + 1}`, rev:Boolean(card.rv) && (revSeed % 100) < reversedRate * 100 };
+  });
+  const rune = seededDraw(RUNAS, 1, seed ^ 0x9e3779b9)[0] || sample(RUNAS);
+  const phase = faseTraducida(faseLunar().fase);
+  const numerology = calculateNumerologyProfile(data.name, data.date);
+  const numberFocus = megaNumerologyFocus(numerology, data.period);
+  let natalChart = null;
+  let periodChart = null;
+  try {
+    natalChart = calculateAstroProfile(data.name, data.date, data.time || '12:00', data.place, { houseSystem:data.houseSystem });
+    const anchor = megaPeriodAnchor(data.period, data.year);
+    periodChart = calculateAstroProfile(data.name, anchor.date, anchor.time, data.place, { houseSystem:data.houseSystem });
+  } catch (error) {
+    pushErrorLog('mega-astro', error?.message || error, data.period);
+  }
+  const astroText = megaAstroSummary(natalChart, periodChart);
+  const numText = numberFocus
+    ? `${numberFocus.label}: ${numberFocus.number} · ${numberFocus.meaning.title}. Fortaleza: ${numberFocus.meaning.gift}. Reto: ${numberFocus.meaning.challenge}. Consejo: ${numberFocus.meaning.advice}.`
+    : 'Numerología: indica una fecha válida para calcular el número guía.';
+  const title = `${cfg.title} · ${data.name}`;
+  const text = `${title.toUpperCase()}
+Periodo: ${cfg.label} · ${periodKey}
+Persona: ${data.name}
+Nacimiento: ${data.date} · ${data.time || '12:00'}${data.place?.label ? ` · ${data.place.label}` : ''}
+Intención: ${data.intention || 'Claridad'}
+
+Tarot:
+${tarot.map(megaTarotLine).join('\n\n')}
+
+Runa guía:
+${rune.name}: ${rune.up}
+
+Luna:
+${phase.name}. ${phase.meaning} Ritual sugerido: ${phase.ritual} Afirmación: ${phase.affirmation}
+
+Astros:
+${astroText}
+
+Numerología:
+${numText}
+
+Síntesis:
+La lectura junta símbolos distintos para señalar una dirección práctica. Mira primero la carta de consejo, después la runa guía y cierra con el número del periodo: ahí está el gesto más concreto para ordenar el ${cfg.label.toLowerCase()}.`;
+  const items = [
+    ...tarot.map(item => ({ kind:'tarot', name:item.card.name, subtitle:item.card.key || item.card.el || '', image:item.card.img || '', symbol:'🃏', position:item.position, reversed:!!item.rev })),
+    { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:'Runa guía' },
+    { kind:'luna', name:phase.name, subtitle:phase.meaning || '', image:'', symbol:phase.sym || '🌙', position:'Luna' },
+    numberFocus ? { kind:'numerologia', name:`${numberFocus.label}: ${numberFocus.number}`, subtitle:numberFocus.meaning.title, image:'', symbol:'🔢', position:'Número guía' } : null,
+    periodChart ? { kind:'astro', name:`Luna en ${periodChart.moon.sign}`, subtitle:`Sol en ${periodChart.sun.name}`, image:'', symbol:'☉', position:'Astros' } : null
+  ].filter(Boolean);
+  setLastReading({ type:'Mega tirada', title, text, items, meta:{ name:data.name, intention:data.intention, period:data.period, periodKey, mega:{ tarot, rune, phase, numerology, numberFocus, natalChart, periodChart, houseSystem:data.houseSystem } } });
+  openModal({ icon:'✦', title, subtitle:`${cfg.label} · ${periodKey}`, body:`
+    <div class="mega-result-hero">
+      <div><small>Periodo</small><strong>${escapeHTML(cfg.label)}</strong></div>
+      <div><small>Intención</small><strong>${escapeHTML(data.intention || 'Claridad')}</strong></div>
+      <div><small>Número guía</small><strong>${numberFocus ? numberFocus.number : '—'}</strong></div>
+    </div>
+    <div class="mega-oracle-grid">
+      ${tarot.map(item => `<article class="daily-oracle-card ${item.rev ? 'is-reversed' : ''}"><small>${escapeHTML(item.position)}</small>${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}${item.rev ? ' · invertida' : ''}</strong><span>${escapeHTML(clampText(item.rev ? item.card.rv : item.card.up, 90))}</span></article>`).join('')}
+      <article class="daily-oracle-card"><small>Runa guía</small><div class="daily-rune-art rune-stone ${rune.img ? 'has-art' : ''}">${runeImage(rune)}</div><strong>${escapeHTML(rune.sym)} ${escapeHTML(rune.name)}</strong><span>${escapeHTML(clampText(rune.up, 90))}</span></article>
+      <article class="daily-oracle-card"><small>Luna</small><div class="moon-big">${phase.sym}</div><strong>${escapeHTML(phase.name)}</strong><span>${escapeHTML(clampText(phase.meaning, 90))}</span></article>
+      <article class="daily-oracle-card"><small>Numerología</small><div class="numerology-number">${numberFocus ? numberFocus.number : '—'}</div><strong>${escapeHTML(numberFocus?.label || 'Número guía')}</strong><span>${escapeHTML(numberFocus?.meaning?.title || 'Sin fecha válida')}</span></article>
+    </div>
+    <div class="mega-sections">
+      <article class="result-card"><h3>Astros</h3><p>${escapeHTML(astroText).replace(/\n/g, '<br>')}</p></article>
+      <article class="result-card"><h3>Numerología</h3><p>${escapeHTML(numText)}</p></article>
+      <article class="result-card"><h3>Síntesis completa</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Mega tirada')}</article>
+    </div>` });
 }
 
 const TAROT_SPREADS = {
@@ -6798,6 +7007,7 @@ function showChatRitual() {
         <button class="btn compact" data-chat-quick="sácame una runa">ᚱ ${escapeHTML(t('qkRune'))}</button>
         <button class="btn compact" data-chat-quick="mensaje del día">🌟 ${escapeHTML(t('chatQuickDay'))}</button>
         <button class="btn compact" data-chat-quick="tirada astral del día">☉ ${escapeHTML(t('qkAstro'))}</button>
+        <button class="btn compact" data-chat-quick="mega tirada del día">✦ Mega</button>
       </div>
       <div class="chat-input-row">
         ${textareaWithMic('chatInput', 'rows="3" placeholder="Escribe: hazme una tirada de amor, sácame una runa, interpreta mi sueño..."')}
@@ -6809,6 +7019,7 @@ function showChatRitual() {
 }
 function detectChatIntent(text) {
   const t = text.toLowerCase();
+  if (/(mega|completa|global|integral|con todo|todo junto)/.test(t) && /(tirada|lectura|informe|or[aá]culo)/.test(t)) return { kind:'mega', period:/año|anual/.test(t) ? 'year' : /semana|semanal/.test(t) ? 'week' : 'day' };
   if (/astro|astral|carta natal|carta astral|zodiaco|hor[oó]scopo|tr[aá]nsito|astros/.test(t)) return { kind:/d[ií]a|diaria|hoy/.test(t) ? 'astroDaily' : 'astros' };
   if (/cruz celta|celt/.test(t)) return { kind:'tarot', spread:'celtic' };
   if (/amor|relaci[oó]n|pareja/.test(t) && /tarot|tirada|carta/.test(t)) return { kind:'tarot', spread:'love' };
@@ -6864,6 +7075,7 @@ async function processChatMessage(text) {
   const intent = detectChatIntent(clean);
   const subject = extractReadingSubjectFromText(clean);
   const followsLastReading = /última|ultima|lectura anterior|tirada anterior|presente|futuro|pasado|invertida|profundiza|explica|comparar|compara/.test(clean.toLowerCase()) && lastReading;
+  if (intent.kind === 'mega') { showMegaReading(intent.period); addChat('oracle','He abierto la Mega tirada. Revisa los datos, elige día, semana o año y pulsa “Crear mega tirada”.'); return; }
   if (intent.kind === 'tarot') return chatDrawTarot(intent.spread, subject);
   if (intent.kind === 'runes') return chatDrawRunes(intent.count, subject);
   if (intent.kind === 'tutorial') { showAppTutorial(); addChat('oracle','He abierto el tutorial guiado.'); return; }
@@ -6915,6 +7127,10 @@ function handleAction(action) {
     'first-reading': showFirstReading,
     'connect-ai': connectPuter,
     'daily': daily,
+    'mega-day': () => showMegaReading('day'),
+    'mega-week': () => showMegaReading('week'),
+    'mega-year': () => showMegaReading('year'),
+    'mega-reading': createMegaReading,
     'tarot-one': () => drawTarotSpread('one'),
     'tarot-three': () => drawTarotSpread('three'),
     'draw-tarot-selected': () => drawTarotSpread($('#tarotSpread')?.value || 'one'),
@@ -7048,7 +7264,7 @@ ${base}`;
   actionMap[action]?.();
 }
 function openModule(module) {
-  const map = { map: showMap, tarot: showTarot, runas: showRunas, luna: showLuna, astros: showAstros, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
+  const map = { map: showMap, mega: showMegaReading, tarot: showTarot, runas: showRunas, luna: showLuna, astros: showAstros, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
   const run = map[module];
   if (!run) return;
   try {
