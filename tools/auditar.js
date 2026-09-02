@@ -87,22 +87,56 @@
      justo donde hacia falta que hablara. Aqui se promedian sus paradas
      de color, que para superficies planas como estas se acerca bastante
      a lo que se ve. */
-  function colorDeImagen(imagen) {
+  /* Antes esto promediaba todas las paradas de color de la imagen de
+     fondo, viniera de donde viniera. Sale mal en dos casos muy comunes
+     en esta app:
+
+       - Un degradado lineal grande: el texto esta en un punto concreto,
+         no en la media. En un panel de arriba claro a abajo crema, un
+         rotulo de arriba se comparaba contra el punto medio.
+       - Un degradado radial con parada "transparent": el promedio cuenta
+         esa parada como un color mas y ensombrece el resultado, cuando
+         en realidad a esa distancia del centro no aporta nada.
+
+     Medido: en el chat en modo claro daba 3,94 y 4,4 donde la
+     composicion hecha punto por punto da 5,34 y 6,29. Seis avisos de
+     nada, y cada aviso falso resta credito a los verdaderos.
+
+     Ahora los degradados lineales se evaluan en la posicion del texto y
+     los radiales se ignoran, que es quedarse corto a proposito: un
+     radial de esta app siempre es un tinte suave sobre el color solido
+     que ya esta contado debajo. */
+  function colorDeImagen(imagen, caja, px, py) {
     if (!imagen || imagen === 'none') return null;
-    const trozos = imagen.match(/rgba?\([^)]*\)|color\(\s*srgb[^)]*\)/gi);
-    if (!trozos || !trozos.length) return null;
-    let r = 0, g = 0, b = 0, a = 0;
-    let n = 0;
-    for (const t of trozos) {
-      const c = color(t);
-      if (!c) continue;
-      r += c.r * c.a; g += c.g * c.a; b += c.b * c.a; a += c.a;
-      n += 1;
+    const i = imagen.indexOf('linear-gradient');
+    if (i < 0) return null;
+    const trozo = imagen.slice(i);
+    const paradas = (trozo.match(/rgba?\([^)]*\)|color\(\s*srgb[^)]*\)/gi) || [])
+      .map(color).filter(Boolean);
+    if (!paradas.length) return null;
+    if (paradas.length === 1) return paradas[0];
+
+    /* Donde cae el texto sobre el eje del degradado, entre 0 y 1. Sin
+       angulo, CSS reparte de arriba abajo. */
+    let t = 0.5;
+    if (caja && caja.width > 0 && caja.height > 0) {
+      const grados = (trozo.match(/(-?[\d.]+)deg/) || [])[1];
+      const rad = ((grados === undefined ? 180 : Number(grados)) - 90) * Math.PI / 180;
+      const ux = Math.cos(rad), uy = Math.sin(rad);
+      const largo = Math.abs(caja.width * ux) + Math.abs(caja.height * uy);
+      const dx = px - (caja.x + caja.width / 2);
+      const dy = py - (caja.y + caja.height / 2);
+      t = Math.max(0, Math.min(1, 0.5 + (dx * ux + dy * uy) / (largo || 1)));
     }
-    if (!n || a === 0) return null;
-    /* Se promedia el color ya premultiplicado y se queda con el alfa
-       medio, que es como se comporta una superficie de varias paradas. */
-    return { r: r / a, g: g / a, b: b / a, a: a / n };
+    const k = Math.min(paradas.length - 2, Math.floor(t * (paradas.length - 1)));
+    const f = t * (paradas.length - 1) - k;
+    const A = paradas[k], B = paradas[k + 1];
+    return {
+      r: A.r + (B.r - A.r) * f,
+      g: A.g + (B.g - A.g) * f,
+      b: A.b + (B.b - A.b) * f,
+      a: A.a + (B.a - A.a) * f,
+    };
   }
 
   function componer(frente, fondo) {
@@ -163,7 +197,7 @@
   /* Sube por los ancestros componiendo colores de fondo hasta dar con
      uno opaco. Si por el camino hay un degradado, lo dice: ese elemento
      no se puede medir con este metodo. */
-  function fondoDeCadena(cadena, base) {
+  function fondoDeCadena(cadena, base, punto) {
     const pila = [];
     let estimado = false;
     for (const n of cadena) {
@@ -176,7 +210,8 @@
       }
       /* La imagen se pinta por encima del color de fondo del mismo
          elemento, asi que entra despues en la pila. */
-      const imagen = colorDeImagen(cs.backgroundImage);
+      const caja = n.getBoundingClientRect();
+      const imagen = colorDeImagen(cs.backgroundImage, caja, punto.x, punto.y);
       if (imagen) {
         pila.push(imagen);
         estimado = true;
@@ -198,7 +233,11 @@
       /* Color transparente: es un emoji, que se pinta con su propio
          glifo de color y no con el color CSS. */
       if (!tinta || tinta.a < 0.05) continue;
-      const { fondo, estimado } = fondoDeCadena(c.cadena, base);
+      /* El degradado se evalua donde esta el texto, no en el centro
+         del elemento que lo pinta ni en la media de sus paradas. */
+      const caja = c.el.getBoundingClientRect();
+      const punto = { x: caja.x + caja.width / 2, y: caja.y + caja.height / 2 };
+      const { fondo, estimado } = fondoDeCadena(c.cadena, base, punto);
       const r = razon(componer(tinta, fondo), fondo);
       const ficha = { texto: c.texto, color: cs.color, razon: +r.toFixed(2), tam: cs.fontSize };
       /* Si el fondo se ha estimado a partir de un degradado, el numero
