@@ -546,22 +546,53 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   }
   return aspectY + 4;
 }
-function canvasDataUrlFromImage(src) {
+/* Las ilustraciones se metian en el PDF a resolucion nativa y en PNG.
+   Una carta ocupa 25 mm de ancho en la pagina; a 300 puntos por pulgada,
+   que es el estandar de imprenta, eso son 295 pixeles. Se estaban
+   metiendo 420, y en un formato sin perdida pensado para dibujos de
+   lineas, no para ilustraciones.
+
+   Medido con una carta del mazo: 503 KB en PNG a tamano nativo frente a
+   34 en JPEG a 320 pixeles de ancho. Quince veces menos, y 320 pixeles
+   para 25 mm siguen siendo 325 puntos por pulgada, por encima del
+   estandar.
+
+   Antes de codificar se pinta un fondo del color del papel del PDF,
+   porque el JPEG no guarda transparencia: sin eso, cualquier imagen con
+   zonas transparentes saldria con el fondo en negro.
+
+   Devuelve tambien el formato, que hay que pasarle a jsPDF: si se le
+   dice PNG y se le dan datos JPEG, unas versiones lo adivinan y otras
+   fallan. */
+const PDF_PAPEL = [249, 246, 238];
+
+function canvasDataUrlFromImage(src, anchoMaximo = 320) {
   return new Promise((resolve) => {
-    if (!src) return resolve('');
+    const vacio = { url: '', formato: 'PNG' };
+    if (!src) return resolve(vacio);
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
+        const nativoW = img.naturalWidth || img.width;
+        const nativoH = img.naturalHeight || img.height;
+        if (!nativoW || !nativoH) return resolve(vacio);
+        /* Nunca se agranda: si la original ya es pequena se deja como
+           esta, que ampliarla solo anadiria peso sin anadir detalle. */
+        const escala = Math.min(1, anchoMaximo / nativoW);
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
+        canvas.width = Math.max(1, Math.round(nativoW * escala));
+        canvas.height = Math.max(1, Math.round(nativoH * escala));
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      } catch { resolve(''); }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = `rgb(${PDF_PAPEL.join(',')})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve({ url: canvas.toDataURL('image/jpeg', 0.82), formato: 'JPEG' });
+      } catch { resolve(vacio); }
     };
-    img.onerror = () => resolve('');
+    img.onerror = () => resolve(vacio);
     img.src = src;
   });
 }
@@ -1210,9 +1241,10 @@ async function exportPDF(title, text, reading = lastReading) {
           const imgH = imgW * 1.72;
           const imgX = x + (cardW - imgW) / 2;
           const imgY = boxY + 12;
-          const dataUrl = await canvasDataUrlFromImage(asset.image);
+          const imagen = await canvasDataUrlFromImage(asset.image);
+          const dataUrl = imagen.url;
           if (dataUrl) {
-            try { doc.addImage(dataUrl, 'PNG', imgX, imgY, imgW, imgH); }
+            try { doc.addImage(dataUrl, imagen.formato, imgX, imgY, imgW, imgH); }
             catch { doc.setFillColor(238, 232, 255); doc.roundedRect(imgX, imgY, imgW, imgH, 3, 3, 'F'); }
           } else {
             doc.setFillColor(238, 232, 255); doc.roundedRect(imgX, imgY, imgW, imgH, 3, 3, 'F');
@@ -1233,9 +1265,13 @@ async function exportPDF(title, text, reading = lastReading) {
           const imgH = 27;
           const imgX = x + (cardW - imgW) / 2;
           const imgY = boxY + 12;
-          let dataUrl = await canvasDataUrlFromImage(asset.image);
-          if (!dataUrl) dataUrl = runeSvgDataUrl(asset.symbol || 'ᚱ');
-          try { doc.addImage(dataUrl, 'PNG', imgX, imgY, imgW, imgH); }
+          const imagenRuna = await canvasDataUrlFromImage(asset.image, 160);
+          let dataUrl = imagenRuna.url;
+          /* El respaldo es un SVG dibujado al vuelo, no una foto: ese
+             sigue yendo como tal. */
+          let formatoRuna = imagenRuna.formato;
+          if (!dataUrl) { dataUrl = runeSvgDataUrl(asset.symbol || 'ᚱ'); formatoRuna = 'PNG'; }
+          try { doc.addImage(dataUrl, formatoRuna, imgX, imgY, imgW, imgH); }
           catch {
             try { doc.addImage(dataUrl, 'SVG', imgX, imgY, imgW, imgH); }
             catch {
@@ -1253,9 +1289,10 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setTextColor(...ink);
           doc.text(pdfAscii(t(asset.reversed ? 'stInvertida' : 'stAlDerecho')), x + cardW / 2, boxY + boxH - 4, { align: 'center' });
         } else {
-          const dataUrl = await canvasDataUrlFromImage(asset.image);
+          const imagenOtra = await canvasDataUrlFromImage(asset.image, 240);
+          const dataUrl = imagenOtra.url;
           if (dataUrl) {
-            try { doc.addImage(dataUrl, 'PNG', x + 4, boxY + 12, cardW - 8, 24); } catch {}
+            try { doc.addImage(dataUrl, imagenOtra.formato, x + 4, boxY + 12, cardW - 8, 24); } catch {}
           } else {
             doc.setFillColor(238, 232, 255); doc.roundedRect(x + 4, boxY + 12, cardW - 8, 24, 3, 3, 'F');
             doc.setFontSize(17); doc.setTextColor(...gold); doc.text(asset.symbol || '✦', x + cardW / 2, boxY + 27, { align: 'center' });
