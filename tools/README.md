@@ -5,7 +5,7 @@ cargan desde `index.html` ni entran en el precache del service worker.
 
 ## `auditar.js`
 
-Comprueba tres cosas que se rompen sin que nadie se entere, porque solo
+Comprueba cuatro cosas que se rompen sin que nadie se entere, porque solo
 aparecen en combinaciones concretas de ajustes:
 
 1. **Contraste** del texto en las 24 combinaciones de tema (6), modo
@@ -16,6 +16,10 @@ aparecen en combinaciones concretas de ajustes:
    ni una letra.
 3. **Espacio**: que al agrandar nada desborde a lo ancho, ni se pisen o
    se recorten las etiquetas de la barra inferior.
+4. **Aplastados**: elementos flex encogidos por debajo de su contenido.
+   En cuanto un elemento flex lleva `overflow`, su `min-height` deja de
+   valer `auto` y pasa a valer cero, así que el navegador lo encoge todo
+   lo que haga falta para que quepan sus hermanos, sin avisar.
 
 ### Cómo se usa
 
@@ -51,6 +55,29 @@ ninguno visible sin buscarlo a propósito:
 
 Se comprobó que la herramienta los detecta reintroduciéndolos uno a uno.
 Un auditor que solo sabe decir «todo bien» no sirve de nada.
+
+### Lo que no supo ver, y por qué ahora sí
+
+En la Biblioteca Arcana la fila de categorías se quedaba en **10 píxeles
+de alto con botones de 40**: solo asomaba el borde de arriba de Tarot,
+Runas, Luna, Sueños y Grabovoi. Es la navegación principal de esa
+sección y llevaba así desde que se escribió.
+
+El auditor no lo vio. Miraba desbordes **hacia fuera** —algo que se sale
+de su sitio— y esto era un encogimiento **hacia dentro**. Se encontró a
+mano, comparando el alto de cada elemento con el de su contenido.
+
+De paso salió el problema contrario. Los mismos botones aparecían en el
+informe como «se salen» en las cuatro escalas de texto, siempre, sin que
+pasara nada: están en un carrusel horizontal y se alcanzan pasando el
+dedo. Un aviso que sale siempre acaba ignorándose, y entonces tampoco se
+mira el día que avisa de algo real.
+
+Así que se hicieron las dos cosas: **añadir la comprobación de
+aplastados** y **dejar de avisar de lo que hay dentro de un carrusel**.
+Las dos validadas igual que las anteriores: con el fallo puesto la
+herramienta lo señala con su medida (`alto: 9.8`, `unaFilaMide: 40`), y
+sin él calla, en las cinco secciones de la app.
 
 ### Límites conocidos
 
