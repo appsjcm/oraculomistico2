@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-copia-195';
+const CACHE_NAME = 'oraculo-v1-0-public-pdf-196';
 const APP_SHELL = [
   './',
   './index.html',
