@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-pdf-196';
+const CACHE_NAME = 'oraculo-v1-0-public-offline-197';
 const APP_SHELL = [
   './',
   './index.html',
@@ -91,6 +91,26 @@ self.addEventListener('activate', event => {
   );
 });
 
+/* La precarga guarda './styles/v2.css', pero la pagina pide
+   'styles/v2.css?v=1.0-...' para saltarse la cache del navegador al
+   subir version. Y una cache no da por buena esa coincidencia: la clave
+   incluye la consulta, asi que la copia precargada no la servia nadie.
+   Comprobado con la propia API de caches: guardando el fichero sin
+   consulta y pidiendolo con ella, no casa; ignorando la consulta, si.
+
+   Resultado: la app aguantaba sin conexion solo porque el manejador de
+   abajo guarda las URL con version segun se van pidiendo. Todo lo que se
+   descarga al instalar, unos sesenta y cinco ficheros, no rescataba
+   nada.
+
+   Se busca primero la coincidencia exacta, que es la que puede tener la
+   version correcta, y solo si no hay nada se acepta la precargada. Peor
+   una hoja de estilos de la version anterior que ninguna. */
+function buscarEnCache(peticion) {
+  return caches.match(peticion)
+    .then(exacta => exacta || caches.match(peticion, { ignoreSearch: true }));
+}
+
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
@@ -108,7 +128,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
           return response;
         })
-        .catch(() => caches.match(event.request).then(cached => {
+        .catch(() => buscarEnCache(event.request).then(cached => {
           if (cached) return cached;
           return event.request.mode === 'navigate' ? caches.match('./index.html') : Response.error();
         }))
@@ -117,7 +137,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request)
+    buscarEnCache(event.request)
       .then(cached => cached || fetch(event.request).then(response => {
         if (!response || !response.ok) return response;
         const copy = response.clone();
