@@ -3059,7 +3059,16 @@ function validateBackupData(data) {
   return { valid };
 }
 function showBackupPreview(data) {
-  return `Backup ${data?.version || 'sin versión'}\n${Array.isArray(data?.diary) ? data.diary.length : 0} lecturas · ${Array.isArray(data?.chat) ? data.chat.length : 0} mensajes`;
+  /* Antes solo contaba lecturas y mensajes. Si la copia trae reflexiones
+     conviene decirlo: es lo que mas duele perder y quien restaura tiene
+     derecho a saber que hay dentro antes de aceptar. */
+  const partes = [
+    `${Array.isArray(data?.diary) ? data.diary.length : 0} lecturas`,
+    `${Array.isArray(data?.chat) ? data.chat.length : 0} mensajes`,
+  ];
+  const reflexiones = Array.isArray(data?.dailyJournal) ? data.dailyJournal.length : 0;
+  if (reflexiones) partes.push(`${reflexiones} reflexiones`);
+  return `Backup ${data?.version || 'sin versión'}\n${partes.join(' · ')}`;
 }
 function openDiaryItem(id) {
   const item = storeGet(LS.diary, []).find(entry => entry.id === id);
@@ -3266,6 +3275,21 @@ function importBackupFromFile(file) {
       if (data.pdfStyle) localStorage.setItem(LS.pdfStyle, data.pdfStyle);
       if (Array.isArray(data.diary)) storeSet(LS.diary, data.diary);
       if (Array.isArray(data.chat)) storeSet(LS.chat, data.chat);
+      /* Estas tres se guardaban desde siempre y no se restauraban nunca:
+         la copia las llevaba dentro y al importarla se tiraban. */
+      if (typeof data.privateMode === 'boolean') setPrivateMode(data.privateMode);
+      if (typeof data.performanceMode === 'boolean') setPerformanceMode(data.performanceMode);
+      if (data.migration) localStorage.setItem(LS.migration, data.migration);
+      /* Y lo que antes ni se guardaba. Las copias antiguas no traen estos
+         campos, asi que cada uno se mira por separado y lo que no venga
+         se queda como esta. */
+      if (Array.isArray(data.dailyJournal)) storeSet(LS.dailyJournal, data.dailyJournal);
+      if (data.achievements && typeof data.achievements === 'object') storeSet(LS.achievements, data.achievements);
+      if (data.appLanguage) setAppLanguage(data.appLanguage);
+      if (data.appearanceMode) setAppearanceMode(data.appearanceMode);
+      if (data.intention !== undefined) localStorage.setItem(LS.intention, data.intention || '');
+      if (data.aiStyle) localStorage.setItem(LS.aiStyle, data.aiStyle);
+      if (typeof data.focusMode === 'boolean') setFocusMode(data.focusMode);
       migrateData();
       applyTheme();
       updateHome();
@@ -3423,7 +3447,20 @@ function backupData() {
     performanceMode:isPerformanceMode(),
     migration:localStorage.getItem(LS.migration) || '',
     diary:storeGet(LS.diary,[]),
-    chat:storeGet(LS.chat,[])
+    chat:storeGet(LS.chat,[]),
+    /* El diario de reflexiones no se guardaba. Son hasta 365 entradas
+       escritas a mano -animo, intencion y texto libre- y no estan en
+       ningun otro sitio: al cambiar de telefono se perdian enteras,
+       cuando el manual dice que la copia es la unica forma de llevarse
+       los datos. Lo mismo pasaba con los logros conseguidos, el idioma
+       elegido, la luz de la app, la intencion y el estilo de lectura. */
+    dailyJournal:storeGet(LS.dailyJournal,[]),
+    achievements:storeGet(LS.achievements,{}),
+    appLanguage:getAppLanguagePreference(),
+    appearanceMode:getAppearanceMode(),
+    intention:localStorage.getItem(LS.intention) || '',
+    aiStyle:localStorage.getItem(LS.aiStyle) || '',
+    focusMode:isFocusMode()
   };
   downloadTextFile('oraculo-mistico-backup.json', JSON.stringify(data,null,2));
   unlockAchievement('first_backup');
