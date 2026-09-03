@@ -1493,3 +1493,26 @@ html[data-appearance-mode="light"] .mega-period-grid .choice.active {
     width: min(116px, 100%);
   }
 }
+
+/* ------------------------------------------------------------------
+   La nota rápida, ahora en Perfil
+   ------------------------------------------------------------------
+   Vivía dentro de los paneles avanzados, en una tarjeta con su propio
+   estilo. Al traerla a Perfil, que es una lista de filas, el texto de
+   ayuda salía a tamaño de cuerpo y pesaba más que la nota misma. Se
+   iguala al de las demás filas. */
+.om-nota-suelta {
+  display: grid;
+  gap: 10px;
+}
+.om-nota-ayuda {
+  margin: 0;
+  font-size: .82rem;
+  line-height: 1.35;
+  color: var(--om-ivory-3, var(--muted));
+}
+.om-nota-suelta .premium-note-input {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+}
