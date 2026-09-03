@@ -678,9 +678,48 @@ function getPdfReadingHighlight(reading = lastReading) {
   return null;
 }
 
+/* jsPDF pesa 356 KB y solo hace falta cuando alguien exporta. Bajarlo en
+   cada visita son 356 KB de datos moviles para algo que la mayoria de las
+   sesiones no usa: es el 18 % de todo lo que se descarga al entrar.
+
+   Se pide la primera vez que se necesita y se guarda la promesa, para que
+   dos exportaciones seguidas no lo bajen dos veces. Sigue estando en la
+   precarga del service worker, asi que se descarga igual en segundo plano
+   al instalar y el PDF sigue saliendo sin conexion; lo que se quita es de
+   la carga de la pagina, que es lo que hace esperar a quien entra.
+
+   La marca de version sale de las hojas de estilo, que es de donde sale
+   todo lo demas, para que no haya dos sitios que actualizar. */
+let promesaJsPDF = null;
+
+function rutaConVersion(ruta) {
+  try {
+    const marca = document.querySelector('link[rel="stylesheet"][href*="?v="]')
+      ?.getAttribute('href')?.match(/[?&]v=([^&"]+)/)?.[1];
+    return marca ? `${ruta}?v=${marca}` : ruta;
+  } catch { return ruta; }
+}
+
+function cargarJsPDF() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (!promesaJsPDF) {
+    promesaJsPDF = new Promise((cumplir, fallar) => {
+      const etiqueta = document.createElement('script');
+      etiqueta.src = rutaConVersion('assets/vendor/jspdf/jspdf.umd.min.js');
+      etiqueta.onload = () => window.jspdf?.jsPDF
+        ? cumplir(window.jspdf.jsPDF)
+        : fallar(new Error('jsPDF cargo pero no expuso jsPDF'));
+      /* Si falla se olvida la promesa: asi un segundo intento vuelve a
+         probar en vez de quedarse con el fallo para siempre. */
+      etiqueta.onerror = () => { promesaJsPDF = null; fallar(new Error('no se pudo cargar jsPDF')); };
+      document.head.appendChild(etiqueta);
+    });
+  }
+  return promesaJsPDF;
+}
+
 async function exportNumerologyPDF(reading = lastReading) {
-  const jsPDF = window.jspdf?.jsPDF;
-  if (!jsPDF) throw new Error('jsPDF no cargado');
+  const jsPDF = await cargarJsPDF();
   const meta = reading?.meta || {};
   const numbers = meta.numbers || {};
   const name = meta.name || numbers.name || getReadingSubjectName(reading) || 'Consulta';
@@ -832,8 +871,7 @@ async function exportNumerologyPDF(reading = lastReading) {
 async function exportAstroPDF(reading = lastReading) {
   const chart = getAstroPdfChart(reading);
   if (!chart) return false;
-  const jsPDF = window.jspdf?.jsPDF;
-  if (!jsPDF) throw new Error('jsPDF no cargado');
+  const jsPDF = await cargarJsPDF();
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
@@ -1074,8 +1112,7 @@ async function exportPDF(title, text, reading = lastReading) {
   }
   const filename = safeFileName(title);
   try {
-    const jsPDF = window.jspdf?.jsPDF;
-    if (!jsPDF) throw new Error('jsPDF no cargado');
+    const jsPDF = await cargarJsPDF();
     toast(t('tsMakingPdf'));
     const style = getPdfStyle();
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
