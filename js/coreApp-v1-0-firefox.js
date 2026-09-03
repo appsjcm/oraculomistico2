@@ -371,8 +371,19 @@ function cleanPdfText(value = '') {
     .trim();
 }
 const ASTRO_PDF_SIGNS = ['ARI','TAU','GEM','CAN','LEO','VIR','LIB','ESC','SAG','CAP','ACU','PIS'];
-const ASTRO_SIGN_COLORS = ['#bd3b75','#a79a92','#f1c833','#4f6fa8','#bd3b75','#a79a92','#f1c833','#4f6fa8','#bd3b75','#a79a92','#f1c833','#4f6fa8'];
-const ASTRO_PDF_SIGN_COLORS = [[189, 59, 117], [167, 154, 146], [241, 200, 51], [79, 111, 168], [189, 59, 117], [167, 154, 146], [241, 200, 51], [79, 111, 168], [189, 59, 117], [167, 154, 146], [241, 200, 51], [79, 111, 168]];
+/* Un color por elemento: fuego, tierra, aire, agua, repetidos en el
+   orden de los signos. La rueda se dibuja sobre papel casi blanco a
+   proposito, en modo dia y en modo noche, para que se lea como una carta
+   impresa. Pero estos colores venian pensados para fondo oscuro y dos de
+   los cuatro se perdian encima: el aire daba 1,58 sobre 1 y la tierra
+   2,69, con lo que seis de los doce glifos no se veian. El fuego y el
+   agua estaban bien, en 5,11 y 4,95.
+
+   Se oscurecen los dos sin salirse de su tono, para que el codigo de
+   elemento se siga leyendo: el aire queda en un ambar hondo, 4,99, y la
+   tierra en un gris calido, 4,87. */
+const ASTRO_SIGN_COLORS = ['#bd3b75','#7a6e64','#8a6a00','#4f6fa8','#bd3b75','#7a6e64','#8a6a00','#4f6fa8','#bd3b75','#7a6e64','#8a6a00','#4f6fa8'];
+const ASTRO_PDF_SIGN_COLORS = [[189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168], [189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168], [189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168]];
 const ASTRO_PDF_PLANETS = { sun:'SOL', moon:'LUN', mercury:'MER', venus:'VEN', mars:'MAR', jupiter:'JUP', saturn:'SAT', uranus:'URA', neptune:'NEP', pluto:'PLU', node:'NOD', chiron:'QUI', lilith:'LIL' };
 const ASTRO_PDF_ASPECTS = {
   'Conjunción': { code:'CONJ', color:[74, 113, 184] },
