@@ -352,6 +352,12 @@
          scroll normal enseña la mitad, y la ficha algo mas de un tercio.
          El corte en la cuarta parte deja fuera a los dos y sigue
          cogiendo el fallo. */
+      /* El texto que solo leen los lectores de pantalla se colapsa a un
+         pixel a proposito, con clip o clip-path. No esta aplastado: esta
+         escondido, que es su trabajo. */
+      if (cs.clipPath !== 'none' || (cs.clip && cs.clip !== 'auto')) continue;
+      if (/sr-only|visually-hidden|screen-reader/.test(el.className || '')) continue;
+
       /* Una hoja cerrada detras de otra abierta declara alturas que no
          se ven, y salian avisos de paneles que ni estaban delante. Se
          miran los atributos que dicen si algo esta apagado, no la
