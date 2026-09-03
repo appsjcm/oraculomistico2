@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-voz-213';
+const CACHE_NAME = 'oraculo-v1-0-public-legal-214';
 const APP_SHELL = [
   './',
   './index.html',
@@ -47,6 +47,7 @@ const APP_SHELL = [
   './grabovoi_db.json',
   './manifest.json',
   './privacy.html',
+  './404.html',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',

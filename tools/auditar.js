@@ -342,25 +342,43 @@
       /* Una lista larga con su propio scroll está encogida a propósito:
          para eso tiene scroll. Lo que delata al fallo es que el hueco se
          quede por debajo de lo que ocupa una sola fila de su contenido. */
-      /* Se baja por los envoltorios de un solo hijo hasta dar con algo
-         que parezca una fila. Sin esto, un contenedor con scroll cuyo
-         contenido cuelga de un unico div daba positivo siempre: "la fila"
-         medía todo el contenido, claro que no cabia. Paso en la ficha de
-         la Biblioteca. */
-      let hijo = el.firstElementChild;
-      while (hijo && el.children.length === 1 && hijo.children.length === 1) {
-        hijo = hijo.firstElementChild;
-      }
-      if (hijo && el.children.length === 1 && hijo.children.length > 1) hijo = hijo.firstElementChild;
-      const altoDeUnaFila = hijo ? hijo.getBoundingClientRect().height : 0;
-      if (!(altoDeUnaFila > 0)) continue;
-      if (r.height >= altoDeUnaFila - 1) continue;
+      /* Cuanto se ve del contenido. Buscar "la altura de una fila" era
+         fragil: en un contenedor cuyo contenido cuelga de un envoltorio,
+         o cuyos hijos son dos bloques grandes, esa medida no significa
+         nada y salian avisos de contenedores que funcionan bien.
+
+         La proporcion separa los casos limpiamente. El fallo real de la
+         Biblioteca dejaba 9,8 px de 48, un 20 %. Un cuerpo de modal con
+         scroll normal enseña la mitad, y la ficha algo mas de un tercio.
+         El corte en la cuarta parte deja fuera a los dos y sigue
+         cogiendo el fallo. */
+      /* Una hoja cerrada detras de otra abierta declara alturas que no
+         se ven, y salian avisos de paneles que ni estaban delante. Se
+         miran los atributos que dicen si algo esta apagado, no la
+         posicion en pantalla: las hojas se abren con una transicion y
+         mientras dura -o si el navegador no la ejecuta- una hoja abierta
+         todavia figura debajo del borde. */
+      if (el.closest('[hidden], [aria-hidden="true"]')) continue;
+      /* Una lista larga con scroll enseña una fracción pequeña de su
+         contenido y eso es lo normal: la de las 78 cartas enseña el 5 %.
+         Lo que delata al fallo es que lo aplastado sea algo *corto*, una
+         barra de herramientas o una cabecera, que deberia caber entera.
+         El caso real: una fila de 48 px reducida a 10.
+
+         Asi que se pide contenido corto y ademas que se vea menos de la
+         mitad. Con eso el cuerpo de un modal (948 px), la ficha (1.847) y
+         la rejilla de cartas (11.000) quedan fuera, y la barra de
+         categorias dentro. */
+      const proporcionVisible = r.height / (el.scrollHeight || 1);
+      if (el.scrollHeight >= 400) continue;
+      if (proporcionVisible >= 0.6) continue;
+
 
       fuera.push({
         elemento: el.tagName + '.' + [...el.classList].slice(0, 2).join('.'),
         alto: Number(r.height.toFixed(1)),
         contenido: el.scrollHeight,
-        unaFilaMide: Number(altoDeUnaFila.toFixed(1)),
+        seVe: Math.round(proporcionVisible * 100) + '%',
         dentroDe: padre.tagName + '.' + [...padre.classList].slice(0, 2).join('.'),
       });
     }
