@@ -5795,16 +5795,28 @@ function calculatePlacidusHouses(asc, mc, date = '', time = '12:00', place = nul
     h12
   ].map(normalizeDegree);
 }
+/* Cual se ha usado de verdad, que no siempre es el que se pidio: pasado
+   el circulo polar Placidus no tiene solucion y se cae al reparto por
+   cuadrantes. La carta seguia diciendo "casas Placidus" igualmente, asi
+   que a quien nace en Longyearbyen se le anunciaba un sistema y se le
+   daba otro. Se apunta aqui para poder decirlo. */
+let ultimoSistemaDeCasas = 'placidus';
+
 function calculateAstroHouses(asc, mc, houseSystem = 'placidus', date = '', time = '12:00', place = null) {
+  ultimoSistemaDeCasas = houseSystem;
   if (!asc) return [];
   if (houseSystem === 'placidus') {
     const placidus = calculatePlacidusHouses(asc, mc, date, time, place);
     if (placidus) return placidus;
+    /* Sin solucion: lo que sale de aqui abajo es el de cuadrantes. */
+    ultimoSistemaDeCasas = 'quadrant';
   }
   if (houseSystem === 'whole') {
+    ultimoSistemaDeCasas = 'whole';
     return ASTRO_HOUSES.map((label, index) => normalizeDegree(asc.index * 30 + index * 30));
   }
   if (houseSystem === 'equal' || !mc) {
+    ultimoSistemaDeCasas = 'equal';
     return ASTRO_HOUSES.map((label, index) => normalizeDegree(asc.absolute + index * 30));
   }
   const ascDeg = asc.absolute;
@@ -5856,8 +5868,15 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
   const utcLabel = Number.isFinite(dateInfo?.ms) ? `${String(new Date(dateInfo.ms).getUTCHours()).padStart(2, '0')}:${String(new Date(dateInfo.ms).getUTCMinutes()).padStart(2, '0')}` : '';
   const siderealDegree = preciseAngles ? localSiderealDegree(date, time, place) : null;
   const siderealTimeLabel = Number.isFinite(siderealDegree) ? siderealTimeLabelFromDegree(siderealDegree) : '';
+  /* Se nombra el sistema que se ha usado, no el que se pidio, y si no
+     coincide se dice por que: Placidus no tiene solucion pasado el
+     circulo polar y ahi se reparte por cuadrantes. */
+  const sistemaUsado = ultimoSistemaDeCasas;
+  const cambioDeSistema = sistemaUsado !== houseSystem
+    ? ` (${astroHouseSystemLabel(houseSystem)} no tiene solución a esta latitud)`
+    : '';
   const quality = preciseAngles
-    ? `Lugar, zona horaria, planetas, ascendente, Medio Cielo y casas ${astroHouseSystemLabel(houseSystem)} calculados con coordenadas locales`
+    ? `Lugar, zona horaria, planetas, ascendente, Medio Cielo y casas ${astroHouseSystemLabel(sistemaUsado)}${cambioDeSistema} calculados con coordenadas locales`
     : 'Lugar manual: ascendente y casas aproximados; selecciona una ciudad de la lista para afinar';
   aspects.sort((a, b) => Number(a.orb) - Number(b.orb));
   /* Se ensenan los doce mas cerrados para que la lectura no se haga
@@ -5867,7 +5886,7 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
      de las cartas, 5,6 aspectos por carta. El resumen ensenaba ese doce
      como si fuera el total. */
   const aspectsFound = aspects.length;
-  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 12), aspectsFound, houseSystem, engine:astroEngineLabel(), quality, timeZoneOffset, utcLabel, siderealDegree, siderealTimeLabel, preciseAngles };
+  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 12), aspectsFound, houseSystem, houseSystemUsed:sistemaUsado, engine:astroEngineLabel(), quality, timeZoneOffset, utcLabel, siderealDegree, siderealTimeLabel, preciseAngles };
 }
 function formatAstroLocalFromMs(ms, timeZone = '') {
   const date = new Date(ms);
