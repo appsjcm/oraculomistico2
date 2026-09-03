@@ -57,7 +57,7 @@ RULE = colors.HexColor('#e4dccb')
 BOX_BG = colors.HexColor('#faf4e6')
 
 VERSION = '1.0'
-BUILD = 'fraunces-95'
+BUILD = 'mega-224'
 
 # --------------------------------------------------------------------
 # Tipografias
@@ -273,10 +273,29 @@ def interior(canvas, doc):
 # --------------------------------------------------------------------
 # Piezas de contenido
 # --------------------------------------------------------------------
-def h1(numero, titulo):
+# El orden de las secciones del manual. Es la unica lista: de aqui salen
+# los numeros que se pintan en cada seccion y tambien el indice. Antes
+# eran dos listas paralelas escritas a mano, y anadir una seccion en medio
+# obligaba a renumerar las veintitres a mano. Si un titulo no coincide,
+# h1 lo dice en vez de numerar mal en silencio.
+SECCIONES = [
+    'Qué es Oráculo Místico', 'Primeros pasos', 'El Santuario',
+    'Idiomas', 'La Mesa de Lectura: tarot', 'Runas', 'Luna', 'Sueños',
+    'Numerología y sinastría', 'Astros', 'Mega tirada', 'Grabovoi', 'Mensaje del día',
+    'Chat ritual', 'Biblioteca Arcana y Mi Grimorio', 'Voz, avatar y lectura hablada',
+    'Apariencia y rendimiento', 'Accesibilidad', 'Exportar y copias de seguridad',
+    'La IA es opcional', 'Privacidad y datos', 'Instalar la app y uso sin conexión',
+    'Si algo no funciona', 'Uso responsable',
+]
+
+
+def h1(titulo):
+    if titulo not in SECCIONES:
+        raise SystemExit('La sección "%s" no está en SECCIONES: añádela allí '
+                         'para que salga en el índice.' % titulo)
     return KeepTogether([
         Spacer(1, 2 * mm),
-        Paragraph(numero, S['h1num']),
+        Paragraph('SECCIÓN %02d' % (SECCIONES.index(titulo) + 1), S['h1num']),
         Paragraph(titulo, S['h1']),
         Barra(),
         Spacer(1, 4 * mm),
@@ -408,15 +427,7 @@ def construir():
     F.append(Paragraph('Índice', S['h1']))
     F.append(Barra())
     F.append(Spacer(1, 6 * mm))
-    secciones = [
-        'Qué es Oráculo Místico', 'Primeros pasos', 'El Santuario',
-        'Idiomas', 'La Mesa de Lectura: tarot', 'Runas', 'Luna', 'Sueños',
-        'Numerología y sinastría', 'Astros', 'Grabovoi', 'Mensaje del día',
-        'Chat ritual', 'Biblioteca Arcana y Mi Grimorio', 'Voz, avatar y lectura hablada',
-        'Apariencia y rendimiento', 'Accesibilidad', 'Exportar y copias de seguridad',
-        'La IA es opcional', 'Privacidad y datos', 'Instalar la app y uso sin conexión',
-        'Si algo no funciona', 'Uso responsable',
-    ]
+    secciones = SECCIONES
     filas = []
     for i, s in enumerate(secciones, 1):
         filas.append(['%02d' % i, s])
@@ -440,7 +451,7 @@ def construir():
     F.append(PageBreak())
 
     # ---------- 01 ----------
-    F.append(h1('SECCIÓN 01', 'Qué es Oráculo Místico'))
+    F.append(h1('Qué es Oráculo Místico'))
     F.append(entradilla(
         'Una aplicación de consulta simbólica que reúne siete oráculos en un mismo lugar '
         'y guarda lo que haces en tu propio dispositivo.'))
@@ -470,7 +481,7 @@ def construir():
         'porque una lectura es material para pensar, no una sentencia.'))
 
     # ---------- 02 ----------
-    F.append(h1('SECCIÓN 02', 'Primeros pasos'))
+    F.append(h1('Primeros pasos'))
     F.append(p(
         'La primera vez que abres la app aparece una pantalla de bienvenida y, tras ella, '
         'una guía breve de primeros pasos. Puedes recorrerla o cerrarla: nada de lo que '
@@ -490,7 +501,7 @@ def construir():
         'la barra superior.'))
 
     # ---------- 03 ----------
-    F.append(h1('SECCIÓN 03', 'El Santuario'))
+    F.append(h1('El Santuario'))
     F.append(entradilla(
         'La pantalla principal. Desde aquí se llega a todo, y muestra de un vistazo el '
         'estado de la app.'))
@@ -499,21 +510,27 @@ def construir():
         'se abren en ventanas superpuestas y se cierran devolviéndote siempre al mismo '
         'sitio. Los indicadores de la parte superior muestran si la IA está conectada, '
         'cuál es tu intención activa y si la app puede instalarse.'))
-    F.append(h2('Zonas del Santuario'))
+    F.append(h2('Los diez altares'))
+    F.append(p(
+        'El Santuario reúne diez caminos y todos llevan al mismo sitio: Tarot, '
+        '<b>Mega tirada</b>, Runas, Luna, Astros, Sueños, Numerología, Grabovoi, '
+        'Consultar al Oráculo y Mi Grimorio. Cada uno se abre en su propia ventana '
+        'y se cierra devolviéndote al Santuario.'))
+    F.append(h2('La barra de abajo'))
+    F.append(p('Siempre visible, con los cinco sitios a los que se vuelve una y otra vez.'))
     F.append(tabla(
-        ['Zona', 'Para qué sirve'],
+        ['Dónde', 'Qué encuentras'],
         [
-            ['Los Arcanos', 'Accesos directos a las lecturas más frecuentes y a la carta del día.'],
-            ['Mesa de Lectura', 'El espacio de tarot: elegir tirada, revelar cartas y leer el resultado.'],
-            ['Biblioteca Arcana', 'Recorrer las 78 cartas con buscador y filtros por palo.'],
-            ['Mi Grimorio', 'Tus lecturas guardadas, notas y favoritos.'],
-            ['Guardián del Santuario', 'Tema visual, nota rápida y actividad reciente.'],
-            ['Tu espacio', 'Perfil, búsqueda avanzada y accesos rápidos.'],
+            ['Inicio', 'La portada, con el Orbe, el mensaje del día y tu intención activa.'],
+            ['El Santuario', 'Los diez altares.'],
+            ['Mi Grimorio', 'Tus lecturas guardadas, el diario y los favoritos.'],
+            ['Biblioteca Arcana', 'Las 78 cartas, las runas, las lunas, los sueños y los códigos, con buscador.'],
+            ['Perfil', 'Voz, idioma, apariencia, copias de seguridad, nota rápida y todos los ajustes.'],
         ],
         [42 * mm, ANCHO - 2 * MARGEN - 42 * mm]))
 
     # ---------- 04 ----------
-    F.append(h1('SECCIÓN 04', 'Idiomas'))
+    F.append(h1('Idiomas'))
     F.append(p(
         'La app está disponible en <b>seis idiomas</b>: español, catalán, inglés, francés, '
         'alemán y chino simplificado. La traducción no se queda en los botones: alcanza '
@@ -532,7 +549,7 @@ def construir():
         'caracteres chinos y el texto saldría vacío.'))
 
     # ---------- 05 ----------
-    F.append(h1('SECCIÓN 05', 'La Mesa de Lectura: tarot'))
+    F.append(h1('La Mesa de Lectura: tarot'))
     F.append(entradilla(
         'Setenta y ocho cartas, veintiuna tiradas y una ceremonia de revelación que puedes '
         'ajustar a tu ritmo.'))
@@ -576,7 +593,7 @@ def construir():
     ]))
 
     # ---------- 06 ----------
-    F.append(h1('SECCIÓN 06', 'Runas'))
+    F.append(h1('Runas'))
     F.append(p(
         'Las veinticuatro runas del futhark antiguo, con su significado al derecho y, '
         'cuando la runa lo admite, su lectura invertida. Algunas runas no tienen inversión: '
@@ -587,7 +604,7 @@ def construir():
         'biblioteca completa cuando quieras consultar una en concreto.'))
 
     # ---------- 07 ----------
-    F.append(h1('SECCIÓN 07', 'Luna'))
+    F.append(h1('Luna'))
     F.append(p(
         'La lectura lunar parte de la fase real del día y añade un enfoque que eliges tú: '
         'claridad, amor, trabajo, descanso o soltar. Incluye el sentido de la fase, un '
@@ -597,7 +614,7 @@ def construir():
         'escribir, observar. Nunca implican sustancias, ayunos ni nada que pueda hacerte daño.'))
 
     # ---------- 08 ----------
-    F.append(h1('SECCIÓN 08', 'Sueños'))
+    F.append(h1('Sueños'))
     F.append(p(
         'Escribe o dicta el sueño y la app lo interpreta de forma simbólica a partir de sus '
         'elementos: la emoción principal que elijas y los símbolos que aparezcan. Puedes '
@@ -607,7 +624,7 @@ def construir():
         'lectura más extensa.'))
 
     # ---------- 09 ----------
-    F.append(h1('SECCIÓN 09', 'Numerología y sinastría'))
+    F.append(h1('Numerología y sinastría'))
     F.append(p(
         'A partir del nombre y la fecha de nacimiento, la app calcula los números '
         'simbólicos habituales y los presenta en fichas claras.'))
@@ -624,7 +641,7 @@ def construir():
         'como una invitación a mirar la relación, no como un veredicto sobre ella.'))
 
     # ---------- 10 ----------
-    F.append(h1('SECCIÓN 10', 'Astros'))
+    F.append(h1('Astros'))
     F.append(entradilla(
         'Carta natal simbólica, lectura del día y revolución solar, con rueda dibujada.'))
     F.append(p(
@@ -647,7 +664,26 @@ def construir():
         'toma esa parte de la lectura con más holgura.'))
 
     # ---------- 11 ----------
-    F.append(h1('SECCIÓN 11', 'Grabovoi'))
+    F.append(h1('Mega tirada'))
+    F.append(entradilla(
+        'Un informe que junta cinco oráculos en una sola lectura, en vez de '
+        'consultarlos por separado y tener que atar los cabos tú.'))
+    F.append(p(
+        'Reúne las cartas, una runa guía, la fase lunar, una base astral y la '
+        'numerología personal, y los lee como un conjunto. Eliges el periodo —día, '
+        'semana o año— y con qué datos se calcula la parte astral y numérica: nombre, '
+        'fecha, hora y lugar de nacimiento.'))
+    F.append(p(
+        'Sale un informe con la síntesis y cada oráculo por separado, con las mismas '
+        'acciones que cualquier otra lectura: guardarlo, copiarlo, escucharlo, '
+        'exportarlo a PDF o pedirle a la IA que lo amplíe.'))
+    F.append(aviso(
+        'Si no has puesto tus datos',
+        'La parte astral y la numerológica necesitan fecha de nacimiento. Sin ella la '
+        'lectura se hace igual, apoyándose en el resto, pero pierde esas dos voces. '
+        'Puedes guardarlos una vez en <b>Mi Oráculo</b> y ya no volver a escribirlos.'))
+
+    F.append(h1('Grabovoi'))
     F.append(p(
         'Una colección amplia de secuencias numéricas organizadas por categoría, con '
         'buscador y filtros. Cada entrada abre una ficha con la estructura del código, el '
@@ -665,7 +701,7 @@ def construir():
         'médica.</b> Si tienes un problema de salud, consulta a un profesional sanitario.'))
 
     # ---------- 12 ----------
-    F.append(h1('SECCIÓN 12', 'Mensaje del día'))
+    F.append(h1('Mensaje del día'))
     F.append(p(
         'Combina la carta, la runa y la fase lunar del día en una sola lectura breve. Es '
         'estable: si lo abres varias veces el mismo día obtienes lo mismo, y también si '
@@ -676,7 +712,7 @@ def construir():
         'que queda guardada en Mi Grimorio.'))
 
     # ---------- 13 ----------
-    F.append(h1('SECCIÓN 13', 'Chat ritual'))
+    F.append(h1('Chat ritual'))
     F.append(p(
         'Una sala privada donde escribir al Oráculo con tus palabras. Puede sacar cartas y '
         'runas sin salir de la conversación, y acompañar consultas sobre sueños, luna o '
@@ -686,22 +722,30 @@ def construir():
         'mantiene el hilo de la conversación reciente.'))
 
     # ---------- 14 ----------
-    F.append(h1('SECCIÓN 14', 'Biblioteca Arcana y Mi Grimorio'))
+    F.append(h1('Biblioteca Arcana y Mi Grimorio'))
     F.append(h2('Biblioteca Arcana'))
     F.append(p(
-        'El archivo de las 78 cartas, con buscador y filtros por palo, por arcanos mayores '
-        'o por cartas de la corte. Sirve para estudiar el mazo sin necesidad de hacer una tirada.'))
+        'El archivo de todo el saber simbólico de la app: las 78 cartas, las runas, las '
+        'fases de la luna, los símbolos de los sueños y los códigos. Con buscador y filtros '
+        'por palo, por arcanos mayores o por cartas de la corte. Sirve para estudiar el '
+        'mazo sin necesidad de hacer una tirada.'))
+    F.append(p(
+        'Cada ficha se abre a pantalla completa, con la lámina ampliable y un botón de '
+        '<b>Escuchar</b> que lee la carta en voz alta con el avatar, igual que en una lectura.'))
     F.append(h2('Mi Grimorio'))
     F.append(p(
         'Donde queda todo lo que guardas: lecturas, notas y reflexiones. Puedes buscar, '
         'filtrar por módulo, marcar favoritos, exportar en PDF y borrar lo que ya no quieras.'))
+    F.append(p(
+        'La tarjeta de cada entrada enseña el principio del texto; el botón de '
+        '<b>Escuchar</b> lee la lectura entera, no ese resumen.'))
     F.append(aviso(
         'Modo privado',
         'Si activas el modo privado en Ajustes, las lecturas nuevas dejan de guardarse. Lo '
         'que ya estaba guardado no se borra: sigue ahí hasta que decidas eliminarlo.'))
 
     # ---------- 15 ----------
-    F.append(h1('SECCIÓN 15', 'Voz, avatar y lectura hablada'))
+    F.append(h1('Voz, avatar y lectura hablada'))
     F.append(p(
         'La app usa las voces del propio dispositivo, no voces generadas en un servidor. '
         'Por eso el catálogo depende de tu teléfono o navegador. Desde Ajustes puedes '
@@ -717,7 +761,7 @@ def construir():
         'elegir estilo, posición, tamaño y expresión, o desactivarlo por completo.'))
 
     # ---------- 16 ----------
-    F.append(h1('SECCIÓN 16', 'Apariencia y rendimiento'))
+    F.append(h1('Apariencia y rendimiento'))
     F.append(h2('Temas'))
     F.append(p(
         'Seis temas visuales: Dorado místico, Noche violeta, Bosque rúnico, Luna azul, '
@@ -738,7 +782,7 @@ def construir():
         'la app en su versión más liviana sin perder ninguna función.'))
 
     # ---------- 17 ----------
-    F.append(h1('SECCIÓN 17', 'Accesibilidad'))
+    F.append(h1('Accesibilidad'))
     F.append(vinetas([
         '<b>Alto contraste</b>, para reforzar la separación entre texto y fondo.',
         '<b>Texto grande</b>, que aumenta el tamaño en toda la app.',
@@ -752,7 +796,7 @@ def construir():
         'la app la respeta sin que tengas que configurar nada.'))
 
     # ---------- 18 ----------
-    F.append(h1('SECCIÓN 18', 'Exportar y copias de seguridad'))
+    F.append(h1('Exportar y copias de seguridad'))
     F.append(h2('PDF'))
     F.append(p(
         'Cualquier lectura puede exportarse en PDF, con las cartas o runas, el resumen y la '
@@ -772,7 +816,7 @@ def construir():
         'recuperarlas.'))
 
     # ---------- 19 ----------
-    F.append(h1('SECCIÓN 19', 'La IA es opcional'))
+    F.append(h1('La IA es opcional'))
     F.append(p(
         'La app funciona completa sin inteligencia artificial. Todo el contenido simbólico '
         '—cartas, runas, lunas, sueños, números— está escrito y vive dentro de la app.'))
@@ -788,7 +832,7 @@ def construir():
         'no escribir ahí información sensible.'))
 
     # ---------- 20 ----------
-    F.append(h1('SECCIÓN 20', 'Privacidad y datos'))
+    F.append(h1('Privacidad y datos'))
     F.append(p(
         'Oráculo Místico no tiene cuentas, ni servidor propio de usuarios, ni seguimiento '
         'publicitario. Tus lecturas, tu perfil, tus notas y tus ajustes se guardan en el '
@@ -804,7 +848,7 @@ def construir():
         '<b>Ajustes → Privacidad y datos</b>.'))
 
     # ---------- 21 ----------
-    F.append(h1('SECCIÓN 21', 'Instalar la app y uso sin conexión'))
+    F.append(h1('Instalar la app y uso sin conexión'))
     F.append(p(
         'Oráculo Místico puede instalarse en la pantalla de inicio y abrirse como una app '
         'más, sin barra de navegador.'))
@@ -822,7 +866,7 @@ def construir():
         'búsqueda externa necesitan conexión.'))
 
     # ---------- 22 ----------
-    F.append(h1('SECCIÓN 22', 'Si algo no funciona'))
+    F.append(h1('Si algo no funciona'))
     F.append(tabla(
         ['Qué ocurre', 'Qué probar'],
         [
@@ -848,7 +892,7 @@ def construir():
         [50 * mm, ANCHO - 2 * MARGEN - 50 * mm]))
 
     # ---------- 23 ----------
-    F.append(h1('SECCIÓN 23', 'Uso responsable'))
+    F.append(h1('Uso responsable'))
     F.append(p(
         'Esta app propone símbolos para pensar, no respuestas cerradas. Sus textos están '
         'escritos a propósito en términos de posibilidad, y ninguna lectura debería '
