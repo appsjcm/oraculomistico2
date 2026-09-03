@@ -3968,6 +3968,17 @@ window.OraculoArcanos = {
   esArcanoMayor
 };
 
+/* La voz y el avatar vivian solo dentro de coreApp, asi que la
+   Biblioteca y el Grimorio, que son modulos aparte, no podian hablar.
+   Este puente sigue el mismo patron que los de arriba. Quien llame a
+   hablar() se lleva tambien el avatar y el movimiento de boca, porque de
+   eso ya se encarga speakText por dentro. */
+window.OraculoVoz = {
+  hablar: (texto) => speakText(String(texto || '')),
+  parar: stopSpeech,
+  get activa() { return Boolean(voiceSpeechSession || remoteSpeechAudio); }
+};
+
 window.OraculoSaber = {
   get tarot()  { return ALL_TAROT; },
   get runas()  { return RUNAS; },
