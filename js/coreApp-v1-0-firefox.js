@@ -5658,11 +5658,59 @@ function latitudDeCarta(place, porDefecto = 0) {
   return Math.max(-LATITUD_MAXIMA_CARTA, Math.min(LATITUD_MAXIMA_CARTA, lat));
 }
 
+/* La formula del ascendente deja el punto en el eje correcto pero no
+   siempre en el extremo correcto: el "+180" con el que acaba vale para
+   latitudes normales, y pasado el circulo polar el denominador cambia de
+   signo, el arcotangente cae en otro cuadrante y lo que sale es el
+   descendente.
+
+   Se ve probando un nacimiento en Longyearbyen, a 78 grados norte: la app
+   daba Escorpio 0 grados 51 minutos y el punto que de verdad estaba
+   subiendo era Tauro 0 grados 51, justo enfrente.
+
+   Esto lo destapo el arreglo anterior. Antes la latitud se recortaba a 66
+   grados y la formula nunca entraba en ese regimen -daba un ascendente de
+   otro sitio, que era peor-; al quitar el recorte para que las cartas
+   polares fueran correctas, quedo a la vista este segundo problema, que
+   ya estaba debajo. Lo comprobe hasta 60 grados y ahi todavia no aparece.
+
+   Se decide cual de los dos extremos sube de verdad, mirando la
+   geometria. */
+function ascendenteDesdeElEje(lst, lat, eps) {
+  const bruto = normalizeDegree(180 + radToDeg(Math.atan2(
+    -cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
+  if (!Number.isFinite(bruto)) return NaN;
+  /* Cual de los dos extremos es el que sube se mira directamente: se
+     calcula a que altura sobre el horizonte esta el punto ahora y a que
+     altura estara un rato despues, y sube el que gana altura.
+
+     Se probaron dos atajos y los dos fallan cerca de los polos. Compararlo
+     con el Medio Cielo se equivoca una hora de cada veinticuatro a 78
+     grados -Longyearbyen, un sitio habitado- porque ahi el ascendente cae
+     casi justo enfrente y la comparacion queda en el borde. Mirar solo el
+     signo del angulo horario falla en el mismo sitio por lo mismo: ese
+     angulo vale 179,85 grados, o sea que el punto esta practicamente en
+     el meridiano, y el seno queda en 0,0026; cualquier diferencia de
+     milisegundos en el tiempo sidereo le cambia el signo.
+
+     Mirando la altura con un cuarto de hora de separacion no hay empate
+     posible: el que sube ha subido y el que baja ha bajado. */
+  const alturaDe = (grados, avanceHoras) => {
+    const alfa = normalizeDegree(radToDeg(Math.atan2(sinDeg(grados) * cosDeg(eps), cosDeg(grados))));
+    const delta = radToDeg(Math.asin(Math.max(-1, Math.min(1, sinDeg(grados) * sinDeg(eps)))));
+    /* El cielo gira 15,04 grados por hora de tiempo sidereo. */
+    const angulo = normalizeDegree(lst + avanceHoras * 15.041069 - alfa);
+    return sinDeg(lat) * sinDeg(delta) + cosDeg(lat) * cosDeg(delta) * cosDeg(angulo);
+  };
+  const gana = grados => alturaDe(grados, 0.25) - alturaDe(grados, 0);
+  return gana(bruto) > 0 ? bruto : normalizeDegree(bruto + 180);
+}
+
 function fallbackAscendant(date = '', time = '12:00', name = '', place = null) {
   const lst = localSiderealDegree(date, time, place);
   const lat = latitudDeCarta(place, 0);
   const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
-  let degree = normalizeDegree(180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps))));
+  let degree = ascendenteDesdeElEje(lst, lat, eps);
   if (!Number.isFinite(degree)) degree = normalizeDegree(lst + (astroHash(name) % 18));
   if (!place?.lat) degree = normalizeDegree(degree + (astroHash(name) % 18));
   return zodiacFromDegree(degree);
@@ -5672,8 +5720,8 @@ function astronomicalAscendant(date = '', time = '12:00', place = null) {
   const lst = localSiderealDegree(date, time, place);
   const lat = latitudDeCarta(place);
   const eps = trueObliquityDegree(astroDayCount(date, time, place)?.t || 0);
-  const raw = 180 + radToDeg(Math.atan2(-cosDeg(lst), sinDeg(lst) * cosDeg(eps) + tanDeg(lat) * sinDeg(eps)));
-  return Number.isFinite(raw) ? zodiacFromDegree(normalizeDegree(raw)) : null;
+  const grados = ascendenteDesdeElEje(lst, lat, eps);
+  return Number.isFinite(grados) ? zodiacFromDegree(grados) : null;
 }
 function eclipticLongitudeFromRightAscension(rightAscension = 0, obliquity = 23.439) {
   return normalizeDegree(radToDeg(Math.atan2(sinDeg(rightAscension) / cosDeg(obliquity), cosDeg(rightAscension))));

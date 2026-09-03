@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-quiron-amplio-222';
+const CACHE_NAME = 'oraculo-v1-0-public-asc-polar-225';
 const APP_SHELL = [
   './',
   './index.html',
