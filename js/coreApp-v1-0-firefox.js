@@ -3762,7 +3762,20 @@ function openCeremonyIntro(kind = 'tarot') {
       <div class="actions mt"><button class="btn primary" data-module="${isTarot?'tarot':'runas'}">${escapeHTML(t(isTarot?'stElegirTirada':'stElegirRunas'))}</button><button class="btn" data-act="settings">${escapeHTML(t('settings'))}</button></div>
     </div>` });
 }
-function getAppVersionLabel() { return 'v1.0'; }
+/* Esto devolvia siempre 'v1.0', asi que cuando alguien contaba que veia
+   algo raro despues de una actualizacion no habia forma de saber que
+   version tenia delante: todo el mundo era v1.0. El identificador de la
+   publicacion ya viaja en la pagina, en el ?v= con el que se piden las
+   hojas de estilo, que es justo lo que cambia en cada subida. Se lee de
+   ahi para que no pueda quedarse desfasado. */
+function getAppVersionLabel() {
+  try {
+    const marca = document.querySelector('link[rel="stylesheet"][href*="?v="]')
+      ?.getAttribute('href')?.match(/[?&]v=([^&"]+)/)?.[1];
+    if (marca) return `v1.0 · ${decodeURIComponent(marca)}`;
+  } catch {}
+  return 'v1.0';
+}
 function get3dPreference() { return 'off'; }
 function set3dPreference(value = 'auto') {
   try { localStorage.setItem(LS.effects3d, 'off'); } catch {}
