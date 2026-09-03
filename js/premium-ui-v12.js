@@ -45,11 +45,11 @@ function OEsc(v = '') {
     let target = null;
 
     if (module) {
-      target = document.querySelector(`.module-card[data-module="${CSS.escape(module)}"]`);
+      target = document.querySelector(`[data-module="${CSS.escape(module)}"]`);
     }
 
     if (!target && action) {
-      target = document.querySelector(`.hero-actions [data-action="${CSS.escape(action)}"], .daily [data-action="${CSS.escape(action)}"], .module-card[data-action="${CSS.escape(action)}"]`);
+      target = document.querySelector(`.hero-actions [data-action="${CSS.escape(action)}"], .daily [data-action="${CSS.escape(action)}"], [data-action="${CSS.escape(action)}"]`);
     }
 
     if (target && target !== btn) {
@@ -195,6 +195,12 @@ function OEsc(v = '') {
     setTimeout(() => el.remove(), 2800);
   }
 
+  /* Estos accesos apuntaban a las tarjetas ".module-card" que vivian en
+     los paneles avanzados. Al quitar el bloque se quedaron sin destino y
+     los botones dejaron de hacer nada, en silencio, porque clickReal
+     devuelve false y nadie mira el valor. Ahora apuntan a lo que si
+     existe: los altares del Santuario y el boton de Biblioteca de la
+     barra de abajo. */
   function clickReal(selector) {
     const el = document.querySelector(selector);
     if (el) {
@@ -278,7 +284,7 @@ function OEsc(v = '') {
 
     if (action === 'tarot-reading') {
       toast(getIntention() ? 'Abriendo tarot con tu intención.' : 'Abriendo tarot.');
-      clickReal('.module-card[data-module="tarot"]');
+      clickReal('[data-module="tarot"]');
       return;
     }
 
@@ -290,7 +296,7 @@ function OEsc(v = '') {
 
     if (action === 'ritual-chat') {
       toast(getIntention() ? 'Abriendo chat ritual con tu intención.' : 'Abriendo chat ritual.');
-      clickReal('.module-card[data-module="chat"]');
+      clickReal('[data-module="chat"]');
       return;
     }
   }
@@ -329,15 +335,15 @@ function OEsc(v = '') {
   const LS_IMMERSIVE = 'oraculo.superPremium.immersive';
 
   const actions = [
-    { label: 'tarot', desc: 'paTarotD', run: () => document.querySelector('.module-card[data-module="tarot"]')?.click() },
-    { label: 'runes', desc: 'paRunasD', run: () => document.querySelector('.module-card[data-module="runas"]')?.click() },
-    { label: 'moon', desc: 'paLunaD', run: () => document.querySelector('.module-card[data-module="luna"]')?.click() },
-    { label: 'dreams', desc: 'paSuenosD', run: () => document.querySelector('.module-card[data-module="suenos"]')?.click() },
-    { label: 'numerology', desc: 'paNumerologiaD', run: () => document.querySelector('.module-card[data-module="numerologia"]')?.click() },
-    { label: 'library', desc: 'paBibliotecaD', run: () => document.querySelector('.module-card[data-module="biblioteca"]')?.click() },
-    { label: 'paChat', desc: 'paChatD', run: () => document.querySelector('.module-card[data-module="chat"]')?.click() },
+    { label: 'tarot', desc: 'paTarotD', run: () => document.querySelector('[data-module="tarot"]')?.click() },
+    { label: 'runes', desc: 'paRunasD', run: () => document.querySelector('[data-module="runas"]')?.click() },
+    { label: 'moon', desc: 'paLunaD', run: () => document.querySelector('[data-module="luna"]')?.click() },
+    { label: 'dreams', desc: 'paSuenosD', run: () => document.querySelector('[data-module="suenos"]')?.click() },
+    { label: 'numerology', desc: 'paNumerologiaD', run: () => document.querySelector('[data-module="numerologia"]')?.click() },
+    { label: 'library', desc: 'paBibliotecaD', run: () => document.querySelector('[data-om-biblioteca]')?.click() },
+    { label: 'paChat', desc: 'paChatD', run: () => document.querySelector('[data-module="chat"]')?.click() },
     { label: 'dailyMessage', desc: 'paDailyD', run: () => document.querySelector('[data-action="daily"]')?.click() },
-    { label: 'settings', desc: 'paAjustesD', run: () => document.querySelector('.module-card[data-action="settings"]')?.click() }
+    { label: 'settings', desc: 'paAjustesD', run: () => document.querySelector('[data-action="settings"]')?.click() }
   ];
 
   function openPalette() {
@@ -586,7 +592,7 @@ function OEsc(v = '') {
     if (!act) return;
     if (act.dataset.premiumAction === 'open-library') {
       e.preventDefault();
-      clickReal('.module-card[data-module="biblioteca"]');
+      clickReal('[data-om-biblioteca]');
     }
   });
 
@@ -722,7 +728,7 @@ function OEsc(v = '') {
         }
       }
 
-      const module = e.target.closest('.module-card[data-module]');
+      const module = e.target.closest('[data-module]');
       if (module) {
         pushActivity('Módulo abierto', module.dataset.module);
       }
@@ -1053,13 +1059,13 @@ function OEsc(v = '') {
     if (action === 'open-card-library') {
       e.preventDefault();
       ceremonialPulse();
-      clickReal('.module-card[data-module="biblioteca"]');
+      clickReal('[data-om-biblioteca]');
     }
 
     if (action === 'start-ceremonial-reading') {
       e.preventDefault();
       ceremonialPulse();
-      clickReal('.module-card[data-module="tarot"]');
+      clickReal('[data-module="tarot"]');
       document.body.classList.add('premium-immersive');
     }
   });
@@ -1169,13 +1175,13 @@ function OEsc(v = '') {
     if (action === 'open-reading-vault') {
       e.preventDefault();
       pulseVeil();
-      clickReal('.module-card[data-module="biblioteca"]');
+      clickReal('[data-om-biblioteca]');
     }
 
     if (action === 'launch-spread-lab') {
       e.preventDefault();
       pulseVeil();
-      clickReal('.module-card[data-module="tarot"]');
+      clickReal('[data-module="tarot"]');
       document.body.classList.add('premium-immersive');
     }
   });
@@ -1278,19 +1284,19 @@ function OEsc(v = '') {
     if (action === 'open-onboarding-hub') {
       e.preventDefault();
       pulseVeil();
-      clickReal('.module-card[data-module="biblioteca"]');
+      clickReal('[data-om-biblioteca]');
     }
 
     if (action === 'open-reading-vault') {
       e.preventDefault();
       pulseVeil();
-      clickReal('.module-card[data-module="biblioteca"]');
+      clickReal('[data-om-biblioteca]');
     }
 
     if (action === 'launch-spread-lab') {
       e.preventDefault();
       pulseVeil();
-      clickReal('.module-card[data-module="tarot"]');
+      clickReal('[data-module="tarot"]');
       document.body.classList.add('premium-immersive');
     }
   });

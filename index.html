@@ -49,8 +49,8 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-sinpaneles-204">
+  <link rel="stylesheet" href="styles/core-remodel-v1-0-70.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/premium-home-v12.css?v=1.0-accesos-206">
 
   <!-- El sistema de diseño se carga el último a propósito: su :root manda
        sobre los heredados, y las clases de tema siguen ganando por especificidad. -->
@@ -58,12 +58,12 @@
        cinco idiomas europeos. El extendido lo pide el navegador solo
        si alguna pagina usa sus caracteres. -->
   <link rel="preload" href="assets/vendor/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles/tokens.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/v2.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-sinpaneles-204">
-  <link rel="stylesheet" href="styles/astro.css?v=1.0-sinpaneles-204">
+  <link rel="stylesheet" href="styles/tokens.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/v2.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/v2-ritual.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/v2-oraculos.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/visual-performance-polish.css?v=1.0-accesos-206">
+  <link rel="stylesheet" href="styles/astro.css?v=1.0-accesos-206">
 
   <script>
     /* Al cambiar de versión ya no se desregistra el service worker ni se
@@ -78,16 +78,16 @@
     })();
   </script>
   <script defer src="https://js.puter.com/v2/"></script>
-  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js?v=1.0-sinpaneles-204"></script>
-  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/premium-ui-v12.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-shell.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-ritual.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-grimorio.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-voz.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-biblioteca.js?v=1.0-sinpaneles-204"></script>
-  <script defer src="js/v2-movil.js?v=1.0-sinpaneles-204"></script>
+  <script defer src="assets/vendor/jspdf/jspdf.umd.min.js?v=1.0-accesos-206"></script>
+  <script defer src="assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js?v=1.0-accesos-206"></script>
+  <script type="module" src="js/coreApp-v1-0-firefox.js?v=1.0-accesos-206"></script>
+  <script defer src="js/premium-ui-v12.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-shell.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-ritual.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-grimorio.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-voz.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-biblioteca.js?v=1.0-accesos-206"></script>
+  <script defer src="js/v2-movil.js?v=1.0-accesos-206"></script>
 
 </head>
 <body>
@@ -359,21 +359,10 @@
 
   
   <!-- Duplica el Santuario y el Perfil: se recoge con los paneles avanzados. -->
-  <section class="premium-quick-actions" aria-label="Accesos rápidos" data-i18n-aria="arAccesosRapidos" id="omQuickActions" hidden>
-    <span class="premium-section-kicker" data-i18n="ixAccesosRapidos">✦ Accesos rápidos</span>
-  <div class="premium-smart-dock" aria-label="Accesos rápidos" data-i18n-aria="arAccesosRapidos">
-    <button type="button" data-premium-action="tarot-reading" data-i18n="ixTarot2">🃏 Tarot</button>
-    <button type="button" data-premium-action="daily-reading" data-i18n="ixDia">🌟 Día</button>
-    <button type="button" data-premium-action="open-library" data-i18n="ixBiblioteca2">📚 Biblioteca</button>
-    <button type="button" data-premium-action="open-card-library" data-i18n="ixCartas">🗂️ Cartas</button>
-    <button type="button" data-premium-action="open-reading-vault" data-i18n="ixGuardadas2">🗄️ Guardadas</button>
-    <button type="button" data-premium-action="open-native-engine" data-i18n="ixArcanos">⚡ Arcanos</button>
-    <button type="button" data-premium-action="open-onboarding-hub" data-i18n="ixOnboarding">🚀 Primeros pasos</button>
-    <button type="button" data-premium-action="ritual-onboarding" data-i18n="ixRitual2">✨ Ritual</button>
-    <button type="button" data-premium-action="open-palette" data-i18n="ixBuscar2">⌘ Buscar</button>
-    <button type="button" data-premium-action="open-settings-drawer" data-i18n="ixAjustes">⚙️ Ajustes</button>
-  </div>
-  </section>
+  <!-- Aqui estaba la barra de accesos rapidos. Solo aparecia cuando se
+       desplegaban los paneles avanzados: al quitarlos se quedo oculta y
+       sin nada que la desvelara. Sus diez accesos siguen todos vivos, en
+       la barra de abajo, en Perfil o en el cajon de ajustes. -->
 
   
   <button id="premiumSettingsFab" class="premium-settings-fab" data-premium-action="open-settings-drawer" type="button" aria-label="Abrir ajustes" data-i18n-aria="arAbrirAjustes">
