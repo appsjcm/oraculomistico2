@@ -4,10 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080713">
+  <script>
+    /* La app guarda si prefieres noche o dia. Esta pagina no lo miraba,
+       asi que con el dia puesto se quedaba en negro: se sale del Perfil
+       con luz y se vuelve con oscuridad. Es el mismo guion que index.html
+       ejecuta antes de pintar, para que no haya un parpadeo. */
+    (() => {
+      const key = 'oraculo.appearanceMode.v1';
+      let mode = 'dark';
+      try { mode = localStorage.getItem(key) === 'light' ? 'light' : 'dark'; } catch {}
+      document.documentElement.dataset.appearanceMode = mode;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', mode === 'light' ? '#f6efe3' : '#080713');
+    })();
+  </script>
   <meta name="robots" content="noindex">
   <title>Página no encontrada · Oráculo Místico</title>
   <link rel="icon" type="image/svg+xml" href="/oraculomistico2/favicon.svg">
-  <link rel="stylesheet" href="/oraculomistico2/styles/core-remodel-v1-0-70.css">
+  <link rel="stylesheet" href="/oraculomistico2/styles/core-remodel-v1-0-70.css?v=1.0-legal-214">
+  <!-- tokens trae las variables y polish el bloque de modo dia. Sin
+       estas dos, la pagina solo sabia pintar de noche. -->
+  <link rel="stylesheet" href="/oraculomistico2/styles/tokens.css?v=1.0-legal-214">
+  <link rel="stylesheet" href="/oraculomistico2/styles/visual-performance-polish.css?v=1.0-legal-214">
 </head>
 <body>
   <div class="cosmos" aria-hidden="true"></div>

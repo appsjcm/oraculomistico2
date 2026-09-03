@@ -1550,3 +1550,24 @@ html[data-appearance-mode="light"] .mega-period-grid .choice.active {
   cursor: pointer;
 }
 .om-bib-escuchar:hover { border-color: var(--om-gold); color: var(--om-gold); }
+
+/* La app no tiene ninguna regla para enlaces sueltos, así que un <a> sin
+   clase se queda con el azul de fábrica del navegador. En la app no se
+   nota porque todos llevan clase o heredan color, pero en la página de
+   privacidad el enlace de volver salía en rgb(0,0,238) sobre el panel
+   oscuro: 2,08 sobre 1, por debajo incluso del umbral de ilegibilidad.
+
+   Se cubren también los enlaces sin clase dentro de lecturas y modales,
+   que hoy no existen pero aparecerán en cuanto alguien escriba uno. */
+.legal-page a,
+.modal-card a:not([class]),
+.result-card a:not([class]),
+.ai-reading-panel a:not([class]) {
+  color: var(--om-gold);
+  text-underline-offset: 2px;
+}
+.legal-page a:hover,
+.modal-card a:not([class]):hover,
+.result-card a:not([class]):hover {
+  color: var(--om-gold-warm, var(--om-gold));
+}

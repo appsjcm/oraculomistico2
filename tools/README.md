@@ -21,6 +21,14 @@ aparecen en combinaciones concretas de ajustes:
    valer `auto` y pasa a valer cero, así que el navegador lo encoge todo
    lo que haga falta para que quepan sus hermanos, sin avisar.
 
+   La regla costó tres intentos. Comparar con «la altura de una fila» no
+   vale: en un contenedor cuyo contenido cuelga de un envoltorio, esa
+   medida es todo el contenido. Y una proporción a secas tampoco: una
+   lista de 78 cartas enseña el 5 % de su alto y está perfectamente. Lo
+   que delata al fallo es que lo aplastado sea algo **corto** —una barra
+   de herramientas, una cabecera— que debería caber entero. Así que se
+   pide contenido por debajo de 400 px y menos de la mitad visible.
+
 ### Cómo se usa
 
 Con la app abierta en el navegador, en la consola:
@@ -76,7 +84,7 @@ mira el día que avisa de algo real.
 Así que se hicieron las dos cosas: **añadir la comprobación de
 aplastados** y **dejar de avisar de lo que hay dentro de un carrusel**.
 Las dos validadas igual que las anteriores: con el fallo puesto la
-herramienta lo señala con su medida (`alto: 9.8`, `unaFilaMide: 40`), y
+herramienta lo señala con su medida (`se ve 17%`), y
 sin él calla, en las cinco secciones de la app.
 
 ### Límites conocidos
