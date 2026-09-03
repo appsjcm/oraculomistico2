@@ -3269,10 +3269,100 @@ function setFocusMode(value) { localStorage.setItem(LS.focusMode, value ? 'true'
 function isPerformanceMode() { return localStorage.getItem(LS.performanceMode) === 'true'; }
 function setPerformanceMode(value) { localStorage.setItem(LS.performanceMode, value ? 'true' : 'false'); }
 
+/* Clave del almacen que vive en los paneles avanzados. Lo define
+   premium-ui, no este fichero, asi que se pone literal. */
+const CLAVE_ALMACEN_PARALELO = 'oraculo.nativeTarotEngine.v12.vault';
+
+/* La app guarda en cuarenta y ocho claves repartidas por cinco ficheros,
+   y la copia nombraba una por una las suyas. Cada vez que alguien anadia
+   una clave en otro fichero se quedaba fuera sin que nadie se enterara.
+   Contadas: veinte fuera, y entre ellas los favoritos de la Biblioteca y
+   la nota rapida, que son cosas que se eligen y se escriben a mano.
+
+   En vez de seguir nombrandolas de una en una, esta lista dice que se
+   lleva y se copia tal cual, como texto. Anadir una clave aqui es una
+   linea. Se quedan fuera a proposito el registro de errores, los
+   contadores de visitas, las marcas de migracion y la cache del mensaje
+   del dia: son cosas del aparato, no de la persona. */
+const CLAVES_EXTRA_EN_LA_COPIA = [
+  'oraculo.v2.biblioteca.favoritos',   /* las fichas marcadas */
+  'oraculo.concierge.quickNote',       /* la nota rapida */
+  'oraculo.v2.voz.silencio',
+  'oraculo.v2.voz.velocidad',
+  'oraculo.v2.ritual',
+  'oraculo.v2.theme',
+  'oraculo.concierge.theme',
+  'oraculo.premiumFocus.v1',
+  'oraculo.superPremium.immersive',
+];
+
+function recogerExtras() {
+  const fuera = {};
+  for (const clave of CLAVES_EXTRA_EN_LA_COPIA) {
+    try {
+      const valor = localStorage.getItem(clave);
+      if (valor !== null) fuera[clave] = valor;
+    } catch {}
+  }
+  return fuera;
+}
+
+function restaurarExtras(extras) {
+  if (!extras || typeof extras !== 'object') return 0;
+  let puestas = 0;
+  for (const clave of CLAVES_EXTRA_EN_LA_COPIA) {
+    const valor = extras[clave];
+    /* Solo se aceptan las claves de la lista: una copia manipulada no
+       puede escribir donde le apetezca. */
+    if (typeof valor !== 'string') continue;
+    try { localStorage.setItem(clave, valor); puestas += 1; } catch {}
+  }
+  return puestas;
+}
+
+/* Las tiradas guardadas estaban en dos sitios: el Grimorio y un almacen
+   propio de los paneles avanzados, cada uno con su clave y su lista.
+   Dos sitios para lo mismo, y la persona no tenia forma de saber en cual
+   habia guardado. Se pasan al Grimorio, que es el que se ve, se busca,
+   se exporta y se comparte.
+
+   No se borra el original: si algo sale mal, sigue ahi. Y la marca de
+   migracion evita repetirlo, para que no salgan duplicados en cada
+   arranque. Cada tirada llega con su fecha original, no con la de hoy,
+   asi que aparece donde le toca en el historial. */
+function fundirAlmacenParaleloEnElGrimorio() {
+  const tiradas = storeGet(CLAVE_ALMACEN_PARALELO, []);
+  if (!Array.isArray(tiradas) || !tiradas.length) return 0;
+  const diario = storeGet(LS.diary, []);
+  const yaEstan = new Set(diario.map(entrada => entrada.id));
+  const nuevas = [];
+  for (const tirada of tiradas) {
+    const id = `almacen-${tirada?.id || Math.random().toString(36).slice(2)}`;
+    if (yaEstan.has(id)) continue;
+    const cartas = Array.isArray(tirada?.cards) ? tirada.cards : [];
+    const nombres = cartas.map(c => c?.name).filter(Boolean);
+    nuevas.push({
+      id,
+      type: 'Tarot',
+      title: tirada?.type || 'Tirada guardada',
+      text: nombres.length ? nombres.join(' · ') : 'Tirada sin detalle.',
+      items: nombres,
+      date: tirada?.createdAt || new Date().toISOString(),
+      favorite: false,
+      note: '',
+    });
+  }
+  if (!nuevas.length) return 0;
+  const juntas = diario.concat(nuevas)
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  storeSet(LS.diary, juntas.slice(0, 300));
+  return nuevas.length;
+}
+
 function migrateData() {
   try {
     const version = localStorage.getItem(LS.migration);
-    if (version === '1.0.73') return;
+    if (version === '1.0.74') return;
     const oldDiary = storeGet('oraculo.diary', null);
     const oldChat = storeGet('oraculo.chatRitual', null);
     const oldGuide = localStorage.getItem('oraculo.guideSeen');
@@ -3281,7 +3371,8 @@ function migrateData() {
     if (!localStorage.getItem(LS.guide) && oldGuide) localStorage.setItem(LS.guide, oldGuide);
     const profile = getProfile();
     if (profile.favoriteSpread === 'cross') setProfile({ favoriteSpread: 'celtic' });
-    localStorage.setItem(LS.migration, '1.0.73');
+    fundirAlmacenParaleloEnElGrimorio();
+    localStorage.setItem(LS.migration, '1.0.74');
   } catch {}
 }
 
@@ -3530,7 +3621,8 @@ function importBackupFromFile(file) {
          campos, asi que cada uno se mira por separado y lo que no venga
          se queda como esta. */
       if (Array.isArray(data.dailyJournal)) storeSet(LS.dailyJournal, data.dailyJournal);
-      if (Array.isArray(data.nativeVault)) storeSet('oraculo.nativeTarotEngine.v12.vault', data.nativeVault);
+      if (Array.isArray(data.nativeVault)) storeSet(CLAVE_ALMACEN_PARALELO, data.nativeVault);
+      restaurarExtras(data.extras);
       if (data.achievements && typeof data.achievements === 'object') storeSet(LS.achievements, data.achievements);
       if (data.appLanguage) setAppLanguage(data.appLanguage);
       if (data.appearanceMode) setAppearanceMode(data.appearanceMode);
@@ -3713,7 +3805,8 @@ function backupData() {
        entradas que no salian en la copia: quien guardase ahi y cambiara
        de telefono las perdia. La clave se pone literal porque la define
        premium-ui, no este fichero. */
-    nativeVault:storeGet('oraculo.nativeTarotEngine.v12.vault', [])
+    nativeVault:storeGet(CLAVE_ALMACEN_PARALELO, []),
+    extras:recogerExtras()
   };
   downloadTextFile('oraculo-mistico-backup.json', JSON.stringify(data,null,2));
   unlockAchievement('first_backup');
