@@ -244,6 +244,12 @@
          es aproximado: se dice, para que quien lo lea sepa que ahi
          conviene mirarlo con los ojos antes de tocar nada. */
       if (estimado) ficha.fondoEstimado = true;
+      /* Si por encima hay una ilustracion, el numero no vale: el fondo
+         real es la lamina, y de eso getComputedStyle no sabe nada. Se
+         marca para que quien lea el informe no salga a arreglar algo que
+         no esta roto. */
+      if (c.el.closest('.om-bib-ficha, .premium-real-card, .card-art, .draw-art')
+          || c.el.parentElement?.querySelector?.('img')) ficha.sobreIlustracion = true;
       if (r < ILEGIBLE) fallos.push(ficha);
       else if (r < AA) flojos.push(ficha);
     }
@@ -336,7 +342,16 @@
       /* Una lista larga con su propio scroll está encogida a propósito:
          para eso tiene scroll. Lo que delata al fallo es que el hueco se
          quede por debajo de lo que ocupa una sola fila de su contenido. */
-      const hijo = el.firstElementChild;
+      /* Se baja por los envoltorios de un solo hijo hasta dar con algo
+         que parezca una fila. Sin esto, un contenedor con scroll cuyo
+         contenido cuelga de un unico div daba positivo siempre: "la fila"
+         medía todo el contenido, claro que no cabia. Paso en la ficha de
+         la Biblioteca. */
+      let hijo = el.firstElementChild;
+      while (hijo && el.children.length === 1 && hijo.children.length === 1) {
+        hijo = hijo.firstElementChild;
+      }
+      if (hijo && el.children.length === 1 && hijo.children.length > 1) hijo = hijo.firstElementChild;
       const altoDeUnaFila = hijo ? hijo.getBoundingClientRect().height : 0;
       if (!(altoDeUnaFila > 0)) continue;
       if (r.height >= altoDeUnaFila - 1) continue;

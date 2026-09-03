@@ -379,7 +379,10 @@
             <span>${esc(e.etiqueta || e.subtitulo || '')}</span>
             <h3 id="omBibDetalleTitulo">${esc(e.titulo)}</h3>
           </div>
-          <button class="om-sheet-close" data-bib="cerrar-detalle" type="button" aria-label="${esc(tr('close'))}">✕</button>
+          <div class="om-bib-card-acciones">
+            <button class="om-bib-escuchar" data-bib="escuchar" type="button">🔊 ${esc(tr('raListen'))}</button>
+            <button class="om-sheet-close" data-bib="cerrar-detalle" type="button" aria-label="${esc(tr('close'))}">✕</button>
+          </div>
         </header>
         <div class="om-bib-card-body">${pintarDetalle(e, true)}</div>
       </section>`;
@@ -470,6 +473,26 @@
         const lista = entradas(categoria) || [];
         abierto = lista.find(e => e.id === t.dataset.id) || null;
         abrirDetalle(abierto); return;
+      }
+      if (q === 'escuchar') {
+        /* Se lee lo mismo que se ve: titulo, etiqueta y el cuerpo de la
+           ficha ya sin marcas. El avatar sale solo, lo pone la voz. */
+        const e = abierto;
+        if (!e) return;
+        const cuerpo = document.querySelector('#omBibDetalleModal .om-bib-card-body');
+        /* Se lee sobre una copia con los mandos quitados. Sin esto se
+           colaba el control de zoom de la lamina y el oraculo recitaba
+           "menos cien por cien mas" en medio de la carta. */
+        let leible = '';
+        if (cuerpo) {
+          const copia = cuerpo.cloneNode(true);
+          copia.querySelectorAll('button, input, select, .om-bib-zoom-tools, [data-bib-zoom], [data-bib-zoom-status], [aria-hidden="true"]').forEach(x => x.remove());
+          leible = copia.innerText || '';
+        }
+        const texto = [e.titulo, e.etiqueta || e.subtitulo || '', leible]
+          .filter(Boolean).join('. ');
+        window.OraculoVoz?.hablar?.(texto);
+        return;
       }
       if (q === 'volver') { cerrarDetalle(); return; }
       if (q === 'favorito') {

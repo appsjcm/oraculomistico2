@@ -194,6 +194,7 @@
         <p class="om-grim-texto">${esc(String(e.texto).replace(/\s+/g, ' ').slice(0, 190))}${String(e.texto).length > 190 ? '…' : ''}</p>
         ${e.nota ? `<p class="om-grim-nota">${esc(e.nota)}</p>` : ''}
         <footer>
+          <button class="om-grim-accion" data-grim="escuchar" data-id="${esc(e.id)}" type="button">🔊 ${esc(tr('raListen'))}</button>
           ${e.editable
             ? `<button class="om-grim-accion" data-grim="favorito" data-id="${esc(e.id)}" type="button" aria-pressed="${e.favorito}">${e.favorito ? '★ ' + tr('gFavorite') : '☆ ' + tr('gFavorite')}</button>
                <button class="om-grim-accion om-grim-borrar" data-grim="borrar" data-id="${esc(e.id)}" type="button">${esc(tr('gDelete'))}</button>`
@@ -306,6 +307,20 @@
   }
 
   /* ---------- Acciones sobre el diario canónico ---------- */
+  /* La tarjeta solo ensena los primeros 190 caracteres del texto. Al
+     escuchar se lee la entrada entera, no el recorte, que para eso esta
+     guardada. El avatar aparece solo: lo pone la voz. */
+  function escuchar(id) {
+    /* Se busca en la lista ya normalizada, no en el diario en crudo: la
+       tarjeta se pinta con titulo, cartas y texto, y en el diario esos
+       campos se llaman de otra manera. Buscando en el sitio equivocado no
+       encontraba nada y el boton no hacia nada. */
+    const e = (todasLasEntradas() || []).find(d => d.id === id);
+    if (!e) return;
+    const partes = [e.titulo, Array.isArray(e.cartas) ? e.cartas.join(', ') : '', e.texto, e.nota];
+    window.OraculoVoz?.hablar?.(partes.filter(Boolean).join('. '));
+  }
+
   function alternarFavorito(id) {
     const diario = leer(DIARIO, []);
     const i = diario.findIndex(d => d.id === id);
@@ -374,6 +389,7 @@
       if (q === 'cerrar') return cerrar();
       if (q === 'pestana') { pestana = t.dataset.valor; abrir(); return; }
       if (q === 'filtro') { filtro = t.dataset.valor; pintar(); return; }
+      if (q === 'escuchar') return escuchar(t.dataset.id);
       if (q === 'favorito') return alternarFavorito(t.dataset.id);
       if (q === 'borrar') return borrar(t.dataset.id);
       if (q === 'exportar') return exportar();

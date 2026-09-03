@@ -161,6 +161,13 @@ html[data-appearance-mode="light"] .om-section-head h2 {
 
 html[data-appearance-mode="light"] .modal-panel,
 html[data-appearance-mode="light"] .om-sheet-panel,
+/* La ficha de la Biblioteca es otro panel, con su propia clase, y esta
+   regla no le llegaba: en modo dia conservaba su degradado casi negro
+   -rgba(19,13,37,.98)- mientras el texto pasaba a tinta oscura. Medido:
+   el titulo de la carta en 1,11 sobre 1 y el cuerpo en 1,07, o sea
+   invisible. Se ve al abrir cualquiera de las 78 cartas con la luz de
+   dia puesta. */
+html[data-appearance-mode="light"] .om-bib-card-panel,
 html[data-appearance-mode="light"] .premium-settings-panel,
 html[data-appearance-mode="light"] .premium-native-splash-card,
 html[data-appearance-mode="light"] .premium-palette-panel,
@@ -1516,3 +1523,30 @@ html[data-appearance-mode="light"] .mega-period-grid .choice.active {
   min-height: 96px;
   resize: vertical;
 }
+
+/* El botón de escuchar de la ficha de Biblioteca va junto al de cerrar,
+   así que la cabecera necesita agruparlos. */
+.om-bib-card-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.om-bib-escuchar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+  border: 1px solid var(--om-line-1);
+  border-radius: var(--om-r-full);
+  background: var(--om-surface-1);
+  /* El tono apagado dejaba la etiqueta en 4,44 sobre su fondo, por
+     debajo del 4,5 de la norma. Es el rotulo de un boton, no texto
+     accesorio: va con el color de texto entero. */
+  color: var(--om-ivory);
+  font-size: var(--om-t-sm);
+  cursor: pointer;
+}
+.om-bib-escuchar:hover { border-color: var(--om-gold); color: var(--om-gold); }
