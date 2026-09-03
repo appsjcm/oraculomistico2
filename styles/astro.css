@@ -568,7 +568,7 @@ html[data-appearance-mode="light"] .astro-wheel-modal-close {
 }
 
 .astro-aspect-key-sextile b {
-  color: rgb(34, 139, 96);
+  color: #1f7a53;
 }
 
 .astro-aspect-key-square b,
@@ -737,7 +737,9 @@ html[data-appearance-mode="light"] .astro-wheel-modal-close {
 .astro-wheel-caption {
   max-width: var(--wheel-size);
   margin: 1px 0 0;
-  color: rgba(98, 96, 102, .72);
+  /* Al 72 % daba 3,28 sobre el papel de la rueda. Se sube la opacidad,
+     no el tono: aqui el fondo es claro en los dos modos. */
+  color: rgba(98, 96, 102, .9);
   font-size: clamp(.8rem, 2.4vw, 1rem);
   line-height: 1.35;
   text-align: center;
@@ -747,7 +749,10 @@ html[data-appearance-mode="light"] .astro-wheel-modal-close {
 .astro-wheel-hint {
   max-width: var(--wheel-size);
   margin: -4px 0 0;
-  color: rgba(98, 96, 102, .64);
+  /* Al 64 % daba 2,8 sobre el papel de la rueda, por debajo del minimo.
+     Se sube la opacidad en vez de cambiar el tono: este texto vive sobre
+     el papel claro en los dos modos, asi que no debe seguir al tema. */
+  color: rgba(98, 96, 102, .9);
   font-size: .76rem;
   font-weight: 750;
   line-height: 1.32;
@@ -870,7 +875,7 @@ html[data-appearance-mode="light"] .astro-engine-note span {
 
 html[data-appearance-mode="light"] .astro-symbol {
   background: rgba(156, 116, 32, .12);
-  color: #9c7420;
+  color: #845f12;
 }
 
 html[data-appearance-mode="light"] .astro-wheel-tools button {
@@ -1037,7 +1042,7 @@ html[data-appearance-mode="light"] .astro-aspect p {
 
 html[data-appearance-mode="light"] .astro-aspect-glyph {
   background: rgba(156, 116, 32, .12);
-  color: #9c7420;
+  color: #845f12;
 }
 
 @media (max-width: 1180px) {
@@ -1238,4 +1243,36 @@ html[data-appearance-mode="light"] .astro-aspect-glyph {
     transition: none;
     animation: none;
   }
+}
+
+/* ------------------------------------------------------------------
+   Los textos de astros en modo día
+   ------------------------------------------------------------------
+   Esta hoja fija el marfil a mano en quince sitios. Seis viven dentro
+   de la rueda a pantalla completa, que tiene fondo oscuro a propósito
+   en los dos modos y ya tienen su regla más arriba. Los otros nueve van
+   sobre paneles normales, y con la luz de día se quedaban en marfil
+   sobre claro.
+
+   Se ve en la Mega tirada, que reutiliza .astro-form: las etiquetas de
+   Periodo, Año de referencia, Nombre completo y Fecha de nacimiento
+   salían en 1,06 sobre 1. También en la carta natal, en el buscador de
+   ciudades y en las tarjetas del día.
+
+   Se pasan a los tokens en vez de a otro color fijo, para que sigan al
+   tema y no haya que volver aquí. El secundario usa --om-ivory-3, que
+   ya está ajustado para pasar el mínimo sobre las superficies claras. */
+html[data-appearance-mode="light"] .astro-form .field label,
+html[data-appearance-mode="light"] .astro-city-option strong,
+html[data-appearance-mode="light"] .astro-day-card strong {
+  color: var(--om-ivory);
+}
+
+html[data-appearance-mode="light"] .astro-engine-note span,
+html[data-appearance-mode="light"] .astro-city-option small,
+html[data-appearance-mode="light"] .astro-day-card small,
+html[data-appearance-mode="light"] .astro-return-bridge span,
+html[data-appearance-mode="light"] .astro-aspect-overview small,
+html[data-appearance-mode="light"] .astro-aspect small {
+  color: var(--om-ivory-3);
 }
