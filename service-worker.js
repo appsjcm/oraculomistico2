@@ -1,4 +1,13 @@
-const CACHE_NAME = 'oraculo-v1-0-public-barra-idiomas-228';
+const CACHE_NAME = 'oraculo-v1-0-public-instalacion-ligera-229';
+/* Dos cosas salieron de esta lista porque casi nadie las usa y las pagaba
+   todo el mundo al instalar: jsPDF, que son 356 KB y solo hace falta si
+   exportas, y el manual en PDF, 165 KB. jsPDF ya se pedia solo cuando se
+   necesita, pero seguia descargandose aqui igualmente, con lo que la
+   carga bajo demanda no ahorraba nada.
+
+   No se pierde el uso sin conexion: el manejador de mas abajo guarda todo
+   lo que se descarga, asi que a la segunda ya estan en la cache. Lo unico
+   que cambia es que la primera exportacion a PDF pide conexion. */
 const APP_SHELL = [
   './',
   './index.html',
@@ -13,7 +22,6 @@ const APP_SHELL = [
   /* jsPDF venia de un CDN y el service worker ignora todo lo que no sea
      del propio dominio, asi que sin conexion el PDF caia a un .txt.
      Alojado aqui, funciona offline y no depende de terceros. */
-  './assets/vendor/jspdf/jspdf.umd.min.js',
   /* La tipografia de titulos: alojada aqui para que sin conexion los
      titulos no cambien de aspecto al caer al respaldo. */
   './assets/vendor/fonts/fraunces-latin.woff2',
@@ -52,7 +60,6 @@ const APP_SHELL = [
   './icon-512.png',
   './apple-touch-icon.png',
   './favicon.svg',
-  './docs/manual_usuario_oraculo_mistico_v1_0.pdf',
   './img/tarot-shuffle-hero.svg',
   './img/rune-pouch.svg',
   './assets/premium/aurora-shell.svg',
