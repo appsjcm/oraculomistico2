@@ -755,6 +755,15 @@ def construir():
     F.append(p(
         'Si tu dispositivo tiene pocas voces instaladas, la app incluye una guía para '
         'añadir más en iPhone y en Android.'))
+    F.append(h2('Lectura sola'))
+    F.append(p(
+        'Debajo de cada lectura hay un interruptor, Lectura sola, que dice si está en sí '
+        'o en no. Encendido, cuando termina una tirada la app la lee en voz alta ella '
+        'sola, con el avatar, sin que tengas que pulsar Escuchar; y si después pides '
+        'Profundizar con IA, lee también esa parte cuando llega. Viene apagado: así nadie '
+        'se encuentra el teléfono hablando sin haberlo pedido. Se recuerda entre sesiones, '
+        'y para callarlo a media lectura está el botón Parar voz, que aparece arriba '
+        'mientras habla; apagar el interruptor también la detiene.'))
     F.append(h2('El avatar'))
     F.append(p(
         'Un rostro que acompaña la lectura hablada y mueve los labios mientras habla. Puedes '
