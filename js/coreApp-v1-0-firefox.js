@@ -1,7 +1,7 @@
 import { ALL_TAROT, MAJOR_ARCANA, MINOR_ARCANA, RUNAS, MOON_PHASES, ARCANOS, ELEMENTOS, validarArcanos, usarIdiomaTarot, estadoIdiomas, TENDENCIA_TRAD } from './data.js';
 import { codigoPorNombre, esArcanoMayor } from './tarot-content.js';
 import { thumbFor } from './config.js';
-import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t } from './i18n.js';
+import { applyAppTranslations, getAppLanguage, getAppLanguagePreference, getAppLocale, languageOptionsHTML, setAppLanguage, t, tEn } from './i18n.js';
 
 document.documentElement.dataset.oraculoModule = 'loaded';
 
@@ -179,10 +179,49 @@ function closeModal() {
 
 /* Las fuentes base de jsPDF no llevan acentos ni CJK: sin esto la
    cabecera salia con simbolos rotos al cambiar de idioma. */
-function pdfAscii(txt = '') {
-  const limpio = String(txt).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  /* Si aun quedan caracteres fuera del latino no hay glifo posible. */
-  return limpio.replace(/[^\u0020-\u024f\n]/g, '').trim();
+/* Lo que la fuente del PDF puede pintar de verdad. jsPDF usa la
+   codificacion WinAnsi, que cubre el latino occidental entero: tildes,
+   enes, dieresis, cedillas y los signos de apertura. Esto quitaba todas
+   las tildes por precaucion, y de ahi salian cabeceras como "ORACULO
+   MISTICO" o "Lectura simbolica" en un documento cuyo cuerpo, que va por
+   otro camino, si las llevaba: "una opcion se impone con claridad"
+   escrito debajo de "Interpretacion simbolica".
+
+   Ahora solo se cae lo que de verdad no tiene glifo, como el chino, y
+   antes de tirar un caracter se prueba a quitarle la tilde por si asi
+   entra. Las comillas y las rayas tipograficas se cambian por las
+   rectas, que si estan en la tabla. */
+function textoParaPdf(txt = '') {
+  const equivalencias = {
+    '\u2018': "'", '\u2019': "'", '\u201c': '"', '\u201d': '"',
+    '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' '
+  };
+  const tieneGlifo = c => /[\u0020-\u007e\u00a1-\u00ff\n]/.test(c);
+  let salida = '';
+  for (const c of String(txt)) {
+    const t = equivalencias[c] !== undefined ? equivalencias[c] : c;
+    if ([...t].every(tieneGlifo)) { salida += t; continue; }
+    const sinTilde = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (sinTilde && [...sinTilde].every(tieneGlifo)) salida += sinTilde;
+  }
+  return salida.trim();
+}
+
+/* Un rotulo para el PDF, en el idioma de la app si se puede pintar.
+
+   La fuente estandar del PDF no tiene glifos chinos, asi que en chino el
+   filtro devuelve cadena vacia y la cabecera saldria en blanco. Antes no
+   se notaba porque estos rotulos estaban escritos a mano en castellano;
+   al traducirlos aparecio el hueco. Cuando pasa, se cae al ingles, que si
+   se puede pintar y se entiende mas que un recuadro vacio.
+
+   El PDF entero tiene esta limitacion, no solo los rotulos: una lectura
+   en chino sale sin texto. Eso ya era asi y se arregla incrustando una
+   fuente, que son cientos de kilobytes. */
+function rotuloDePdf(clave) {
+  const propio = textoParaPdf(t(clave));
+  /* tEn recibe primero el idioma y despues la clave. */
+  return propio || textoParaPdf(tEn('en', clave)) || '';
 }
 
 /* Vista traducida de una fase lunar. El indice es la clave y no cambia,
@@ -466,7 +505,7 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...violet);
-  doc.text(pdfAscii(heading), x, y - 1);
+  doc.text(textoParaPdf(heading), x, y - 1);
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(232, 226, 214);
   doc.roundedRect(x - 6, y + 2, size + 12, size + extraH, 3, 3, 'FD');
@@ -551,7 +590,7 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   chart.planets.forEach((planet, index) => {
     const radius = planetRadii[index % planetRadii.length];
     const p = toPoint(planet.degree, radius);
-    const code = ASTRO_PDF_PLANETS[planet.id] || pdfAscii(planet.name).slice(0, 3).toUpperCase();
+    const code = ASTRO_PDF_PLANETS[planet.id] || textoParaPdf(planet.name).slice(0, 3).toUpperCase();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(5.7);
     doc.setTextColor(78, 78, 82);
@@ -563,20 +602,20 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(4.6);
     doc.setTextColor(112, 108, 116);
-    doc.text(pdfAscii(planet.degreeLabel || `${planet.signDegree}°`).slice(0, 8), p.x, p.y + 6, { align:'center' });
+    doc.text(textoParaPdf(planet.degreeLabel || `${planet.signDegree}°`).slice(0, 8), p.x, p.y + 6, { align:'center' });
   });
   const signLegend = 'ARI Aries · TAU Tauro · GEM Geminis · CAN Cancer · LEO Leo · VIR Virgo · LIB Libra · ESC Escorpio · SAG Sagitario · CAP Capricornio · ACU Acuario · PIS Piscis';
   const aspectLegend = 'CONJ 0 conjuncion · SEXT 60 sextil · CUAD 90 cuadratura · TRIG 120 trigono · OPOS 180 oposicion';
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.2);
   doc.setTextColor(142, 139, 143);
-  doc.text(pdfAscii(`${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}`).toUpperCase(), cx, y + size + 14, { align:'center' });
-  if (chart.place?.label) doc.text(pdfAscii(chart.place.label).toUpperCase(), cx, y + size + 21, { align:'center' });
+  doc.text(textoParaPdf(`${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}`).toUpperCase(), cx, y + size + 14, { align:'center' });
+  if (chart.place?.label) doc.text(textoParaPdf(chart.place.label).toUpperCase(), cx, y + size + 21, { align:'center' });
   if (includeLegend) {
     doc.setFontSize(6.1);
     doc.setTextColor(...ink);
-    doc.text(doc.splitTextToSize(pdfAscii(signLegend), size - 8).slice(0, 2), cx, y + size + 31, { align:'center' });
-    doc.text(doc.splitTextToSize(pdfAscii(aspectLegend), size - 8).slice(0, 2), cx, y + size + 39, { align:'center' });
+    doc.text(doc.splitTextToSize(textoParaPdf(signLegend), size - 8).slice(0, 2), cx, y + size + 31, { align:'center' });
+    doc.text(doc.splitTextToSize(textoParaPdf(aspectLegend), size - 8).slice(0, 2), cx, y + size + 39, { align:'center' });
   }
   let aspectY = y + size + (includeLegend ? 50 : 30);
   if (includeAspectList && chart.aspects?.length) {
@@ -588,7 +627,7 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.2);
     chart.aspects.slice(0, 8).forEach((aspect, index) => {
-      const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:pdfAscii(aspect.name).slice(0, 4).toUpperCase(), color:ink };
+      const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:textoParaPdf(aspect.name).slice(0, 4).toUpperCase(), color:ink };
       const col = index % 2;
       const row = Math.floor(index / 2);
       const tx = x + col * (size / 2 + 4);
@@ -598,7 +637,7 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
       doc.text(meta.code, tx, ty);
       doc.setTextColor(...ink);
       doc.setFont('helvetica', 'normal');
-      doc.text(pdfAscii(`${aspect.a}/${aspect.b} orb ${aspect.orb}°`), tx + 15, ty);
+      doc.text(textoParaPdf(`${aspect.a}/${aspect.b} orb ${aspect.orb}°`), tx + 15, ty);
     });
     aspectY += Math.ceil(Math.min(chart.aspects.length, 8) / 2) * 6;
   }
@@ -788,7 +827,7 @@ async function exportNumerologyPDF(reading = lastReading) {
   const today = new Date(reading?.date || Date.now()).toLocaleDateString('es-ES');
   let y = 0;
 
-  const text = (value, x, yy, options = {}) => doc.text(pdfAscii(value), x, yy, options);
+  const text = (value, x, yy, options = {}) => doc.text(textoParaPdf(value), x, yy, options);
   const addFooter = () => {
     doc.setDrawColor(232, 222, 195);
     doc.line(margin, H - 17, W - margin, H - 17);
@@ -821,7 +860,7 @@ async function exportNumerologyPDF(reading = lastReading) {
     doc.addPage();
     addPageHeader();
   };
-  const wrapped = (value, width) => doc.splitTextToSize(cleanPdfText(value), width).map(pdfAscii);
+  const wrapped = (value, width) => doc.splitTextToSize(cleanPdfText(value), width).map(textoParaPdf);
 
   addPageHeader();
 
@@ -951,13 +990,13 @@ async function exportAstroPDF(reading = lastReading) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
     doc.setTextColor(...gold);
-    doc.text('ORACULO MISTICO', margin, 10);
+    doc.text('ORÁCULO MÍSTICO', margin, 10);
     doc.setFontSize(8.5);
     doc.setTextColor(244, 238, 222);
     doc.text('INFORME ASTRAL', margin, 16);
     doc.setFontSize(8);
     doc.text(new Date(reading?.date || Date.now()).toLocaleString('es-ES'), W - margin, 10, { align:'right' });
-    doc.text(pdfAscii(section), W - margin, 16, { align:'right' });
+    doc.text(textoParaPdf(section), W - margin, 16, { align:'right' });
     doc.setDrawColor(...line);
     doc.setLineWidth(.35);
     doc.line(margin, 24, W - margin, 24);
@@ -968,7 +1007,9 @@ async function exportAstroPDF(reading = lastReading) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...muted);
-    doc.text('Lectura simbolica. Calculada en el dispositivo con motor abierto y sin marcas externas.', margin, H - 8);
+    /* Sigue escrito a mano y solo en castellano: no hay clave para esta
+       frase, que es propia de la carta astral. */
+    doc.text('Lectura simbólica. Calculada en el dispositivo con motor abierto y sin marcas externas.', margin, H - 8);
     doc.text(String(page), W - margin, H - 8, { align:'right' });
   };
   const newPage = (section = reportTitle) => {
@@ -985,7 +1026,7 @@ async function exportAstroPDF(reading = lastReading) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...violet);
-    doc.text(pdfAscii(label).toUpperCase(), margin, y);
+    doc.text(textoParaPdf(label).toUpperCase(), margin, y);
     doc.setDrawColor(...line);
     doc.setLineWidth(.25);
     doc.line(margin, y + 2.5, W - margin, y + 2.5);
@@ -1045,7 +1086,7 @@ async function exportAstroPDF(reading = lastReading) {
       doc.setTextColor(255, 250, 239);
       let tx = margin + 3;
       headers.forEach((head, i) => {
-        doc.text(pdfAscii(head), tx, y + 5.3);
+        doc.text(textoParaPdf(head), tx, y + 5.3);
         tx += colW[i];
       });
       y += 9;
@@ -1094,7 +1135,7 @@ async function exportAstroPDF(reading = lastReading) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(...violet);
-  doc.text(pdfAscii(reportTitle).toUpperCase(), margin, y);
+  doc.text(textoParaPdf(reportTitle).toUpperCase(), margin, y);
   doc.setFontSize(10);
   doc.setTextColor(...muted);
   doc.text(wrapped(`${subject} · ${chart.date || ''} · ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`, W - margin * 2), margin, y + 7);
@@ -1132,7 +1173,7 @@ async function exportAstroPDF(reading = lastReading) {
   ]), [54, 82, 44]);
   addSynthesis();
   const aiBody = cleanPdfText(reading?.ai || extractEmbeddedAI(reading?.text));
-  if (aiBody) addLongTextSection('Interpretacion IA', aiBody, { accent:true });
+  if (aiBody) addLongTextSection(rotuloDePdf('stInterpretacionIa'), aiBody, { accent:true });
   addFooter();
   doc.save(`${fileName}-profesional.pdf`);
   unlockAchievement('first_pdf');
@@ -1186,14 +1227,14 @@ async function exportPDF(title, text, reading = lastReading) {
       doc.setTextColor(...gold);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.text('ORACULO MISTICO', margin, 11);
+      doc.text('ORÁCULO MÍSTICO', margin, 11);
       doc.setFontSize(9);
       doc.setTextColor(style === 'light' || style === 'summary' ? 80 : 245, style === 'light' || style === 'summary' ? 58 : 239, style === 'light' || style === 'summary' ? 36 : 218);
-      doc.text(pdfAscii(t('pdfSubtitle')), margin, 17);
+      doc.text(rotuloDePdf('pdfSubtitle'), margin, 17);
       doc.setTextColor(style === 'light' || style === 'summary' ? 80 : 245, style === 'light' || style === 'summary' ? 58 : 239, style === 'light' || style === 'summary' ? 36 : 218);
       doc.setFontSize(9);
       doc.text(date, W - margin, 11, { align: 'right' });
-      if (userName) doc.text(pdfAscii(`${t('lblFor')}: ${userName}`), W - margin, 17, { align: 'right' });
+      if (userName) doc.text(textoParaPdf(`${t('lblFor')}: ${userName}`), W - margin, 17, { align: 'right' });
       doc.setDrawColor(...line);
       doc.setLineWidth(0.35);
       doc.line(margin, 25, W - margin, 25);
@@ -1209,7 +1250,9 @@ async function exportPDF(title, text, reading = lastReading) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(110, 103, 125);
-      doc.text('Uso simbolico y de entretenimiento. No sustituye consejo profesional.', margin, H - 9);
+      /* Estaba escrito a mano y en castellano, cuando la misma frase ya
+         existe traducida a los seis idiomas para la guia. */
+      doc.text(rotuloDePdf('guideNotice'), margin, H - 9);
       doc.text(String(page), W - margin, H - 9, { align: 'right' });
     };
     let y = addHeader(title);
@@ -1240,7 +1283,7 @@ async function exportPDF(title, text, reading = lastReading) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(...violet);
-        doc.text(pdfAscii(heading), margin + 6, y + 7);
+        doc.text(textoParaPdf(heading), margin + 6, y + 7);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(options.fontSize || 7.7);
         doc.setTextColor(...ink);
@@ -1257,6 +1300,10 @@ async function exportPDF(title, text, reading = lastReading) {
     }
     const highlight = getPdfReadingHighlight(reading);
     if (highlight) {
+      /* Lo mismo al reves: se partia a 10 y se dibujaba a 8,5, con lo que
+         las lineas cortaban antes de tiempo y el recuadro quedaba con un
+         palmo de aire a la derecha. */
+      doc.setFontSize(8.5);
       const detailLines = doc.splitTextToSize(cleanPdfText(highlight.detail), W - margin * 2 - 16).slice(0, 3);
       const highlightH = 21 + detailLines.length * 4.3;
       doc.setFillColor(246, 239, 213);
@@ -1304,7 +1351,7 @@ async function exportPDF(title, text, reading = lastReading) {
       ], { columns:2, accent:true, rowH:6.2 });
       addPdfRows('Posiciones planetarias', astroPdfChart.planets.map(planet => `${ASTRO_PDF_PLANETS[planet.id] || planet.name}: ${planet.degreeLabel || `${planet.signDegree} grados`} ${planet.sign}${planet.retrograde ? ' Rx' : ''} - ${planet.role}`), { columns:2, rowH:6.2, fontSize:7.2 });
       addPdfRows('Aspectos principales', (astroPdfChart.aspects || []).slice(0, 12).map(aspect => {
-        const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:pdfAscii(aspect.name).slice(0, 4).toUpperCase() };
+        const meta = ASTRO_PDF_ASPECTS[aspect.name] || { code:textoParaPdf(aspect.name).slice(0, 4).toUpperCase() };
         return `${meta.code}: ${aspect.a} / ${aspect.b} - ${aspect.angle} grados, orbe ${aspect.orb} (${astroAspectOrbLabel(aspect.orb)})`;
       }), { columns:1, accent:true, rowH:6.1, fontSize:7.4 });
       addPdfRows('Casas', astroPdfChart.houses.map(house => `Casa ${house.number} - ${house.label}: ${house.degreeLabel || `${house.degree} grados`} ${house.sign}`), { columns:2, rowH:6, fontSize:7.4 });
@@ -1364,7 +1411,7 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.4);
           doc.setTextColor(...ink);
-          const foot = pdfAscii(t(asset.reversed ? 'stInvertida' : 'stAlDerecho'));
+          const foot = rotuloDePdf(asset.reversed ? 'stInvertida' : 'stAlDerecho');
           doc.text(foot, x + cardW / 2, boxY + boxH - 5, { align: 'center' });
         } else if (asset.kind === 'runa') {
           const imgW = Math.min(cardW - 10, 20);
@@ -1393,7 +1440,7 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.2);
           doc.setTextColor(...ink);
-          doc.text(pdfAscii(t(asset.reversed ? 'stInvertida' : 'stAlDerecho')), x + cardW / 2, boxY + boxH - 4, { align: 'center' });
+          doc.text(rotuloDePdf(asset.reversed ? 'stInvertida' : 'stAlDerecho'), x + cardW / 2, boxY + boxH - 4, { align: 'center' });
         } else {
           const imagenOtra = await canvasDataUrlFromImage(asset.image, 240);
           const dataUrl = imagenOtra.url;
@@ -1411,24 +1458,53 @@ async function exportPDF(title, text, reading = lastReading) {
       }
       y += rowHeights.reduce((a, b) => a + b, 0) + gap * (rowHeights.length - 1) + 4;
     }
+    const removeAIBlock = (value = '') => String(value || '')
+      .replace(/Interpretaci[oó]n IA:\s*[\s\S]*$/i, '')
+      .replace(/Interpretacion IA\s*[\s\S]*$/i, '')
+      .trim();
+    const symbolicBody = removeAIBlock(long || text);
     const summaryText = compact.join('\n') || cleanPdfText(text).slice(0, 500);
-    const summaryLines = doc.splitTextToSize(cleanPdfText(summaryText), W - margin * 2 - 16);
-    const summaryH = Math.min(44, 12 + summaryLines.slice(0, 7).length * 5);
-    if (y + summaryH > H - 18) { addFooter(); doc.addPage(); y = addHeader(title); }
-    doc.setFillColor(228, 224, 235);
-    doc.setDrawColor(...line);
-    doc.roundedRect(margin, y, W - margin * 2, summaryH, 5, 5, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...ink);
-    doc.text('Resumen de la lectura', margin + 5, y + 7);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(summaryLines.slice(0, 7), margin + 7, y + 14);
-    y += summaryH + 6;
+    /* En una tirada corta los dos recuadros decian exactamente lo mismo:
+       el reparto manda los parrafos breves al resumen, y cuando no queda
+       ninguno largo la interpretacion se rellena con el texto entero. Una
+       carta rapida salia dos veces seguidas, palabra por palabra.
+
+       Se queda la interpretacion y se quita el resumen, no al reves: el
+       resumen corta a siete lineas y a 44 mm de alto, mientras que la
+       interpretacion se reparte por paginas y sale completa. */
+    const aplanar = v => cleanPdfText(v).replace(/\s+/g, ' ').trim();
+    const resumenAporta = Boolean(summaryText)
+      && !(symbolicBody && aplanar(symbolicBody).includes(aplanar(summaryText)));
+    /* jsPDF parte las lineas segun el tamano de letra que este puesto en
+       ese momento, no segun el que se use luego al dibujarlas. Aqui se
+       venia de escribir el nombre de la carta a 8 y se dibujaba a 9: cada
+       linea salia un 12 % mas larga de lo calculado y se salia del
+       recuadro por la derecha, cortada a media palabra. Se ve en cualquier
+       exportacion con una frase larga. Asi que primero el tamano y
+       despues el reparto, y los dos iguales. */
+    if (resumenAporta) {
+      doc.setFontSize(9);
+      const summaryLines = doc.splitTextToSize(cleanPdfText(summaryText), W - margin * 2 - 16);
+      const summaryH = Math.min(44, 12 + summaryLines.slice(0, 7).length * 5);
+      if (y + summaryH > H - 18) { addFooter(); doc.addPage(); y = addHeader(title); }
+      doc.setFillColor(228, 224, 235);
+      doc.setDrawColor(...line);
+      doc.roundedRect(margin, y, W - margin * 2, summaryH, 5, 5, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...ink);
+      doc.text(rotuloDePdf('stResumen'), margin + 5, y + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(summaryLines.slice(0, 7), margin + 7, y + 14);
+      y += summaryH + 6;
+    }
     function addTextBox(heading, body, accent = false) {
       let content = cleanPdfText(body);
       if (!content) return;
+      /* Se partia a 9 y se dibuja a 9,1. La diferencia era pequena y el
+         margen del recuadro la absorbia, pero es el mismo descuido. */
+      doc.setFontSize(9.1);
       let lines = doc.splitTextToSize(content, W - margin * 2 - 18);
       let idx = 0;
       while (idx < lines.length) {
@@ -1452,14 +1528,9 @@ async function exportPDF(title, text, reading = lastReading) {
         idx += take;
       }
     }
-    const removeAIBlock = (value = '') => String(value || '')
-      .replace(/Interpretaci[oó]n IA:\s*[\s\S]*$/i, '')
-      .replace(/Interpretacion IA\s*[\s\S]*$/i, '')
-      .trim();
-    const symbolicBody = removeAIBlock(long || text);
-    if (symbolicBody) addTextBox('Interpretacion simbolica', symbolicBody, true);
+    if (symbolicBody) addTextBox(rotuloDePdf('dlSymbolic'), symbolicBody, true);
     const aiBody = cleanPdfText(reading?.ai || '');
-    if (aiBody) addTextBox('Interpretacion IA', aiBody, true);
+    if (aiBody) addTextBox(rotuloDePdf('stInterpretacionIa'), aiBody, true);
     addFooter();
     doc.save(`${filename}-${style}.pdf`);
     unlockAchievement('first_pdf');
