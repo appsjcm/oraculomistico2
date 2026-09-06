@@ -33,10 +33,6 @@ aparecen en combinaciones concretas de ajustes:
    (`.sr-only` y compañía), que se colapsa a un píxel a propósito: no
    está aplastado, está escondido, que es su trabajo.
 
-   Se deja fuera además el texto que solo leen los lectores de pantalla
-   ( y compañía), que se colapsa a un píxel a propósito: no
-   está aplastado, está escondido, que es su trabajo.
-
 ### Cómo se usa
 
 Con la app abierta en el navegador, en la consola:

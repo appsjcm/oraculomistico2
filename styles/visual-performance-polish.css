@@ -1571,3 +1571,43 @@ html[data-appearance-mode="light"] .mega-period-grid .choice.active {
 .result-card a:not([class]):hover {
   color: var(--om-gold-warm, var(--om-gold));
 }
+
+/* El interruptor de lectura sola ocupa toda la fila de la barra de acciones:
+   la etiqueta dice el estado y en aleman o frances no cabe a media fila. */
+.reading-actions .om-leer-sola { flex: 1 0 100%; }
+.reading-actions .om-leer-sola[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+/* El panel del avatar se pinta su propio fondo: oscuro en cinco temas y
+   blanco en El Alba. Ese fondo lo decide el tema, pero el color del rotulo
+   lo decidia el modo claro u oscuro, y son dos ajustes independientes: en
+   modo claro con cualquier tema oscuro el nombre y la etiqueta quedaban en
+   2,3:1 sobre el panel oscuro, y en El Alba con modo oscuro, en 2,8:1 sobre
+   el panel blanco. Doce de las veinticuatro combinaciones.
+
+   Se ve poco porque el avatar solo sale mientras habla, y hasta ahora eso
+   pasaba solo si lo pedias. Con la lectura sola encendida sale en cada
+   tirada, asi que ya no es un rincon.
+
+   Aqui el color del texto sigue al panel: el tono claro del tema mientras
+   el panel sea oscuro, y el oscuro cuando el panel es blanco. Los estados
+   de animo traen sus propios colores con mas especificidad y se respetan. */
+.oracle-avatar-window                     { --oro-del-avatar: #f2cc65; }
+body.theme-violet  .oracle-avatar-window  { --oro-del-avatar: #d9b6ff; }
+body.theme-forest  .oracle-avatar-window  { --oro-del-avatar: #b8e07a; }
+body.theme-blue    .oracle-avatar-window  { --oro-del-avatar: #a7d8ff; }
+body.theme-classic .oracle-avatar-window  { --oro-del-avatar: #e0b25d; }
+body.theme-light   .oracle-avatar-window  { --oro-del-avatar: #8a5f10; }
+.oracle-avatar-window .oracle-avatar-copy strong,
+.oracle-avatar-window .oracle-avatar-badge { color: var(--oro-del-avatar); }
+
+/* Los estados de animo del avatar traen colores palidos, pensados para el
+   panel oscuro. En El Alba el panel es blanco y ahi se pierden: rosa sobre
+   blanco daba 1,3:1, menta 1,2:1. Solo "bloqueado" tenia su version oscura.
+   Se completan las demas conservando el tono de cada animo. */
+body.theme-light .oracle-avatar-window.mood-love    .oracle-avatar-badge { color: #9c2159; }
+body.theme-light .oracle-avatar-window.mood-warning .oracle-avatar-badge { color: #855100; }
+body.theme-light .oracle-avatar-window.mood-dream   .oracle-avatar-badge { color: #3a4a94; }
+body.theme-light .oracle-avatar-window.mood-power   .oracle-avatar-badge { color: #0f6340; }
+body.theme-light .oracle-avatar-window.mode-whisper .oracle-avatar-badge { color: #2b5691; }

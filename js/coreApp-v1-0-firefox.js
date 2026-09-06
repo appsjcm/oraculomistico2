@@ -208,15 +208,62 @@ function readingActions(text, type = 'Lectura') {
       ${b('copy-reading', '📋', 'raCopy')}
       ${b('share-reading', '📤', 'raShare')}
       ${b('speak-reading', '🔊', 'raListen')}
+      ${botonDeLecturaSola()}
       ${b('download-reading-mp3', '🎧', 'raMp3')}
       ${b('pdf-options', '📄', 'raPdf')}
       ${b('share-visual', '🖼️', 'raCard')}
     </div>
     <div id="aiReadingPanel" class="ai-reading-panel hidden" aria-live="polite"></div>`;
 }
+/* Leer sola la lectura al terminar. Apagado de fabrica: que el telefono
+   se ponga a hablar sin avisar molesta a quien esta en un sitio callado,
+   asi que se enciende con el boton de la barra de acciones y se apaga
+   igual. Para callarlo a media lectura ya estaba el boton flotante.
+
+   No se dispara desde setLastReading directamente porque una tirada de
+   tarot se revela carta a carta: la lectura existe antes de estar en
+   pantalla. Se deja apuntada y se lee cuando aparece la barra de
+   acciones, que es lo ultimo que se pinta y solo cuando la lectura esta
+   entera. */
+/* Ocupa la fila entera. La etiqueta lleva el estado escrito y en varios
+   idiomas no cabe en media fila: partida en dos lineas dejaba el boton mas
+   alto que su companero y descuadraba la fila. */
+function botonDeLecturaSola() {
+  const encendida = autoLecturaActiva();
+  return `<button class="btn compact om-leer-sola" data-act="toggle-auto-read" type="button" aria-pressed="${encendida ? 'true' : 'false'}">🔁 ${escapeHTML(t(encendida ? 'raAutoOn' : 'raAutoOff'))}</button>`;
+}
+
+function autoLecturaActiva() {
+  return Boolean(getVoicePrefs().autoRead);
+}
+
+let lecturaEsperandoVoz = null;
+
+function anotarParaLeerSola(texto) {
+  lecturaEsperandoVoz = autoLecturaActiva() && texto ? String(texto) : null;
+}
+
+function vigilarLecturasParaLeerlas() {
+  const raiz = document.getElementById('modalRoot');
+  if (!raiz || raiz.dataset.vigiladaLaVoz === 'si') return;
+  raiz.dataset.vigiladaLaVoz = 'si';
+  const observador = new MutationObserver(() => {
+    if (!lecturaEsperandoVoz) return;
+    if (!raiz.querySelector('.reading-actions')) return;
+    const texto = lecturaEsperandoVoz;
+    lecturaEsperandoVoz = null;
+    /* Un respiro antes de empezar: si arranca en el mismo instante en que
+       aparece el texto se pisa con la animacion de las cartas. */
+    setTimeout(() => speakText(texto), 450);
+  });
+  observador.observe(raiz, { childList: true, subtree: true });
+}
+
 function setLastReading({ type, title, text, items = [], ai = '', ritual = null, meta = {} }) {
   lastReading = { type, title, text: cleanInterpretation(text), items, ai: cleanInterpretation(ai), ritual, meta, date: new Date().toISOString() };
   unlockAchievement('first_reading');
+  vigilarLecturasParaLeerlas();
+  anotarParaLeerSola(getReadingText());
 }
 function getReadingText() {
   if (!lastReading) return '';
@@ -1489,9 +1536,9 @@ function getVoicePrefs() {
   const saved = storeGet(LS.voice, null);
   if (saved?.preset) {
     const migrated = Number(saved.localePreferenceVersion || 0) >= 2 ? saved : { ...saved, language:'auto', localePreferenceVersion:3 };
-    return { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset(saved.preset), ...migrated, avatarRenderMode:normalizeAvatarRenderMode(migrated), avatarRenderModePreferenceVersion:4 };
+    return { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', autoRead:false, ...getVoicePreset(saved.preset), ...migrated, avatarRenderMode:normalizeAvatarRenderMode(migrated), avatarRenderModePreferenceVersion:4 };
   }
-  return { engine:'device', remoteVoice:'coral', preset:'mistica_femenina', language:'auto', localePreferenceVersion:3, voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...getVoicePreset('mistica_femenina') };
+  return { engine:'device', remoteVoice:'coral', preset:'mistica_femenina', language:'auto', localePreferenceVersion:3, voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', autoRead:false, ...getVoicePreset('mistica_femenina') };
 }
 function normalizeAvatarRenderMode(saved = {}) {
   const mode = ['auto', '2d'].includes(saved.avatarRenderMode) ? saved.avatarRenderMode : 'auto';
@@ -1502,7 +1549,7 @@ function setVoicePrefs(prefs) {
   const preset = prefs.preset || getVoicePrefs().preset || 'mistica_femenina';
   const base = getVoicePreset(preset);
   const current = getVoicePrefs();
-  const next = { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', ...base, ...current, ...prefs, preset, localePreferenceVersion:3, avatarRenderModePreferenceVersion:4 };
+  const next = { engine:'device', remoteVoice:'coral', voiceFilter:'all', keepScreenAwake:true, avatarStyle:'auto', avatarRenderMode:'auto', avatarRenderModePreferenceVersion:4, avatarEnabled:true, avatarPosition:'right', avatarSize:'medium', avatarMood:'auto', avatarSpeechMode:'auto', autoRead:false, ...base, ...current, ...prefs, preset, localePreferenceVersion:3, avatarRenderModePreferenceVersion:4 };
   next.avatarRenderMode = normalizeAvatarRenderMode(next);
   storeSet(LS.voice, next);
 }
@@ -1751,6 +1798,10 @@ function collectVoicePrefsFromControls() {
     avatarSize:value('#oracleAvatarSize', current.avatarSize || 'medium'),
     avatarMood:value('#oracleAvatarMood', current.avatarMood || 'auto'),
     avatarSpeechMode:value('#oracleAvatarSpeechMode', current.avatarSpeechMode || 'auto'),
+    /* No tiene control en la pantalla de ajustes: se enciende desde la
+       barra de la lectura. Se arrastra el valor de ahora para que guardar
+       los ajustes no lo apague sin querer. */
+    autoRead:Boolean(current.autoRead),
     rate:Number(value('#voiceRate', current.rate || getVoicePreset(preset).rate))
   };
 }
@@ -7635,12 +7686,25 @@ ${base}`;
       const ai = cleanClosedReading(rawAI);
       if (ai) {
         lastReading.ai = ai;
+        /* La profundizacion llega despues de la lectura, asi que se lee
+           aparte: aqui solo el texto nuevo, no todo otra vez. */
+        if (autoLecturaActiva()) speakText(ai);
         setAIReadingPanel(`<h3>${escapeHTML(t('stInterpretacionIa'))}</h3><p>${escapeHTML(ai).replace(/\n/g,'<br>')}</p><div class="actions mt"><button class="btn compact" data-act="speak-ai" type="button">🔊 Leer IA</button><button class="btn compact" data-act="stop-voice" type="button">⏹️ Parar</button><button class="btn compact" data-act="copy-reading" type="button">📋 Copiar todo</button><button class="btn compact" data-act="pdf-reading" type="button">📄 Incluir IA en PDF</button></div>`, 'success');
       } else {
         setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoDisponibleAhora'))}</h3><p>${escapeHTML(t('stLaLecturaSimbolicaSigueActivaPuedes'))}</p>`, 'warning');
       }
     },
     'speak-reading': () => speakText(getReadingText()),
+    'toggle-auto-read': () => {
+      const encendida = !autoLecturaActiva();
+      setVoicePrefs({ autoRead: encendida });
+      /* Si se apaga con la voz en marcha, se calla: apagarlo y seguir
+         oyendo la lectura no tendria sentido. */
+      if (!encendida) stopSpeech();
+      toast(t(encendida ? 'tsAutoReadOn' : 'tsAutoReadOff'));
+      const boton = document.querySelector('[data-act="toggle-auto-read"]');
+      if (boton) boton.outerHTML = botonDeLecturaSola();
+    },
     'download-reading-mp3': downloadReadingMP3,
     'speak-ai': () => speakText(lastReading?.ai || ''),
     'stop-voice': stopSpeech,
