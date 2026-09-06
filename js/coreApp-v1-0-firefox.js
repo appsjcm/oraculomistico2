@@ -293,7 +293,18 @@ function vigilarLecturasParaLeerlas() {
     lecturaEsperandoVoz = null;
     /* Un respiro antes de empezar: si arranca en el mismo instante en que
        aparece el texto se pisa con la animacion de las cartas. */
-    setTimeout(() => speakText(texto), 450);
+    setTimeout(() => {
+      const antes = vecesQueLaVozArranco;
+      speakText(texto);
+      /* Cuando un navegador se niega a hablar sin un toque no avisa de
+         nada: no lanza error, simplemente no suena. Quedaba un silencio
+         sin explicacion y parecia que la lectura sola estuviera rota. Si
+         pasados unos segundos no ha arrancado, se dice y se recuerda que
+         el boton de escuchar si funciona, porque ese si es un toque. */
+      setTimeout(() => {
+        if (vecesQueLaVozArranco === antes) toast(t('tsAutoReadSilenciada'));
+      }, 3000);
+    }, 450);
   });
   observador.observe(raiz, { childList: true, subtree: true });
 }
@@ -663,9 +674,9 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
    fallan. */
 const PDF_PAPEL = [249, 246, 238];
 
-function canvasDataUrlFromImage(src, anchoMaximo = 320) {
+function canvasDataUrlFromImage(src, anchoMaximo = 320, girar = false) {
   return new Promise((resolve) => {
-    const vacio = { url: '', formato: 'PNG' };
+    const vacio = { url: '', formato: 'PNG', proporcion: 0 };
     if (!src) return resolve(vacio);
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -685,8 +696,21 @@ function canvasDataUrlFromImage(src, anchoMaximo = 320) {
         ctx.imageSmoothingQuality = 'high';
         ctx.fillStyle = `rgb(${PDF_PAPEL.join(',')})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        /* Una carta invertida se lee del reves, asi que en el PDF tiene que
+           salir del reves. En pantalla ya se gira; aqui se imprimia derecha
+           y lo unico que la distinguia era la palabra "Invertida" debajo.
+           Se gira al pintarla en el lienzo y no al colocarla en el PDF,
+           porque jsPDF rota alrededor de la esquina y habria que recolocar
+           la imagen a mano; asi llega ya girada y se coloca igual que las
+           demas. */
+        if (girar) { ctx.translate(canvas.width, canvas.height); ctx.rotate(Math.PI); }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve({ url: canvas.toDataURL('image/jpeg', 0.82), formato: 'JPEG' });
+        if (girar) ctx.setTransform(1, 0, 0, 1, 0, 0);
+        resolve({
+          url: canvas.toDataURL('image/jpeg', 0.82), formato: 'JPEG',
+          /* Alto entre ancho, para poder colocarla sin deformarla. */
+          proporcion: nativoH / nativoW
+        });
       } catch { resolve(vacio); }
     };
     img.onerror = () => resolve(vacio);
@@ -1367,17 +1391,42 @@ async function exportPDF(title, text, reading = lastReading) {
       const cardW = allTarot ? Math.min(34, rawCardW) : rawCardW;
       const gridW = cardW * cols + gap * (cols - 1);
       const startX = margin + Math.max(0, (W - margin * 2 - gridW) / 2);
+      /* Las imagenes se cargan antes de repartir el espacio porque hace
+         falta su proporcion real para saber cuanto mide cada ficha. Antes
+         se daba por hecho que una carta era 1,72 veces mas alta que ancha
+         y las del mazo son 1,333: salian estiradas casi un tercio, con las
+         figuras alargadas. Y como la ficha media 92 mm fijos, debajo de la
+         imagen quedaba un palmo de papel en blanco. */
+      const imagenes = await Promise.all(visible.map(asset => canvasDataUrlFromImage(
+        asset.image,
+        asset.kind === 'runa' ? 160 : asset.kind === 'tarot' ? 320 : 240,
+        Boolean(asset.reversed))));
+      const medidaDe = (asset, i) => {
+        const porDefecto = asset.kind === 'tarot' ? 1.5 : 1;
+        const proporcion = imagenes[i]?.proporcion || porDefecto;
+        const anchoTope = asset.kind === 'runa' ? Math.min(cardW - 10, 20) : cardW - 8;
+        const altoTope = asset.kind === 'tarot' ? 48 : asset.kind === 'runa' ? 27 : 26;
+        const ancho = Math.min(anchoTope, altoTope / proporcion);
+        return { ancho, alto: ancho * proporcion };
+      };
+      const medidas = visible.map(medidaDe);
+      /* Doce milimetros arriba para el rotulo de la posicion y el hueco de
+         abajo para el nombre y el derecho o reves. */
+      const alturaFicha = (asset, i) => asset.kind === 'tarot' ? 12 + medidas[i].alto + 20
+        : asset.kind === 'runa' ? 12 + medidas[i].alto + 14
+        : 12 + medidas[i].alto + 14;
       const rowHeights = [];
       for (let row = 0; row < Math.ceil(visible.length / cols); row++) {
-        const slice = visible.slice(row * cols, row * cols + cols);
-        rowHeights[row] = Math.max(...slice.map(asset => asset.kind === 'tarot' ? 92 : asset.kind === 'runa' ? 58 : 52));
+        const desde = row * cols;
+        rowHeights[row] = Math.max(...visible.slice(desde, desde + cols)
+          .map((asset, k) => alturaFicha(asset, desde + k)));
       }
       const rowOffset = (r) => rowHeights.slice(0, r).reduce((a, b) => a + b + gap, 0);
       for (let i = 0; i < visible.length; i++) {
         const asset = visible[i];
         const col = i % cols;
         const row = Math.floor(i / cols);
-        const boxH = asset.kind === 'tarot' ? 92 : asset.kind === 'runa' ? 58 : 52;
+        const boxH = rowHeights[row];
         const x = startX + col * (cardW + gap);
         const boxY = y + rowOffset(row);
         doc.setDrawColor(...line);
@@ -1390,11 +1439,10 @@ async function exportPDF(title, text, reading = lastReading) {
         const labelLines = doc.splitTextToSize(label, cardW - 4).slice(0, 2);
         doc.text(labelLines, x + cardW / 2, boxY + 5, { align: 'center' });
         if (asset.kind === 'tarot') {
-          const imgW = Math.max(18, Math.min(cardW - 12, 25));
-          const imgH = imgW * 1.72;
+          const { ancho: imgW, alto: imgH } = medidas[i];
           const imgX = x + (cardW - imgW) / 2;
           const imgY = boxY + 12;
-          const imagen = await canvasDataUrlFromImage(asset.image);
+          const imagen = imagenes[i];
           const dataUrl = imagen.url;
           if (dataUrl) {
             try { doc.addImage(dataUrl, imagen.formato, imgX, imgY, imgW, imgH); }
@@ -1414,11 +1462,10 @@ async function exportPDF(title, text, reading = lastReading) {
           const foot = rotuloDePdf(asset.reversed ? 'stInvertida' : 'stAlDerecho');
           doc.text(foot, x + cardW / 2, boxY + boxH - 5, { align: 'center' });
         } else if (asset.kind === 'runa') {
-          const imgW = Math.min(cardW - 10, 20);
-          const imgH = 27;
+          const { ancho: imgW, alto: imgH } = medidas[i];
           const imgX = x + (cardW - imgW) / 2;
           const imgY = boxY + 12;
-          const imagenRuna = await canvasDataUrlFromImage(asset.image, 160);
+          const imagenRuna = imagenes[i];
           let dataUrl = imagenRuna.url;
           /* El respaldo es un SVG dibujado al vuelo, no una foto: ese
              sigue yendo como tal. */
@@ -1442,13 +1489,15 @@ async function exportPDF(title, text, reading = lastReading) {
           doc.setTextColor(...ink);
           doc.text(rotuloDePdf(asset.reversed ? 'stInvertida' : 'stAlDerecho'), x + cardW / 2, boxY + boxH - 4, { align: 'center' });
         } else {
-          const imagenOtra = await canvasDataUrlFromImage(asset.image, 240);
+          const { ancho: imgW, alto: imgH } = medidas[i];
+          const imgX = x + (cardW - imgW) / 2;
+          const imagenOtra = imagenes[i];
           const dataUrl = imagenOtra.url;
           if (dataUrl) {
-            try { doc.addImage(dataUrl, imagenOtra.formato, x + 4, boxY + 12, cardW - 8, 24); } catch {}
+            try { doc.addImage(dataUrl, imagenOtra.formato, imgX, boxY + 12, imgW, imgH); } catch {}
           } else {
-            doc.setFillColor(238, 232, 255); doc.roundedRect(x + 4, boxY + 12, cardW - 8, 24, 3, 3, 'F');
-            doc.setFontSize(17); doc.setTextColor(...gold); doc.text(asset.symbol || '✦', x + cardW / 2, boxY + 27, { align: 'center' });
+            doc.setFillColor(238, 232, 255); doc.roundedRect(imgX, boxY + 12, imgW, imgH, 3, 3, 'F');
+            doc.setFontSize(17); doc.setTextColor(...gold); doc.text(asset.symbol || '✦', x + cardW / 2, boxY + 12 + imgH / 2 + 3, { align: 'center' });
           }
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
@@ -2549,6 +2598,7 @@ function speakWithDevice(clean, options = {}) {
     utter.lang = voice.lang || utter.lang;
   }
   utter.onstart = () => {
+    vecesQueLaVozArranco++;
     if (sessionId !== voiceSpeechSession) return;
     setFloatingVoiceStopVisible(true);
     requestVoiceWakeLock(); showOracleVoiceAvatar(clean); setOracleMouthShape('closed');
@@ -2604,6 +2654,70 @@ window.onNativeTTSError = message => {
   releaseVoiceWakeLock();
   hideOracleVoiceAvatar();
 };
+/* Safari en iPhone solo deja arrancar la voz dentro del propio toque del
+   dedo. No basta con que se haya tocado la pantalla antes: la llamada
+   tiene que salir del manejador del gesto. La lectura sola arranca cuando
+   termina de pintarse la tirada, medio segundo despues y desde un
+   temporizador, asi que llegaba tarde y el sistema la ignoraba en
+   silencio: ni sonido, ni error, ni aviso. Por eso el boton de escuchar
+   funcionaba -eso si es un toque- y la lectura sola no.
+
+   El apano conocido es hablar una vez, sin volumen, dentro del primer
+   toque que haya en la pagina. Con eso el navegador da por desbloqueado
+   el motor y deja hablar despues sin gesto. Lo mismo con un elemento de
+   audio para la voz de IA, que ademas hay que reutilizar: en iPhone el
+   permiso se concede al elemento concreto, no a la pagina, asi que uno
+   recien creado vuelve a estar bloqueado.
+
+   Se hace siempre, no solo con la lectura sola encendida, porque la
+   profundizacion con IA tiene el mismo problema: llega despues de una
+   espera y tampoco sale de un gesto. */
+const SILENCIO_CORTO = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
+let vozYaDesbloqueada = false;
+/* Sube solo cuando la voz empieza a sonar de verdad. Sirve para saber si
+   una lectura automatica llego a oirse o el navegador la descarto. */
+let vecesQueLaVozArranco = 0;
+let audioReutilizable = null;
+
+function elementoDeAudioDeVoz() {
+  if (!audioReutilizable) {
+    audioReutilizable = new Audio();
+    audioReutilizable.preload = 'auto';
+    /* Sin esto iPhone abre el reproductor a pantalla completa. */
+    audioReutilizable.playsInline = true;
+    audioReutilizable.setAttribute('playsinline', '');
+  }
+  return audioReutilizable;
+}
+
+function desbloquearLaVozConElDedo() {
+  if (vozYaDesbloqueada) return;
+  vozYaDesbloqueada = true;
+  try {
+    if ('speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
+      const mudo = new SpeechSynthesisUtterance(' ');
+      mudo.volume = 0;
+      window.speechSynthesis.speak(mudo);
+      /* Se corta enseguida: solo hacia falta la llamada, no el sonido. */
+      setTimeout(() => { try { window.speechSynthesis.cancel(); } catch {} }, 60);
+    }
+  } catch {}
+  try {
+    const audio = elementoDeAudioDeVoz();
+    audio.muted = true;
+    audio.src = SILENCIO_CORTO;
+    const promesa = audio.play();
+    if (promesa && promesa.then) promesa.then(() => { audio.pause(); audio.muted = false; }).catch(() => { audio.muted = false; });
+    else { audio.pause(); audio.muted = false; }
+  } catch {}
+}
+
+for (const gesto of ['pointerdown', 'touchend', 'mousedown', 'keydown']) {
+  document.addEventListener(gesto, desbloquearLaVozConElDedo, { capture: true, passive: true });
+}
+/* Al volver de la cache de atras y adelante el permiso se pierde. */
+window.addEventListener('pageshow', event => { if (event.persisted) vozYaDesbloqueada = false; });
+
 async function speakText(text) {
   const clean = cleanSpeechText(text);
   if (!clean) return toast(t('tsNoAiText'));
@@ -2656,12 +2770,17 @@ async function speakWithPuter(clean) {
   try {
     showOracleVoiceAvatar(clean);
     requestVoiceWakeLock();
-    const audio = await generatePuterSpeech(clean);
-    if (!audio) throw new Error('Audio IA no disponible');
+    const generado = await generatePuterSpeech(clean);
+    if (!generado) throw new Error('Audio IA no disponible');
+    /* Se toca por el elemento ya desbloqueado y no por el que devuelve el
+       servicio, que en iPhone nace bloqueado. */
+    const audio = elementoDeAudioDeVoz();
+    if (generado.src && audio.src !== generado.src) audio.src = generado.src;
     remoteSpeechAudio = audio;
     try { audio.currentTime = 0; } catch {}
     setMediaSessionForReading();
     audio.onplay = () => {
+      vecesQueLaVozArranco++;
       setFloatingVoiceStopVisible(true);
       updateOracleVoiceAvatarSpeaking(true);
       startRemoteAudioLipSync(audio, clean);
