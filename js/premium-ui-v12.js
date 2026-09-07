@@ -226,18 +226,8 @@ function OEsc(v = '') {
 
   function syncIntentionUI() {
     const value = getIntention();
-    const input = $('#premiumIntention');
-    const hint = $('#premiumIntentionHint');
     const chip = $('#intentionChip');
-
-    if (input && input.value !== value) input.value = value;
     document.body.classList.toggle('premium-has-intention', !!value);
-
-    if (hint) {
-      hint.textContent = value
-        ? OI('pmIntentionActive', { v: value })
-        : OI('ixSeGuardaraSoloEnEsteDispositivo');
-    }
 
     if (chip) {
       /* El valor lo escribe la persona: se escapa. La cadena traducida
@@ -262,21 +252,6 @@ function OEsc(v = '') {
   }
 
   function handlePremiumAction(action, source) {
-    if (action === 'save-intention') {
-      const input = $('#premiumIntention');
-      setIntention(input?.value || '');
-      $('.premium-intention-box')?.classList.add('premium-intention-saved');
-      setTimeout(() => $('.premium-intention-box')?.classList.remove('premium-intention-saved'), 750);
-      toast(getIntention() ? 'Intención guardada.' : 'Intención vacía.');
-      return;
-    }
-
-    if (action === 'clear-intention') {
-      setIntention('');
-      toast(OI('pmIntentionCleared'));
-      return;
-    }
-
     if (action === 'focus-mode') {
       setFocusMode(!document.body.classList.contains('premium-focus-mode'));
       return;
@@ -309,13 +284,6 @@ function OEsc(v = '') {
     }
   });
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target?.id === 'premiumIntention') {
-      e.preventDefault();
-      handlePremiumAction('save-intention');
-    }
-  });
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => { syncIntentionUI(); bootFocusMode(); }, { once: true });
   } else {
@@ -331,7 +299,6 @@ function OEsc(v = '') {
 (() => {
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const LS_VISITS = 'oraculo.superPremium.visits';
   const LS_IMMERSIVE = 'oraculo.superPremium.immersive';
 
   const actions = [
@@ -396,45 +363,6 @@ function OEsc(v = '') {
     }
   }
 
-  function syncDashboard() {
-    const now = new Date();
-    const days = ['posDomingo','posLunes','posMartes','posMiercoles','posJueves','posViernes','posSabado'].map(k => OI(k));
-    const day = days[now.getDay()];
-    const visitNode = $('#premiumVisitCount');
-    const todayNode = $('#premiumTodayLabel');
-    const todayMsg = $('#premiumTodayMessage');
-    const intentionStatus = $('#premiumIntentionStatus');
-
-    try {
-      const visits = (parseInt(localStorage.getItem(LS_VISITS) || '0', 10) || 0) + 1;
-      localStorage.setItem(LS_VISITS, String(visits));
-      if (visitNode) visitNode.textContent = String(visits);
-    } catch {
-      if (visitNode) visitNode.textContent = '1';
-    }
-
-    if (todayNode) todayNode.textContent = day;
-    if (todayMsg) todayMsg.textContent = OI('pmTodayMessage');
-    const hint = $('#premiumIntentionHint')?.textContent || OI('pmFree');
-    /* La pista lleva delante la etiqueta traducida; se recorta por ella. */
-    const etiqueta = OI('pmIntentionActive', { v: '' }).trim();
-    if (intentionStatus) intentionStatus.textContent = hint.startsWith(etiqueta)
-      ? hint.slice(etiqueta.length).trim()
-      : OI('pmFree');
-  }
-
-  function bootTimer() {
-    const start = Date.now();
-    const node = $('#premiumSessionTimer');
-    if (!node) return;
-    setInterval(() => {
-      const s = Math.floor((Date.now() - start) / 1000);
-      const mm = String(Math.floor(s / 60)).padStart(2, '0');
-      const ss = String(s % 60).padStart(2, '0');
-      node.textContent = `${mm}:${ss}`;
-    }, 1000);
-  }
-
   function toggleImmersive(force) {
     const next = typeof force === 'boolean'
       ? force
@@ -484,13 +412,9 @@ function OEsc(v = '') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       bootImmersive();
-      syncDashboard();
-      bootTimer();
     }, { once: true });
   } else {
     bootImmersive();
-    syncDashboard();
-    bootTimer();
   }
 })();
 
@@ -621,7 +545,6 @@ function OEsc(v = '') {
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const LS_THEME = 'oraculo.concierge.theme';
   const LS_NOTE = 'oraculo.concierge.quickNote';
-  const LS_ACTIVITY = 'oraculo.concierge.activity';
 
   function toast(text) {
     const root = $('#toastRoot');
@@ -636,7 +559,6 @@ function OEsc(v = '') {
   function saveTheme(theme) {
     document.body.dataset.premiumTheme = theme;
     try { localStorage.setItem(LS_THEME, theme); } catch {}
-    pushActivity('Tema visual', `Cambio a ${theme}`);
     const NOMBRES = { gold: "Arcano", violet: "Violeta", obsidian: "Obsidiana" };
     toast(`Tema ${NOMBRES[theme] || theme} activado.`);
   }
@@ -654,7 +576,6 @@ function OEsc(v = '') {
       if (value) localStorage.setItem(LS_NOTE, value);
       else localStorage.removeItem(LS_NOTE);
     } catch {}
-    pushActivity('Nota rápida', value ? 'Nota guardada' : 'Nota vacía');
     toast(value ? 'Nota guardada.' : 'No había contenido para guardar.');
   }
 
@@ -662,7 +583,6 @@ function OEsc(v = '') {
     const input = $('#premiumQuickNote');
     if (input) input.value = '';
     try { localStorage.removeItem(LS_NOTE); } catch {}
-    pushActivity('Nota rápida', 'Nota eliminada');
     toast('Nota eliminada.');
   }
 
@@ -671,68 +591,6 @@ function OEsc(v = '') {
     try { note = localStorage.getItem(LS_NOTE) || ''; } catch {}
     const input = $('#premiumQuickNote');
     if (input) input.value = note;
-  }
-
-  function getActivity() {
-    try {
-      return JSON.parse(localStorage.getItem(LS_ACTIVITY) || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  function setActivity(items) {
-    try { localStorage.setItem(LS_ACTIVITY, JSON.stringify(items.slice(0, 12))); } catch {}
-  }
-
-  function pushActivity(title, desc) {
-    const items = getActivity();
-    const stamp = new Date().toLocaleString();
-    items.unshift({ title, desc, stamp });
-    setActivity(items);
-    renderActivity();
-  }
-
-  function renderActivity() {
-    const root = $('#premiumActivityList');
-    if (!root) return;
-    const items = getActivity();
-    root.innerHTML = '';
-    if (!items.length) {
-      const empty = document.createElement('div');
-      empty.className = 'premium-activity-item';
-      empty.innerHTML = `<strong>${OI('pmNoActivity')}</strong><small>${OI('pmStartReading')}</small>`;
-      root.appendChild(empty);
-      return;
-    }
-    items.forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'premium-activity-item';
-      /* Hoy estos tres valores los pone la propia app -nombres de tema,
-         atributos data- y no hay forma de colar texto ajeno. Se escapan
-         igual: pasan por localStorage y basta que alguien pase aqui el
-         titulo de una lectura, que lleva el nombre de la persona, para
-         que deje de ser cierto. */
-      el.innerHTML = `<strong>${OEsc(item.title)}</strong><small>${OEsc(item.desc)}<br>${OEsc(item.stamp)}</small>`;
-      root.appendChild(el);
-    });
-  }
-
-  function trackPremiumActions() {
-    document.addEventListener('click', (e) => {
-      const premium = e.target.closest('[data-premium-action]');
-      if (premium) {
-        const action = premium.dataset.premiumAction;
-        if (!['save-quick-note','clear-quick-note'].includes(action)) {
-          pushActivity(OI('activityAction'), action);
-        }
-      }
-
-      const module = e.target.closest('[data-module]');
-      if (module) {
-        pushActivity('Módulo abierto', module.dataset.module);
-      }
-    });
   }
 
   document.addEventListener('click', (e) => {
@@ -763,14 +621,10 @@ function OEsc(v = '') {
     document.addEventListener('DOMContentLoaded', () => {
       bootTheme();
       bootQuickNote();
-      renderActivity();
-      trackPremiumActions();
     }, { once: true });
   } else {
     bootTheme();
     bootQuickNote();
-    renderActivity();
-    trackPremiumActions();
   }
 })();
 
