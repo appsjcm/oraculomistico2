@@ -277,33 +277,75 @@ function autoLecturaActiva() {
 }
 
 let lecturaEsperandoVoz = null;
+function usaLaVozDelAparato() {
+  const prefs = getVoicePrefs();
+  return !(prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true'));
+}
 
+/* Desbloquear el motor una vez no bastaba en iPhone: alli no vale con que
+   la pagina haya recibido un toque, cada arranque de voz tiene que salir
+   del propio manejador del gesto. Por eso el boton de Escuchar sonaba y la
+   lectura sola no, aunque saliera el avatar: el codigo corria entero y el
+   sistema descartaba el sonido sin decir nada.
+
+   La salida esta en donde se llama a esto. Toda la cadena desde el boton
+   de la tirada hasta setLastReading es sincrona -drawTarotSpread,
+   drawTarot, animateTarotReading-, asi que aqui todavia estamos dentro del
+   toque y la voz se puede pedir.
+
+   Se intento retenerla: pedirla aqui y dejarla en pausa hasta que las
+   cartas estuvieran a la vista. No aguanta. Con el motor de voz suelto la
+   pausa funciona, pero dentro de la aplicacion la voz aparcada llegaba
+   muerta al reanudar: ni sonaba ni saltaba su onstart. Un mecanismo que
+   falla en silencio es peor que ninguno, asi que se deja ir.
+
+   La consecuencia, y conviene saberla: con la lectura sola encendida la
+   voz empieza mientras las cartas se estan dando la vuelta, y nombra la
+   carta antes de que se vea. Es el precio de que suene en iPhone. Quien
+   prefiera la revelacion callada tiene el boton de Escuchar, que espera a
+   que este todo en pantalla. */
 function anotarParaLeerSola(texto) {
-  lecturaEsperandoVoz = autoLecturaActiva() && texto ? String(texto) : null;
+  lecturaEsperandoVoz = null;
+  if (!autoLecturaActiva() || !texto) return;
+  const limpio = String(texto);
+  const dentroDeUnToque = navigator.userActivation ? navigator.userActivation.isActive : true;
+  if (dentroDeUnToque && usaLaVozDelAparato() && 'speechSynthesis' in window) {
+    const arranquesAntes = vecesQueLaVozArranco;
+    speakText(limpio);
+    setTimeout(() => {
+      if (vecesQueLaVozArranco === arranquesAntes) toast(t('tsAutoReadSilenciada'));
+    }, 3000);
+    return;
+  }
+  /* Sin gesto -la profundizacion con IA, o una lectura que llega sola- no
+     queda otra que pedirla al pintarse y cruzar los dedos. */
+  lecturaEsperandoVoz = limpio;
 }
 
 function vigilarLecturasParaLeerlas() {
   const raiz = document.getElementById('modalRoot');
   if (!raiz || raiz.dataset.vigiladaLaVoz === 'si') return;
   raiz.dataset.vigiladaLaVoz = 'si';
+  /* Cuando un navegador se niega a hablar no avisa de nada: no lanza
+     error, simplemente no suena. Quedaba un silencio sin explicacion y
+     parecia que la lectura sola estuviera rota. Si pasados unos segundos
+     no ha arrancado de verdad -contado en el onstart, no al pedirla-, se
+     dice y se recuerda que Escuchar si funciona, porque ese si es un
+     toque. */
+  const avisarSiSeQuedoMuda = (arranquesAntes) => setTimeout(() => {
+    if (vecesQueLaVozArranco === arranquesAntes) toast(t('tsAutoReadSilenciada'));
+  }, 3000);
   const observador = new MutationObserver(() => {
-    if (!lecturaEsperandoVoz) return;
     if (!raiz.querySelector('.reading-actions')) return;
-    const texto = lecturaEsperandoVoz;
-    lecturaEsperandoVoz = null;
     /* Un respiro antes de empezar: si arranca en el mismo instante en que
        aparece el texto se pisa con la animacion de las cartas. */
+    if (!lecturaEsperandoVoz) return;
+    const texto = lecturaEsperandoVoz;
+    lecturaEsperandoVoz = null;
     setTimeout(() => {
-      const antes = vecesQueLaVozArranco;
+      const arranquesAntes = vecesQueLaVozArranco;
       speakText(texto);
-      /* Cuando un navegador se niega a hablar sin un toque no avisa de
-         nada: no lanza error, simplemente no suena. Quedaba un silencio
-         sin explicacion y parecia que la lectura sola estuviera rota. Si
-         pasados unos segundos no ha arrancado, se dice y se recuerda que
-         el boton de escuchar si funciona, porque ese si es un toque. */
-      setTimeout(() => {
-        if (vecesQueLaVozArranco === antes) toast(t('tsAutoReadSilenciada'));
-      }, 3000);
+      avisarSiSeQuedoMuda(arranquesAntes);
     }, 450);
   });
   observador.observe(raiz, { childList: true, subtree: true });
@@ -2698,8 +2740,11 @@ function desbloquearLaVozConElDedo() {
       const mudo = new SpeechSynthesisUtterance(' ');
       mudo.volume = 0;
       window.speechSynthesis.speak(mudo);
-      /* Se corta enseguida: solo hacia falta la llamada, no el sonido. */
-      setTimeout(() => { try { window.speechSynthesis.cancel(); } catch {} }, 60);
+      /* No se cancela despues. Se hacia, para no dejar rastro, y resulto
+         que se llevaba por delante la lectura: el desbloqueo salta en el
+         pointerdown y la lectura se pide en el click del mismo toque, ocho
+         milisegundos despues, asi que el cancel programado a los sesenta
+         mataba las dos. Un espacio a volumen cero termina solo. */
     }
   } catch {}
   try {
@@ -7890,7 +7935,7 @@ ${base}`;
       setVoicePrefs({ autoRead: encendida });
       /* Si se apaga con la voz en marcha, se calla: apagarlo y seguir
          oyendo la lectura no tendria sentido. */
-      if (!encendida) stopSpeech();
+      if (!encendida) { lecturaEsperandoVoz = null; stopSpeech(); }
       toast(t(encendida ? 'tsAutoReadOn' : 'tsAutoReadOff'));
       const boton = document.querySelector('[data-act="toggle-auto-read"]');
       if (boton) boton.outerHTML = botonDeLecturaSola();
