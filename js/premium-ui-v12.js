@@ -974,7 +974,7 @@ function OEsc(v = '') {
       syncThemeLabel();
       if (bodyObserver) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-premium-theme'] });
       const build = $('#premiumNativeBuild');
-      if (build) build.textContent = 'v8';
+      if (build) build.textContent = localStorage.getItem('oraculo.publicBuild') || 'v1.0';
     }, { once: true });
   } else {
     const settings = readSettings();
@@ -984,7 +984,7 @@ function OEsc(v = '') {
     syncThemeLabel();
     if (bodyObserver) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-premium-theme'] });
     const build = $('#premiumNativeBuild');
-    if (build) build.textContent = 'v8';
+    if (build) build.textContent = localStorage.getItem('oraculo.publicBuild') || 'v1.0';
   }
 })();
 

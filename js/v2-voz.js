@@ -204,6 +204,13 @@
     }
   }, true);
 
+  document.addEventListener('pointerdown', (ev) => {
+    const t = ev.target?.closest?.('[data-voz="cerrar"]');
+    if (!t) return;
+    ev.preventDefault();
+    cerrarPanel({ inmediato: true });
+  }, { passive: false });
+
   document.addEventListener('click', (ev) => {
     const t = ev.target?.closest?.('[data-voz]');
     if (t) {
