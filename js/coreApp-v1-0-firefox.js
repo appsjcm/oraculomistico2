@@ -2933,7 +2933,9 @@ function desbloquearLaVozConElDedo() {
   } catch {}
 }
 
-for (const gesto of ['pointerdown', 'touchend', 'mousedown', 'keydown']) {
+/* touchstart va delante de touchend, y en iPhone ya cuenta como gesto: se
+   escucha tambien, que asi el desbloqueo llega lo antes posible. */
+for (const gesto of ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'keydown']) {
   document.addEventListener(gesto, desbloquearLaVozConElDedo, { capture: true, passive: true });
 }
 /* Al volver de la cache de atras y adelante el permiso se pierde. */
