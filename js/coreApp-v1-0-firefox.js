@@ -32,6 +32,7 @@ const LS = {
   birthTime: 'oraculo.birthTime.v1',
   birthPlace: 'oraculo.birthPlace.v1',
   astroHouseSystem: 'oraculo.astroHouseSystem.v1',
+  megaFocus: 'oraculo.megaFocus.v1',
   effects3d: 'oraculo.3d.preference.v14'
 };
 
@@ -45,6 +46,8 @@ let oracleProsodyTimer = null;
 let voiceWakeLock = null;
 let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 let voiceSpeechSession = 0;
+let voiceKeepAliveTimer = null;
+let voiceStartFallbackTimer = null;
 let remoteSpeechAudio = null;
 let lastGeneratedSpeech = null;
 let cachedWebVoices = [];
@@ -2580,12 +2583,101 @@ async function releaseVoiceWakeLock() {
 function resetActiveSpeech() {
   activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 }
+function clearSpeechTimers() {
+  if (voiceKeepAliveTimer) clearInterval(voiceKeepAliveTimer);
+  if (voiceStartFallbackTimer) clearTimeout(voiceStartFallbackTimer);
+  voiceKeepAliveTimer = null;
+  voiceStartFallbackTimer = null;
+}
+function splitSpeechIntoChunks(text = '', max = 820) {
+  const source = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!source) return [];
+  const parts = source.match(/[^.!?¿¡…;:]+[.!?¿¡…;:]*/g) || [source];
+  const chunks = [];
+  let current = '';
+  parts.forEach(part => {
+    const piece = part.trim();
+    if (!piece) return;
+    if ((current + ' ' + piece).trim().length <= max) {
+      current = (current + ' ' + piece).trim();
+      return;
+    }
+    if (current) chunks.push(current);
+    if (piece.length <= max) {
+      current = piece;
+      return;
+    }
+    const words = piece.split(/\s+/);
+    current = '';
+    words.forEach(word => {
+      if ((current + ' ' + word).trim().length > max && current) {
+        chunks.push(current);
+        current = word;
+      } else {
+        current = (current + ' ' + word).trim();
+      }
+    });
+  });
+  if (current) chunks.push(current);
+  return chunks;
+}
+function speechChunkOffsets(chunks = [], text = '') {
+  let cursor = 0;
+  return chunks.map(chunk => {
+    const found = String(text || '').indexOf(chunk, cursor);
+    const offset = found >= 0 ? found : cursor;
+    cursor = offset + chunk.length;
+    return offset;
+  });
+}
+function estimatedSpeechMs(text = '', rate = 0.92) {
+  const words = String(text || '').split(/\s+/).filter(Boolean).length || 1;
+  const speed = Math.max(Number(rate) || 0.92, 0.55);
+  return Math.max(2200, Math.min(18000, (words / 2.45 / speed) * 1000 + 900));
+}
+function keepSpeechSynthesisAlive(sessionId) {
+  if (!('speechSynthesis' in window)) return;
+  if (voiceKeepAliveTimer) clearInterval(voiceKeepAliveTimer);
+  voiceKeepAliveTimer = setInterval(() => {
+    if (sessionId !== voiceSpeechSession || !activeSpeech.active) {
+      clearSpeechTimers();
+      return;
+    }
+    try {
+      if (!document.hidden) window.speechSynthesis.resume?.();
+    } catch {}
+  }, 7000);
+}
+function finishSpeechSession(sessionId, { delayed = false } = {}) {
+  if (sessionId !== voiceSpeechSession) return;
+  const finish = () => {
+    if (sessionId !== voiceSpeechSession) return;
+    clearSpeechTimers();
+    setFloatingVoiceStopVisible(false);
+    resetActiveSpeech();
+    releaseVoiceWakeLock();
+    hideOracleVoiceAvatar();
+  };
+  if (delayed) setTimeout(finish, 900);
+  else finish();
+}
 function setFloatingVoiceStopVisible(visible) {
   const button = document.getElementById('floatingVoiceStop');
   if (!button) return;
   button.classList.toggle('visible', Boolean(visible));
   button.setAttribute('aria-hidden', visible ? 'false' : 'true');
   button.tabIndex = visible ? 0 : -1;
+  if (visible) {
+    button.style.setProperty('opacity', '1', 'important');
+    button.style.setProperty('visibility', 'visible', 'important');
+    button.style.setProperty('pointer-events', 'auto', 'important');
+    button.style.setProperty('transform', 'translateY(0) scale(1)', 'important');
+  } else {
+    button.style.removeProperty('opacity');
+    button.style.removeProperty('visibility');
+    button.style.removeProperty('pointer-events');
+    button.style.removeProperty('transform');
+  }
 }
 function resumeInterruptedSpeech() {
   if (!activeSpeech.active || !activeSpeech.interrupted || document.hidden || window.speechSynthesis?.speaking) return;
@@ -2611,6 +2703,7 @@ function speakWithDevice(clean, options = {}) {
     const voice = getPreferredVoice(prefs);
     activeSpeech = { text:options.fullText || clean, charIndex:Number(options.offset || 0), active:true, interrupted:false };
     showOracleVoiceAvatar(clean);
+    startOracleLipSync(clean, prefs.rate);
     requestVoiceWakeLock();
     const started = window.AndroidTTS.speak(clean, voice?.voiceURI || '', Number(prefs.rate || 0.92), Number(prefs.pitch || 1));
     if (started) {
@@ -2627,50 +2720,99 @@ function speakWithDevice(clean, options = {}) {
   window.speechSynthesis.cancel();
   const prefs = getVoicePrefs();
   const offset = Number(options.offset || 0);
+  const fullText = options.resume ? (options.fullText || activeSpeech.text || clean) : clean;
   if (!options.resume) activeSpeech = { text: clean, charIndex: 0, active: true, interrupted: false };
-  else activeSpeech = { text: options.fullText || activeSpeech.text || clean, charIndex: offset, active: true, interrupted: false };
-  const utter = new SpeechSynthesisUtterance(clean);
-  utter.lang = getEffectiveVoiceLocale(prefs);
-  utter.rate = Number(prefs.rate || 0.92);
-  utter.pitch = Number(prefs.pitch || 1);
-  utter.volume = 1;
+  else activeSpeech = { text: fullText, charIndex: offset, active: true, interrupted: false };
+  const chunks = splitSpeechIntoChunks(clean);
+  const offsets = speechChunkOffsets(chunks, clean);
   const voice = getPreferredVoice(prefs);
-  if (voice) {
-    utter.voice = voice;
-    utter.lang = voice.lang || utter.lang;
-  }
-  utter.onstart = () => {
-    vecesQueLaVozArranco++;
-    if (sessionId !== voiceSpeechSession) return;
-    setFloatingVoiceStopVisible(true);
-    requestVoiceWakeLock(); showOracleVoiceAvatar(clean); setOracleMouthShape('closed');
-  };
-  utter.onboundary = event => {
-    if (sessionId !== voiceSpeechSession) return;
-    activeSpeech.charIndex = offset + Number(event?.charIndex || 0);
-    pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, prefs.rate);
-  };
-  utter.onresume = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(true); };
-  utter.onpause = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(false); };
-  utter.onend = () => {
-    if (sessionId !== voiceSpeechSession) return;
-    if (document.hidden && activeSpeech.active) activeSpeech.interrupted = true;
-    else { setFloatingVoiceStopVisible(false); resetActiveSpeech(); releaseVoiceWakeLock(); hideOracleVoiceAvatar(); }
-  };
-  utter.onerror = (event) => {
-    if (sessionId !== voiceSpeechSession) return;
-    if (document.hidden && activeSpeech.active) activeSpeech.interrupted = true;
-    else {
-      pushErrorLog('tts-avatar', event?.error || 'Error de voz', 'speech avatar');
-      setFloatingVoiceStopVisible(false);
-      resetActiveSpeech();
-      releaseVoiceWakeLock();
-      hideOracleVoiceAvatar();
-    }
-  };
   showOracleVoiceAvatar(clean);
   setFloatingVoiceStopVisible(true);
-  window.speechSynthesis.speak(utter);
+  requestVoiceWakeLock();
+  keepSpeechSynthesisAlive(sessionId);
+  const speakChunk = (index = 0) => {
+    if (sessionId !== voiceSpeechSession || !activeSpeech.active) return;
+    const chunk = chunks[index];
+    if (!chunk) return finishSpeechSession(sessionId, { delayed:true });
+    const chunkOffset = offset + (offsets[index] || 0);
+    let started = false;
+    let startedAt = 0;
+    const utter = new SpeechSynthesisUtterance(chunk);
+    utter.lang = getEffectiveVoiceLocale(prefs);
+    utter.rate = Number(prefs.rate || 0.92);
+    utter.pitch = Number(prefs.pitch || 1);
+    utter.volume = 1;
+    if (voice) {
+      utter.voice = voice;
+      utter.lang = voice.lang || utter.lang;
+    }
+    utter.onstart = () => {
+      if (sessionId !== voiceSpeechSession) return;
+      vecesQueLaVozArranco++;
+      started = true;
+      startedAt = performance.now();
+      if (voiceStartFallbackTimer) clearTimeout(voiceStartFallbackTimer);
+      setFloatingVoiceStopVisible(true);
+      requestVoiceWakeLock();
+      updateOracleVoiceAvatarSpeaking(true);
+      startOracleLipSync(chunk, prefs.rate);
+    };
+    utter.onboundary = event => {
+      if (sessionId !== voiceSpeechSession) return;
+      activeSpeech.charIndex = chunkOffset + Number(event?.charIndex || 0);
+      pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, prefs.rate);
+    };
+    utter.onresume = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(true); };
+    utter.onpause = () => { if (sessionId === voiceSpeechSession) updateOracleVoiceAvatarSpeaking(false); };
+    utter.onend = () => {
+      if (sessionId !== voiceSpeechSession) return;
+      if (voiceStartFallbackTimer) clearTimeout(voiceStartFallbackTimer);
+      voiceStartFallbackTimer = null;
+      if (document.hidden && activeSpeech.active) {
+        activeSpeech.interrupted = true;
+        return;
+      }
+      stopOracleLipSync(false);
+      activeSpeech.charIndex = chunkOffset + chunk.length;
+      const elapsed = startedAt ? performance.now() - startedAt : 0;
+      const pause = started && elapsed < 180 && chunk.length > 40 ? 180 : 55;
+      setTimeout(() => speakChunk(index + 1), pause);
+    };
+    utter.onerror = (event) => {
+      if (sessionId !== voiceSpeechSession) return;
+      if (voiceStartFallbackTimer) clearTimeout(voiceStartFallbackTimer);
+      voiceStartFallbackTimer = null;
+      const error = String(event?.error || '').toLowerCase();
+      if (document.hidden && activeSpeech.active) {
+        activeSpeech.interrupted = true;
+        return;
+      }
+      if (error === 'interrupted' || error === 'canceled') return;
+      pushErrorLog('tts-avatar', event?.error || 'Error de voz', 'speech avatar');
+      toast('La voz del navegador se ha cortado. Revisa la voz del dispositivo en Ajustes.');
+      finishSpeechSession(sessionId, { delayed:true });
+    };
+    voiceStartFallbackTimer = setTimeout(() => {
+      if (sessionId !== voiceSpeechSession || started || !activeSpeech.active) return;
+      try { window.speechSynthesis.resume?.(); } catch {}
+      updateOracleVoiceAvatarSpeaking(true);
+      startOracleLipSync(chunk, prefs.rate);
+      voiceStartFallbackTimer = setTimeout(() => {
+        if (sessionId !== voiceSpeechSession || started || !activeSpeech.active) return;
+        pushErrorLog('tts-avatar-start', 'La voz del navegador no ha arrancado', 'speech avatar');
+        toast('La voz no ha arrancado. Cambia la voz del dispositivo o prueba otra del selector.');
+        finishSpeechSession(sessionId, { delayed:true });
+      }, Math.min(2600, estimatedSpeechMs(chunk, prefs.rate)));
+    }, 900);
+    try {
+      window.speechSynthesis.resume?.();
+      window.speechSynthesis.speak(utter);
+    } catch (error) {
+      pushErrorLog('tts-avatar', error?.message || error, 'speech avatar');
+      finishSpeechSession(sessionId, { delayed:true });
+    }
+  };
+  speakChunk(0);
   return true;
 }
 window.onNativeTTSStart = () => {
@@ -2684,6 +2826,7 @@ window.onNativeTTSRange = charIndex => {
   pulseOracleMouth(activeSpeech.charIndex, activeSpeech.text, getVoicePrefs().rate);
 };
 window.onNativeTTSDone = () => {
+  clearSpeechTimers();
   setFloatingVoiceStopVisible(false);
   resetActiveSpeech();
   releaseVoiceWakeLock();
@@ -2691,6 +2834,7 @@ window.onNativeTTSDone = () => {
 };
 window.onNativeTTSError = message => {
   pushErrorLog('android-native-tts', message || 'Error de voz Android', 'native speech');
+  clearSpeechTimers();
   setFloatingVoiceStopVisible(false);
   resetActiveSpeech();
   releaseVoiceWakeLock();
@@ -2873,6 +3017,7 @@ async function downloadReadingMP3() {
 }
 function stopSpeech() {
   voiceSpeechSession += 1;
+  clearSpeechTimers();
   setFloatingVoiceStopVisible(false);
   try { window.AndroidTTS?.stop?.(); } catch {}
   if ('speechSynthesis' in window) {
@@ -3321,14 +3466,22 @@ function showMap() {
     ['mega','✦','Mega tirada'], ['tarot','🃏','Tarot'], ['runas','ᚱ','Runas'], ['luna','🌙','Luna'], ['astros','☉','Astros'], ['suenos','💭','Sueños'],
     ['numerologia','🔢','Numerología'], ['grabovoi','📜','Grabovoi'], ['biblioteca','📚','Biblioteca'], ['settings','⚙️','Ajustes']
   ];
-  openModal({ icon:'🗺️', title:t('mdMapa'), subtitle:t('mdMapaS'), body:`<div class="panel-grid">${modules.map(([m,i,t])=>`<button class="choice" data-module="${m}"><strong>${i} ${t}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
+  openModal({ icon:'🗺️', title:t('mdMapa'), subtitle:t('mdMapaS'), body:`<div class="panel-grid">${modules.map(([moduleKey, icon, label])=>`<button class="choice" data-module="${moduleKey}"><strong>${icon} ${escapeHTML(label)}</strong><small>${escapeHTML(t('stAbrirEsteApartado'))}</small></button>`).join('\n\n')}</div>` });
 }
 
 const MEGA_PERIODS = {
-  day: { label:'Día', title:'Mega tirada del día', tarot:3, positions:['Clima', 'Reto', 'Consejo'] },
-  week: { label:'Semana', title:'Mega tirada de la semana', tarot:5, positions:['Entrada', 'Movimiento', 'Vínculo', 'Trabajo interior', 'Cierre'] },
-  year: { label:'Año', title:'Mega tirada del año', tarot:7, positions:['Puerta del año', 'Tema central', 'Reto', 'Apoyo', 'Sombra', 'Expansión', 'Cierre'] }
+  day: { label:'Día', title:'Mega tirada del día', tarot:3, positions:['Clima', 'Reto', 'Consejo'], map:['Apertura', 'Centro', 'Cierre'] },
+  week: { label:'Semana', title:'Mega tirada de la semana', tarot:5, positions:['Entrada', 'Movimiento', 'Vínculo', 'Trabajo interior', 'Cierre'], map:['Inicio', 'Mitad', 'Vínculos', 'Cierre'] },
+  year: { label:'Año', title:'Mega tirada del año', tarot:7, positions:['Puerta del año', 'Tema central', 'Reto', 'Apoyo', 'Sombra', 'Expansión', 'Cierre'], map:['Trimestre 1', 'Trimestre 2', 'Trimestre 3', 'Trimestre 4'] }
 };
+const MEGA_FOCUS_OPTIONS = [
+  ['general', 'General'],
+  ['amor', 'Amor y vínculos'],
+  ['trabajo', 'Trabajo y proyectos'],
+  ['crecimiento', 'Crecimiento personal'],
+  ['decision', 'Decisión importante'],
+  ['limpieza', 'Cierre y limpieza']
+];
 function localDateKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -3374,6 +3527,103 @@ function megaNumerologyFocus(profile, period = 'day') {
   if (period === 'week') return { label:'Mes personal como tono semanal', number:personalMonth, meaning:numerologyMeaning(personalMonth) };
   return { label:'Día personal', number:personalDay, meaning:numerologyMeaning(personalDay) };
 }
+function megaFocusOptionsHTML(selected = 'general') {
+  return MEGA_FOCUS_OPTIONS.map(([key, label]) => `<option value="${key}" ${selected === key ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('');
+}
+function megaFocusLabel(key = 'general') {
+  return MEGA_FOCUS_OPTIONS.find(([value]) => value === key)?.[1] || 'General';
+}
+function megaFocusTone(key = 'general') {
+  const map = {
+    amor:'mira la calidad del vínculo, los gestos de cuidado y los límites sanos',
+    trabajo:'ordena prioridades, oportunidades reales y energía disponible para sostenerlas',
+    crecimiento:'usa la lectura como espejo de madurez, hábito y dirección interior',
+    decision:'reduce ruido: qué pide avance, qué pide pausa y qué dato falta',
+    limpieza:'cierra lo que drena, recupera presencia y deja espacio a lo nuevo',
+    general:'busca el hilo común entre señales internas, ritmo del periodo y acción concreta'
+  };
+  return map[key] || map.general;
+}
+function megaTopAspects(chart, limit = 3) {
+  return Array.isArray(chart?.aspects) ? chart.aspects.slice(0, limit) : [];
+}
+function megaDominantElement(chart) {
+  const counts = {};
+  (chart?.planets || []).slice(0, 10).forEach(planet => {
+    const el = planet.element || '';
+    if (el) counts[el] = (counts[el] || 0) + 1;
+  });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || chart?.moon?.element || '';
+}
+function megaNumerologySummary(profile, numberFocus, period = 'day') {
+  if (!profile || !numberFocus) return 'Numerología: indica una fecha válida para calcular el número guía.';
+  const base = `Camino de vida ${profile.life}, expresión ${profile.expression} y año personal ${profile.personalYear}.`;
+  const rhythm = period === 'year'
+    ? 'El año pide mirar decisiones grandes, continuidad y cierres de ciclo.'
+    : period === 'week'
+      ? 'La semana se entiende mejor como ajuste de ritmo: menos dispersión y más secuencia.'
+      : 'El día necesita una acción pequeña, visible y terminada.';
+  return `${base} ${numberFocus.label}: ${numberFocus.number} · ${numberFocus.meaning.title}. Fortaleza: ${numberFocus.meaning.gift}. Reto: ${numberFocus.meaning.challenge}. Consejo: ${numberFocus.meaning.advice}. ${rhythm}`;
+}
+function megaPeriodLens(data, cfg, phase, numberFocus, periodChart) {
+  const number = numberFocus?.number || '—';
+  const moon = phase?.name || 'la fase lunar actual';
+  const element = megaDominantElement(periodChart) || 'Centro';
+  if (data.period === 'year') {
+    return {
+      opening:`${data.year} se abre con número ${number}, ${moon} y tono elemental ${element}.`,
+      rhythm:'Trabaja el año por trimestres: no lo decidas todo al principio, revisa dirección cada tres meses.',
+      practice:'Elige una intención anual, una renuncia concreta y una métrica sencilla para notar avance.',
+      review:['T1 · limpiar agenda y deseo real', 'T2 · consolidar hábitos y alianzas', 'T3 · ajustar ambición y descanso', 'T4 · cerrar, agradecer y preparar continuidad']
+    };
+  }
+  if (data.period === 'week') {
+    return {
+      opening:`La semana queda marcada por número ${number}, ${moon} y tono elemental ${element}.`,
+      rhythm:'Divide la lectura en inicio, mitad y cierre: primero escucha, después decide, finalmente simplifica.',
+      practice:'Reserva una acción importante, una conversación pendiente y un momento de revisión breve.',
+      review:['Inicio · observa el clima y no fuerces respuesta', 'Mitad · actúa sobre lo evidente', 'Vínculos · cuida el tono antes que la razón', 'Cierre · recoge aprendizaje y deja una tarea menos abierta']
+    };
+  }
+  return {
+    opening:`Hoy la lectura habla desde número ${number}, ${moon} y tono elemental ${element}.`,
+    rhythm:'El día funciona mejor con un gesto claro que con muchas promesas.',
+    practice:'Haz una cosa que ordene energía, una que cuide el cuerpo y una que cierre ruido mental.',
+    review:['Apertura · define intención en una frase', 'Centro · toma la decisión más simple disponible', 'Cierre · anota qué señal se repitió y qué harás mañana']
+  };
+}
+function megaSynthesis(data, cfg, tarot, rune, phase, numberFocus, natalChart, periodChart, lens) {
+  const challenge = tarot.find(item => /reto|sombra|bloqueo/i.test(item.position)) || tarot[1] || tarot[0];
+  const advice = tarot.find(item => /consejo|cierre|apoyo/i.test(item.position)) || tarot[tarot.length - 1];
+  const astroCore = natalChart && periodChart
+    ? `La base natal (${natalChart.sun.name}, Luna en ${natalChart.moon.sign}, ASC ${natalChart.asc.name}) se cruza con el clima del periodo (${periodChart.sun.name}, Luna en ${periodChart.moon.sign}).`
+    : 'La parte astral queda como apoyo simbólico porque faltan datos completos o coordenadas fiables.';
+  return {
+    thread:`El hilo conductor es ${megaFocusTone(data.focus)}. ${lens.opening}`,
+    key:`La carta que pide atención es ${challenge?.card?.name || 'la carta central'}; la salida práctica la marca ${advice?.card?.name || 'la carta final'} junto a ${rune.name}.`,
+    close:`${astroCore} El número ${numberFocus?.number || '—'} pide convertir la lectura en un gesto medible durante el ${cfg.label.toLowerCase()}.`
+  };
+}
+function megaReadingBriefHTML(synthesis, lens) {
+  return `<div class="mega-reading-brief">
+    <article><small>Hilo conductor</small><strong>${escapeHTML(synthesis.thread)}</strong></article>
+    <article><small>Clave práctica</small><strong>${escapeHTML(synthesis.key)}</strong></article>
+    <article><small>Ritmo</small><strong>${escapeHTML(lens.rhythm)}</strong></article>
+  </div>`;
+}
+function megaAstroPillsHTML(natalChart, periodChart) {
+  if (!natalChart || !periodChart) return '';
+  const aspects = megaTopAspects(periodChart, 3);
+  return `<div class="mega-astro-pills" aria-label="Claves astrales">
+    <span>Sol natal · ${escapeHTML(natalChart.sun.name)}</span>
+    <span>Luna natal · ${escapeHTML(natalChart.moon.sign)}</span>
+    <span>ASC · ${escapeHTML(natalChart.asc.name)}</span>
+    ${aspects.map(aspect => `<span>${escapeHTML(aspect.symbol || astroAspectMeta(aspect.name).symbol)} ${escapeHTML(aspect.name)} · ${escapeHTML(aspect.a)} / ${escapeHTML(aspect.b)} · ${escapeHTML(aspect.orb)}°</span>`).join('')}
+  </div>`;
+}
+function megaPeriodMapHTML(lens) {
+  return `<article class="result-card mega-period-map"><h3>Mapa del periodo</h3><p>${escapeHTML(lens.practice)}</p><div>${(lens.review || []).map(item => `<span>${escapeHTML(item)}</span>`).join('')}</div></article>`;
+}
 function showMegaReading(period = 'day') {
   const selected = MEGA_PERIODS[period] ? period : 'day';
   const profile = getProfile();
@@ -3385,17 +3635,19 @@ function showMegaReading(period = 'day') {
   const placeData = place ? escapeHTML(JSON.stringify(place)) : '';
   const intention = escapeHTML(localStorage.getItem(LS.intention) || profile.intention || 'Claridad');
   const houseSystem = getAstroHouseSystem();
+  const focus = localStorage.getItem(LS.megaFocus) || 'general';
   const year = new Date().getFullYear();
   openModal({ icon:'✦', title:'Mega tirada', subtitle:'Tarot · runa · luna · astros · numerología', body:`
     <div class="mega-intro result-card">
       <h3>Informe simbólico completo</h3>
-      <p>Elige día, semana o año. La lectura une las cartas, una runa guía, la fase lunar, una base astral y la numerología personal en un solo informe exportable.</p>
+      <p>Elige día, semana o año. La lectura une cartas, runa, luna, base astral y numerología en un informe claro, exportable y preparado para ampliar con IA.</p>
     </div>
     <div class="panel-grid mt mega-period-grid">
       ${Object.entries(MEGA_PERIODS).map(([key, cfg]) => `<button class="choice ${selected === key ? 'active' : ''}" data-act="mega-${key}" type="button"><strong>${escapeHTML(cfg.title)}</strong><small>${cfg.tarot} cartas · runa · luna · astros · número guía</small></button>`).join('')}
     </div>
     <div class="form-grid mt astro-form">
       <div class="field"><label for="megaPeriod">Periodo</label><select id="megaPeriod" class="input">${Object.entries(MEGA_PERIODS).map(([key, cfg]) => `<option value="${key}" ${selected === key ? 'selected' : ''}>${escapeHTML(cfg.label)}</option>`).join('')}</select></div>
+      <div class="field"><label for="megaFocus">Enfoque</label><select id="megaFocus" class="input">${megaFocusOptionsHTML(focus)}</select></div>
       <div class="field"><label for="megaYear">Año de referencia</label><input id="megaYear" class="input" type="number" min="1900" max="2100" value="${year}"><small class="subtle">Solo se usa en la tirada anual.</small></div>
       <div class="field"><label for="megaName">${escapeHTML(t('nuName'))}</label>${inputWithMic('megaName', `value="${name}" placeholder="${escapeHTML(t('nuNamePh'))}"`)}</div>
       <div class="field"><label for="megaDate">${escapeHTML(t('nuBirth'))}</label><input id="megaDate" class="input" type="date" value="${date}"></div>
@@ -3415,6 +3667,7 @@ function getMegaFormData() {
   return {
     period:MEGA_PERIODS[$('#megaPeriod')?.value] ? $('#megaPeriod')?.value : 'day',
     year:Math.max(1900, Math.min(2100, Number($('#megaYear')?.value) || new Date().getFullYear())),
+    focus:MEGA_FOCUS_OPTIONS.some(([key]) => key === $('#megaFocus')?.value) ? $('#megaFocus')?.value : 'general',
     name:($('#megaName')?.value || localStorage.getItem(LS.name) || '').trim(),
     date:$('#megaDate')?.value || getBirthDate() || '',
     time:$('#megaTime')?.value || getBirthTime() || '12:00',
@@ -3431,9 +3684,12 @@ function megaAstroSummary(natalChart, periodChart) {
   if (!natalChart || !periodChart) return 'Astros: sin datos completos de nacimiento o lugar; la lectura mantiene tarot, runa, luna y numerología.';
   const stats = astroAspectStats(periodChart);
   const tight = stats.tightest;
+  const element = megaDominantElement(periodChart);
+  const top = megaTopAspects(periodChart, 3).map(aspect => `${aspect.symbol || astroAspectMeta(aspect.name).symbol} ${aspect.name} entre ${aspect.a} y ${aspect.b}, orbe ${aspect.orb}°`).join('; ');
   return `Base natal: Sol en ${natalChart.sun.name}, Luna en ${natalChart.moon.sign}, Ascendente en ${natalChart.asc.name} y Medio Cielo en ${natalChart.mc.name}.
 Clima del periodo: Sol en ${periodChart.sun.name}, Luna en ${periodChart.moon.sign}, Ascendente de referencia en ${periodChart.asc.name}.
-Aspectos del periodo: ${periodChart.aspects.length} mayores visibles${tight ? `; el más exacto es ${tight.name} entre ${tight.a} y ${tight.b}, orbe ${tight.orb}°` : ''}. Consejo elemental: ${astroAdviceForElement(periodChart.moon.element)}.`;
+Aspectos del periodo: ${periodChart.aspects.length} mayores visibles${tight ? `; el más exacto es ${tight.name} entre ${tight.a} y ${tight.b}, orbe ${tight.orb}°` : ''}${top ? `. Destacados: ${top}` : ''}.
+Tono elemental dominante: ${element || periodChart.moon.element}. Consejo elemental: ${astroAdviceForElement(element || periodChart.moon.element)}.`;
 }
 async function createMegaReading() {
   const data = getMegaFormData();
@@ -3445,10 +3701,11 @@ async function createMegaReading() {
   if (data.place?.label) setBirthPlace(data.place);
   if (data.houseSystem) setAstroHouseSystem(data.houseSystem);
   if (data.intention) localStorage.setItem(LS.intention, data.intention);
+  if (data.focus) localStorage.setItem(LS.megaFocus, data.focus);
 
   const cfg = MEGA_PERIODS[data.period];
   const periodKey = megaPeriodKey(data.period, data.year);
-  const seed = astroHash(`${data.name}|${data.date}|${data.time}|${data.place?.label || ''}|${data.intention}|${data.period}|${periodKey}`);
+  const seed = astroHash(`${data.name}|${data.date}|${data.time}|${data.place?.label || ''}|${data.intention}|${data.focus}|${data.period}|${periodKey}`);
   const reversedRate = .28;
   const tarot = seededDraw(ALL_TAROT, cfg.tarot, seed).map((card, index) => {
     const revSeed = astroHash(`${seed}|${card.codigo || card.name}|${index}`);
@@ -3468,15 +3725,19 @@ async function createMegaReading() {
     pushErrorLog('mega-astro', error?.message || error, data.period);
   }
   const astroText = megaAstroSummary(natalChart, periodChart);
-  const numText = numberFocus
-    ? `${numberFocus.label}: ${numberFocus.number} · ${numberFocus.meaning.title}. Fortaleza: ${numberFocus.meaning.gift}. Reto: ${numberFocus.meaning.challenge}. Consejo: ${numberFocus.meaning.advice}.`
-    : 'Numerología: indica una fecha válida para calcular el número guía.';
+  const numText = megaNumerologySummary(numerology, numberFocus, data.period);
+  const lens = megaPeriodLens(data, cfg, phase, numberFocus, periodChart);
+  const synthesis = megaSynthesis(data, cfg, tarot, rune, phase, numberFocus, natalChart, periodChart, lens);
   const title = `${cfg.title} · ${data.name}`;
   const text = `${title.toUpperCase()}
 Periodo: ${cfg.label} · ${periodKey}
+Enfoque: ${megaFocusLabel(data.focus)}
 Persona: ${data.name}
 Nacimiento: ${data.date} · ${data.time || '12:00'}${data.place?.label ? ` · ${data.place.label}` : ''}
 Intención: ${data.intention || 'Claridad'}
+
+Apertura:
+${synthesis.thread}
 
 Tarot:
 ${tarot.map(megaTarotLine).join('\n\n')}
@@ -3493,8 +3754,13 @@ ${astroText}
 Numerología:
 ${numText}
 
+Mapa del periodo:
+${lens.practice}
+${lens.review.map(item => `- ${item}`).join('\n')}
+
 Síntesis:
-La lectura junta símbolos distintos para señalar una dirección práctica. Mira primero la carta de consejo, después la runa guía y cierra con el número del periodo: ahí está el gesto más concreto para ordenar el ${cfg.label.toLowerCase()}.`;
+${synthesis.key}
+${synthesis.close}`;
   const items = [
     ...tarot.map(item => ({ kind:'tarot', name:item.card.name, subtitle:item.card.key || item.card.el || '', image:item.card.img || '', symbol:'🃏', position:item.position, reversed:!!item.rev })),
     { kind:'runa', name:rune.name, subtitle:rune.up || '', image:rune.img || '', symbol:rune.sym || 'ᚱ', position:'Runa guía' },
@@ -3502,20 +3768,24 @@ La lectura junta símbolos distintos para señalar una dirección práctica. Mir
     numberFocus ? { kind:'numerologia', name:`${numberFocus.label}: ${numberFocus.number}`, subtitle:numberFocus.meaning.title, image:'', symbol:'🔢', position:'Número guía' } : null,
     periodChart ? { kind:'astro', name:`Luna en ${periodChart.moon.sign}`, subtitle:`Sol en ${periodChart.sun.name}`, image:'', symbol:'☉', position:'Astros' } : null
   ].filter(Boolean);
-  setLastReading({ type:'Mega tirada', title, text, items, meta:{ name:data.name, intention:data.intention, period:data.period, periodKey, mega:{ tarot, rune, phase, numerology, numberFocus, natalChart, periodChart, houseSystem:data.houseSystem } } });
+  setLastReading({ type:'Mega tirada', title, text, items, meta:{ name:data.name, intention:data.intention, period:data.period, periodKey, focus:data.focus, mega:{ tarot, rune, phase, numerology, numberFocus, natalChart, periodChart, houseSystem:data.houseSystem, lens, synthesis } } });
   openModal({ icon:'✦', title, subtitle:`${cfg.label} · ${periodKey}`, body:`
     <div class="mega-result-hero">
       <div><small>Periodo</small><strong>${escapeHTML(cfg.label)}</strong></div>
+      <div><small>Enfoque</small><strong>${escapeHTML(megaFocusLabel(data.focus))}</strong></div>
       <div><small>Intención</small><strong>${escapeHTML(data.intention || 'Claridad')}</strong></div>
       <div><small>Número guía</small><strong>${numberFocus ? numberFocus.number : '—'}</strong></div>
     </div>
+    ${megaReadingBriefHTML(synthesis, lens)}
     <div class="mega-oracle-grid">
       ${tarot.map(item => `<article class="daily-oracle-card ${item.rev ? 'is-reversed' : ''}"><small>${escapeHTML(item.position)}</small>${cardImage(item.card)}<strong>${escapeHTML(item.card.name)}${item.rev ? ' · invertida' : ''}</strong><span>${escapeHTML(clampText(item.rev ? item.card.rv : item.card.up, 90))}</span></article>`).join('')}
       <article class="daily-oracle-card"><small>Runa guía</small><div class="daily-rune-art rune-stone ${rune.img ? 'has-art' : ''}">${runeImage(rune)}</div><strong>${escapeHTML(rune.sym)} ${escapeHTML(rune.name)}</strong><span>${escapeHTML(clampText(rune.up, 90))}</span></article>
       <article class="daily-oracle-card"><small>Luna</small><div class="moon-big">${phase.sym}</div><strong>${escapeHTML(phase.name)}</strong><span>${escapeHTML(clampText(phase.meaning, 90))}</span></article>
       <article class="daily-oracle-card"><small>Numerología</small><div class="numerology-number">${numberFocus ? numberFocus.number : '—'}</div><strong>${escapeHTML(numberFocus?.label || 'Número guía')}</strong><span>${escapeHTML(numberFocus?.meaning?.title || 'Sin fecha válida')}</span></article>
     </div>
+    ${megaAstroPillsHTML(natalChart, periodChart)}
     <div class="mega-sections">
+      ${megaPeriodMapHTML(lens)}
       <article class="result-card"><h3>Astros</h3><p>${escapeHTML(astroText).replace(/\n/g, '<br>')}</p></article>
       <article class="result-card"><h3>Numerología</h3><p>${escapeHTML(numText)}</p></article>
       <article class="result-card"><h3>Síntesis completa</h3><p>${escapeHTML(cleanInterpretation(text)).replace(/\n/g,'<br>')}</p>${readingActions(text,'Mega tirada')}</article>
@@ -7988,6 +8258,22 @@ function openModule(module) {
 }
 
 function attachGlobalEvents() {
+  const floatingStop = document.getElementById('floatingVoiceStop');
+  if (floatingStop && floatingStop.dataset.voiceStopBound !== 'true') {
+    floatingStop.dataset.voiceStopBound = 'true';
+    let lastStopTap = 0;
+    const handleFloatingStop = event => {
+      const now = Date.now();
+      if (now - lastStopTap < 300) return;
+      lastStopTap = now;
+      event.preventDefault();
+      event.stopPropagation();
+      stopSpeech();
+    };
+    floatingStop.addEventListener('pointerdown', handleFloatingStop);
+    floatingStop.addEventListener('click', handleFloatingStop);
+    floatingStop.addEventListener('touchend', handleFloatingStop, { passive:false });
+  }
   document.addEventListener('click', async e => {
     if (e.target.closest('[data-astro-wheel-modal-close]')) {
       e.preventDefault();
