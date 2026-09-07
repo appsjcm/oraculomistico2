@@ -307,6 +307,7 @@ function anotarParaLeerSola(texto) {
   if (!autoLecturaActiva() || !texto) return;
   const limpio = String(texto);
   const dentroDeUnToque = navigator.userActivation ? navigator.userActivation.isActive : true;
+  apuntarVoz('lectura sola: se pide', `gesto=${dentroDeUnToque} activacion=${navigator.userActivation ? 'si' : 'no la mide'}`);
   if (dentroDeUnToque && 'speechSynthesis' in window) {
     const arranquesAntes = vecesQueLaVozArranco;
     speakText(limpio, { forzarVozDelAparato: true });
@@ -2684,6 +2685,7 @@ function vigilarElFinDeLaVoz(sessionId) {
     if (callado < 3) return;
     clearInterval(vigilanciaDeLaVoz);
     vigilanciaDeLaVoz = null;
+    apuntarVoz('el motor lleva segundo y medio callado: se recoge el avatar');
     finishSpeechSession(sessionId);
   }, 500);
 }
@@ -2758,6 +2760,7 @@ function speakWithDevice(clean, options = {}) {
   }
   if (!('speechSynthesis' in window)) return false;
   const sessionId = ++voiceSpeechSession;
+  apuntarVoz('se manda al motor del aparato', `${clean.length} caracteres, voces=${(window.speechSynthesis.getVoices() || []).length}`);
   window.speechSynthesis.cancel();
   const prefs = getVoicePrefs();
   const offset = Number(options.offset || 0);
@@ -2790,6 +2793,7 @@ function speakWithDevice(clean, options = {}) {
     utter.onstart = () => {
       if (sessionId !== voiceSpeechSession) return;
       vecesQueLaVozArranco++;
+      apuntarVoz('arranca la voz del aparato');
       started = true;
       startedAt = performance.now();
       if (voiceStartFallbackTimer) clearTimeout(voiceStartFallbackTimer);
@@ -2828,6 +2832,7 @@ function speakWithDevice(clean, options = {}) {
         activeSpeech.interrupted = true;
         return;
       }
+      apuntarVoz('error de la voz', String(event?.error || 'sin detalle'));
       if (error === 'interrupted' || error === 'canceled') return;
       pushErrorLog('tts-avatar', event?.error || 'Error de voz', 'speech avatar');
       toast('La voz del navegador se ha cortado. Revisa la voz del dispositivo en Ajustes.');
@@ -3050,6 +3055,20 @@ async function downloadReadingMP3() {
     toast(t('tsMp3Fail'));
   }
 }
+/* Rastro de la voz, para poder mirar desde el propio telefono que ha
+   pasado. Aqui no hay consola ni forma de conectar un ordenador, y llevo
+   varios arreglos a ciegas sobre un fallo que solo se ve en iPhone. Se
+   apunta lo justo: cuando se pide la voz, si se pedia dentro de un gesto,
+   que motor iba a usarse, y si llego a arrancar o a terminar.
+
+   Va al mismo registro que los errores, que ya tiene pantalla, borrado y
+   descarga. Son cincuenta lineas como mucho y solo se llenan al hablar. */
+function apuntarVoz(que, detalle = '') {
+  try {
+    pushErrorLog('voz', `${que}${detalle ? ' · ' + detalle : ''}`, 'rastro de voz');
+  } catch {}
+}
+
 function stopSpeech() {
   voiceSpeechSession += 1;
   clearSpeechTimers();
