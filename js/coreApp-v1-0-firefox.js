@@ -311,7 +311,10 @@ function anotarParaLeerSola(texto) {
     const arranquesAntes = vecesQueLaVozArranco;
     speakText(limpio, { forzarVozDelAparato: true });
     setTimeout(() => {
-      if (vecesQueLaVozArranco === arranquesAntes) toast(t('tsAutoReadSilenciada'));
+      /* Se mira tambien el motor, no solo el contador: el contador sube en
+         onstart y hay navegadores que no lo lanzan aunque esten hablando. */
+      const sonando = window.speechSynthesis?.speaking || window.speechSynthesis?.pending || remoteSpeechAudio;
+      if (vecesQueLaVozArranco === arranquesAntes && !sonando) toast(t('tsAutoReadSilenciada'));
     }, 3000);
     return;
   }
@@ -331,7 +334,8 @@ function vigilarLecturasParaLeerlas() {
      dice y se recuerda que Escuchar si funciona, porque ese si es un
      toque. */
   const avisarSiSeQuedoMuda = (arranquesAntes) => setTimeout(() => {
-    if (vecesQueLaVozArranco === arranquesAntes) toast(t('tsAutoReadSilenciada'));
+    const sonando = window.speechSynthesis?.speaking || window.speechSynthesis?.pending || remoteSpeechAudio;
+    if (vecesQueLaVozArranco === arranquesAntes && !sonando) toast(t('tsAutoReadSilenciada'));
   }, 3000);
   const observador = new MutationObserver(() => {
     if (!raiz.querySelector('.reading-actions')) return;
@@ -2482,6 +2486,14 @@ function startRemoteAudioLipSync(audio, text = '') {
   const tick = () => {
     if (!audio || audio.ended) {
       stopOracleLipSync();
+      /* Recoger tambien aqui. El cierre colgaba del aviso onended del
+         audio, y donde ese aviso no llega el avatar se quedaba puesto con
+         el boton de parar encendido. Esto ya se ejecuta cada poco para
+         mover la boca, asi que no cuesta nada comprobarlo. */
+      setFloatingVoiceStopVisible(false);
+      hideOracleVoiceAvatar();
+      releaseVoiceWakeLock();
+      if (remoteSpeechAudio === audio) remoteSpeechAudio = null;
       return;
     }
     if (audio.paused) {
@@ -2643,10 +2655,44 @@ function keepSpeechSynthesisAlive(sessionId) {
     } catch {}
   }, 7000);
 }
+/* Cierra la sesion de voz cuando el motor deja de hablar, mire quien mire.
+   El cierre colgaba de onend, y donde ese aviso no llega el avatar se
+   quedaba puesto para siempre, con el boton de parar encendido, hasta que
+   alguien lo tocaba. Aqui se pregunta al motor cada medio segundo: en
+   cuanto deja de hablar y no le queda nada en la cola, se recoge todo.
+
+   Se deja un margen de gracia al principio porque entre el speak y el
+   arranque real puede pasar un segundo largo, y en ese hueco el motor
+   todavia dice que no habla. */
+let vigilanciaDeLaVoz = null;
+
+function vigilarElFinDeLaVoz(sessionId) {
+  if (vigilanciaDeLaVoz) clearInterval(vigilanciaDeLaVoz);
+  if (!('speechSynthesis' in window)) return;
+  const motor = window.speechSynthesis;
+  const desde = Date.now();
+  /* El texto se dice por trozos y entre trozo y trozo el motor calla un
+     instante -de cinco a dieciocho centesimas-. Con mirar una sola vez, el
+     vigilante cerraria el avatar en mitad de una lectura larga. Se exige
+     silencio sostenido: tres comprobaciones seguidas, segundo y medio. */
+  let callado = 0;
+  vigilanciaDeLaVoz = setInterval(() => {
+    if (sessionId !== voiceSpeechSession) { clearInterval(vigilanciaDeLaVoz); vigilanciaDeLaVoz = null; return; }
+    if (Date.now() - desde < 2500) return;
+    if (motor.speaking || motor.pending) { callado = 0; return; }
+    callado += 1;
+    if (callado < 3) return;
+    clearInterval(vigilanciaDeLaVoz);
+    vigilanciaDeLaVoz = null;
+    finishSpeechSession(sessionId);
+  }, 500);
+}
+
 function finishSpeechSession(sessionId, { delayed = false } = {}) {
   if (sessionId !== voiceSpeechSession) return;
   const finish = () => {
     if (sessionId !== voiceSpeechSession) return;
+    if (vigilanciaDeLaVoz) { clearInterval(vigilanciaDeLaVoz); vigilanciaDeLaVoz = null; }
     clearSpeechTimers();
     setFloatingVoiceStopVisible(false);
     resetActiveSpeech();
@@ -2794,6 +2840,10 @@ function speakWithDevice(clean, options = {}) {
       startOracleLipSync(chunk, prefs.rate);
       voiceStartFallbackTimer = setTimeout(() => {
         if (sessionId !== voiceSpeechSession || started || !activeSpeech.active) return;
+        /* Preguntar al motor antes de acusarlo. Donde onstart no llega, la
+           voz esta sonando igualmente y darla por fallida cortaba una
+           lectura que se estaba oyendo perfectamente. */
+        if (window.speechSynthesis?.speaking || window.speechSynthesis?.pending) return;
         pushErrorLog('tts-avatar-start', 'La voz del navegador no ha arrancado', 'speech avatar');
         toast('La voz no ha arrancado. Cambia la voz del dispositivo o prueba otra del selector.');
         finishSpeechSession(sessionId, { delayed:true });
@@ -2802,6 +2852,14 @@ function speakWithDevice(clean, options = {}) {
     try {
       window.speechSynthesis.resume?.();
       window.speechSynthesis.speak(utter);
+      /* La boca se pone en marcha aqui y no en onstart. Safari en iPhone no
+         siempre lanza ese aviso -ni onboundary, ni a veces onend- y sin el
+         la cara se quedaba quieta mientras la voz hablaba. El movimiento no
+         necesita el aviso: va por su propio reloj sobre las silabas del
+         texto. Si onstart llega, no estorba; vuelve a sincronizar. */
+      updateOracleVoiceAvatarSpeaking(true);
+      startOracleLipSync(chunk, prefs.rate);
+      vigilarElFinDeLaVoz(sessionId);
     } catch (error) {
       pushErrorLog('tts-avatar', error?.message || error, 'speech avatar');
       finishSpeechSession(sessionId, { delayed:true });
