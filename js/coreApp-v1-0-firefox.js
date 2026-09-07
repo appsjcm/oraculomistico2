@@ -2875,7 +2875,24 @@ function stopSpeech() {
   voiceSpeechSession += 1;
   setFloatingVoiceStopVisible(false);
   try { window.AndroidTTS?.stop?.(); } catch {}
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  if ('speechSynthesis' in window) {
+    const motor = window.speechSynthesis;
+    /* Si el motor quedo en pausa, cancel se ignora: primero se reanuda.
+       Y en iPhone un solo cancel no siempre corta una voz en marcha, asi
+       que se insiste mientras siga hablando, hasta cinco veces y solo si
+       hace falta. Sin esto, tocar Parar voz podia no hacer nada visible:
+       el avatar se iba y la voz seguia. */
+    try { motor.resume(); } catch {}
+    try { motor.cancel(); } catch {}
+    let insistencias = 0;
+    const insistir = () => {
+      if (insistencias >= 5 || !motor.speaking) return;
+      insistencias += 1;
+      try { motor.cancel(); } catch {}
+      setTimeout(insistir, 140);
+    };
+    setTimeout(insistir, 140);
+  }
   if (remoteSpeechAudio) {
     try { remoteSpeechAudio.pause(); remoteSpeechAudio.currentTime = 0; } catch {}
     remoteSpeechAudio = null;

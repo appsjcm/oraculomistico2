@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-voz-en-el-toque-233';
+const CACHE_NAME = 'oraculo-v1-0-public-parar-voz-234';
 /* Dos cosas salieron de esta lista porque casi nadie las usa y las pagaba
    todo el mundo al instalar: jsPDF, que son 356 KB y solo hace falta si
    exportas, y el manual en PDF, 165 KB. jsPDF ya se pedia solo cuando se
