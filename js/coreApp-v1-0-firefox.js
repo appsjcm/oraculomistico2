@@ -3386,6 +3386,7 @@ async function startBrowserSpeechDictation(target) {
     recognition.maxAlternatives = 1;
     const original = target.value || '';
     let gotResult = false;
+    let fallbackToRecorder = false;
     const timer = setTimeout(() => {
       if (activeDictation?.recognition !== recognition) return;
       toast(t('tsMicTranscribing'));
@@ -3402,12 +3403,17 @@ async function startBrowserSpeechDictation(target) {
         try { recognition.stop(); } catch {}
       }
     };
-    recognition.onerror = event => {
-      pushErrorLog('mic-browser-speech', event?.error || 'Speech recognition failed', 'speech recognition');
+    recognition.onerror = async event => {
       const err = event?.error || '';
+      if (err === 'audio-capture' && !gotResult && localStorage.getItem(LS.puter) === 'true' && await waitForPuterSpeechToText(250)) {
+        fallbackToRecorder = true;
+        try { recognition.stop(); } catch {}
+        return;
+      }
+      pushErrorLog('mic-browser-speech', err || 'Speech recognition failed', 'speech recognition');
       const message = err === 'not-allowed' || err === 'service-not-allowed'
         ? t('tsMicPermission')
-        : err === 'no-speech'
+        : err === 'no-speech' || err === 'audio-capture'
           ? micPcNoAudioHintText()
           : err === 'network'
             ? t('tsMicNoStart')
@@ -3420,6 +3426,7 @@ async function startBrowserSpeechDictation(target) {
       if (activeDictation?.recognition === recognition) activeDictation = null;
       setMicButtonState(targetId, false);
       target.focus();
+      if (fallbackToRecorder && !gotResult) startRecordedDictation(target);
     };
     recognition.start();
     return true;
@@ -4053,8 +4060,19 @@ function migrateData() {
 
 function pushErrorLog(source, message, context = '') {
   try {
+    const src = String(source || 'app');
+    const text = String(message || 'Error');
+    const ctx = String(context || '');
+    /* Algunos navegadores anuncian "canceled" o "interrupted" cuando la
+       propia app corta una voz para empezar otra, cerrar un panel o parar
+       la lectura. Eso no es un fallo para la persona: ensuciaba el informe
+       y hacia parecer rota una accion normal. */
+    if (/(cancell?ed|interrupted)/i.test(text) && /(voz|tts|speech|avatar)/i.test(`${src} ${ctx}`)) return;
     const log = storeGet(LS.errorLog, []);
-    log.unshift({ source, message: String(message || 'Error'), context, date: new Date().toISOString() });
+    const last = log[0];
+    const lastAt = Date.parse(last?.date || '');
+    if (last?.source === src && last?.message === text && last?.context === ctx && Number.isFinite(lastAt) && Date.now() - lastAt < 5000) return;
+    log.unshift({ source:src, message:text, context:ctx, date: new Date().toISOString() });
     storeSet(LS.errorLog, log.slice(0, 50));
   } catch {}
 }
