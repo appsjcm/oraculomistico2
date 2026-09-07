@@ -280,11 +280,6 @@ function autoLecturaActiva() {
 }
 
 let lecturaEsperandoVoz = null;
-function usaLaVozDelAparato() {
-  const prefs = getVoicePrefs();
-  return !(prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true'));
-}
-
 /* Desbloquear el motor una vez no bastaba en iPhone: alli no vale con que
    la pagina haya recibido un toque, cada arranque de voz tiene que salir
    del propio manejador del gesto. Por eso el boton de Escuchar sonaba y la
@@ -312,9 +307,9 @@ function anotarParaLeerSola(texto) {
   if (!autoLecturaActiva() || !texto) return;
   const limpio = String(texto);
   const dentroDeUnToque = navigator.userActivation ? navigator.userActivation.isActive : true;
-  if (dentroDeUnToque && usaLaVozDelAparato() && 'speechSynthesis' in window) {
+  if (dentroDeUnToque && 'speechSynthesis' in window) {
     const arranquesAntes = vecesQueLaVozArranco;
-    speakText(limpio);
+    speakText(limpio, { forzarVozDelAparato: true });
     setTimeout(() => {
       if (vecesQueLaVozArranco === arranquesAntes) toast(t('tsAutoReadSilenciada'));
     }, 3000);
@@ -2858,23 +2853,10 @@ window.onNativeTTSError = message => {
    Se hace siempre, no solo con la lectura sola encendida, porque la
    profundizacion con IA tiene el mismo problema: llega despues de una
    espera y tampoco sale de un gesto. */
-const SILENCIO_CORTO = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
 let vozYaDesbloqueada = false;
 /* Sube solo cuando la voz empieza a sonar de verdad. Sirve para saber si
    una lectura automatica llego a oirse o el navegador la descarto. */
 let vecesQueLaVozArranco = 0;
-let audioReutilizable = null;
-
-function elementoDeAudioDeVoz() {
-  if (!audioReutilizable) {
-    audioReutilizable = new Audio();
-    audioReutilizable.preload = 'auto';
-    /* Sin esto iPhone abre el reproductor a pantalla completa. */
-    audioReutilizable.playsInline = true;
-    audioReutilizable.setAttribute('playsinline', '');
-  }
-  return audioReutilizable;
-}
 
 function desbloquearLaVozConElDedo() {
   if (vozYaDesbloqueada) return;
@@ -2891,14 +2873,6 @@ function desbloquearLaVozConElDedo() {
          mataba las dos. Un espacio a volumen cero termina solo. */
     }
   } catch {}
-  try {
-    const audio = elementoDeAudioDeVoz();
-    audio.muted = true;
-    audio.src = SILENCIO_CORTO;
-    const promesa = audio.play();
-    if (promesa && promesa.then) promesa.then(() => { audio.pause(); audio.muted = false; }).catch(() => { audio.muted = false; });
-    else { audio.pause(); audio.muted = false; }
-  } catch {}
 }
 
 for (const gesto of ['pointerdown', 'touchend', 'mousedown', 'keydown']) {
@@ -2907,12 +2881,17 @@ for (const gesto of ['pointerdown', 'touchend', 'mousedown', 'keydown']) {
 /* Al volver de la cache de atras y adelante el permiso se pierde. */
 window.addEventListener('pageshow', event => { if (event.persisted) vozYaDesbloqueada = false; });
 
-async function speakText(text) {
+async function speakText(text, { forzarVozDelAparato = false } = {}) {
   const clean = cleanSpeechText(text);
   if (!clean) return toast(t('tsNoAiText'));
   stopSpeech();
   const prefs = getVoicePrefs();
-  const usePuter = prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true');
+  /* La voz de IA se pide por la red y suena despues, o sea fuera del toque,
+     y iPhone no la deja arrancar sola. La del aparato si arranca en el
+     mismo toque, asi que la lectura automatica la usa siempre. Escuchar,
+     pulsado a mano, respeta la voz elegida. */
+  const usePuter = !forzarVozDelAparato
+    && (prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true'));
   if (usePuter) {
     const remoteOk = await speakWithPuter(clean);
     if (remoteOk) return;
@@ -2959,12 +2938,8 @@ async function speakWithPuter(clean) {
   try {
     showOracleVoiceAvatar(clean);
     requestVoiceWakeLock();
-    const generado = await generatePuterSpeech(clean);
-    if (!generado) throw new Error('Audio IA no disponible');
-    /* Se toca por el elemento ya desbloqueado y no por el que devuelve el
-       servicio, que en iPhone nace bloqueado. */
-    const audio = elementoDeAudioDeVoz();
-    if (generado.src && audio.src !== generado.src) audio.src = generado.src;
+    const audio = await generatePuterSpeech(clean);
+    if (!audio) throw new Error('Audio IA no disponible');
     remoteSpeechAudio = audio;
     try { audio.currentTime = 0; } catch {}
     setMediaSessionForReading();
