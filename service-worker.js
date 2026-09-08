@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oraculo-v1-0-public-pdf-simbolos-257';
+const CACHE_NAME = 'oraculo-v1-0-public-rueda-pdf-258';
 /* Dos cosas salieron de esta lista porque casi nadie las usa y las pagaba
    todo el mundo al instalar: jsPDF, que son 356 KB y solo hace falta si
    exportas, y el manual en PDF, 165 KB. jsPDF ya se pedia solo cuando se

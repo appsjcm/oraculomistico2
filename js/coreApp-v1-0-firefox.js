@@ -634,7 +634,11 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   const outer = size * .445;
   const signR = size * .375;
   const houseR = size * .414;
-  const planetRadii = [size * .30, size * .265, size * .23, size * .195];
+  /* Tres anillos y no cuatro: lo que importa no es cuantos hay sino
+     cuanto se separan. Con cuatro quedaban a 2,7 mm y el glifo mide 5,6,
+     asi que dos planetas al mismo angulo se pisaban aunque estuvieran en
+     anillos distintos. */
+  const planetRadii = [size * .305, size * .245, size * .185];
   const toPoint = (degree, radius) => {
     const angle = degToRad(astroWheelAngle(chart, degree) - 90);
     return { x:cx + Math.cos(angle) * radius, y:cy + Math.sin(angle) * radius };
@@ -728,9 +732,14 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   doc.setFontSize(7);
   doc.setTextColor(...rose);
   axisLabels.forEach(([label, lx, ly]) => doc.text(label, lx, ly, { align:'center' }));
+  /* Cuantos grados ocupa un glifo aqui: mide 5,6 mm y el radio va en mm,
+     asi que a radio r tapa 5,6/(2*PI*r)*360 grados, o sea 321/r. Se usa
+     340 para dejar aire, que debajo de cada uno va ademas su grado. */
+  const repartoDeGlifosPdf = repartirGlifosEnAnillos(chart.planets, planetRadii, radio => 340 / Math.abs(radio || 1));
   chart.planets.forEach((planet, index) => {
-    const radius = planetRadii[index % planetRadii.length];
-    const p = toPoint(planet.degree, radius);
+    const puesto = repartoDeGlifosPdf.get(index);
+    const radius = planetRadii[puesto ? puesto.anillo : index % planetRadii.length];
+    const p = toPoint(puesto ? puesto.angulo : planet.degree, radius);
     const code = ASTRO_PDF_PLANETS[planet.id] || textoParaPdf(planet.name).slice(0, 3).toUpperCase();
     if (!ponerGlifoEnPdf(doc, planet.symbol, p.x, p.y, 5.6, 'rgb(47,43,69)')) {
       doc.setFont('helvetica', 'bold');
@@ -746,6 +755,14 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
     doc.setFontSize(4.6);
     doc.setTextColor(112, 108, 116);
     doc.text(textoParaPdf(planet.degreeLabel || `${planet.signDegree}°`).slice(0, 8), p.x, p.y + 6, { align:'center' });
+    /* El abanico corre el glifo para que no se tape con otro; esta rayita,
+       en el borde del anillo de signos, no se mueve nunca y dice donde
+       esta de verdad. */
+    const dentro = toPoint(planet.degree, size * .341);
+    const fuera = toPoint(planet.degree, size * .358);
+    doc.setDrawColor(120, 116, 132);
+    doc.setLineWidth(0.28);
+    doc.line(dentro.x, dentro.y, fuera.x, fuera.y);
   });
   const signLegend = 'ARI Aries · TAU Tauro · GEM Geminis · CAN Cancer · LEO Leo · VIR Virgo · LIB Libra · ESC Escorpio · SAG Sagitario · CAP Capricornio · ACU Acuario · PIS Piscis';
   const aspectLegend = 'CONJ 0 conjuncion · SEXT 60 sextil · CUAD 90 cuadratura · TRIG 120 trigono · OPOS 180 oposicion';
@@ -6826,6 +6843,87 @@ function astroEngineNoticeHTML(chart = null) {
   const quality = chart?.quality || 'Usa fecha, hora, lugar, coordenadas y zona horaria cuando hay ciudad seleccionada.';
   return `<div class="astro-engine-note" role="note"><strong>${escapeHTML(astroEngineLabel())}</strong><span>${escapeHTML(quality)} · Sin Swiss Ephemeris ni marcas externas.</span></div>`;
 }
+/* Reparte los glifos de los planetas en anillos para que no se tapen.
+
+   Lo usan las dos ruedas, la de pantalla y la del PDF. Antes cada una
+   elegia el anillo por la posicion del planeta en la lista, con un
+   index % 4, que no mira si dos estan juntos en el cielo: dos que casi
+   coinciden caian en el mismo anillo y se pisaban, y dos separados
+   noventa grados iban a anillos distintos sin motivo.
+
+   Van dos pasos. Primero el anillo: en orden de longitud, cada uno baja
+   al primero donde no tenga a nadie demasiado cerca. Despues el abanico:
+   dentro de cada anillo, el racimo se abre hasta que nadie estorbe, y se
+   recentra sobre su propia media -cada racimo por separado, que si no se
+   arrastra tambien a los que no molestan a nadie-.
+
+   Se le pasa cuantos grados ocupa un glifo en cada anillo, porque eso
+   depende del radio y de la unidad de cada rueda: cuanto mas adentro,
+   menos sitio. */
+function repartirGlifosEnAnillos(planetas, anillos, gradosQueOcupa) {
+  const enAnillo = anillos.map(() => []);
+  const reparto = new Map();
+  planetas
+    .map((planeta, index) => ({ index, lon: normalizeDegree(planeta.degree) }))
+    .filter(item => Number.isFinite(item.lon))
+    .sort((a, b) => a.lon - b.lon)
+    .forEach(item => {
+      let anillo = 0;
+      while (anillo < anillos.length - 1
+        && enAnillo[anillo].some(otro => Math.abs(signedDegreeDelta(otro.lon, item.lon)) < gradosQueOcupa(anillos[anillo]))) {
+        anillo += 1;
+      }
+      enAnillo[anillo].push(item);
+    });
+
+  enAnillo.forEach((grupo, anillo) => {
+    if (!grupo.length) return;
+    const hueco = gradosQueOcupa(anillos[anillo]);
+    /* Se empieza por donde el circulo mas se abre, para que el abanico no
+       parta un racimo por el corte de los 360 grados. */
+    const orden = grupo.slice().sort((a, b) => a.lon - b.lon);
+    let arranque = 0;
+    let mayor = -1;
+    orden.forEach((item, i) => {
+      const siguiente = orden[(i + 1) % orden.length];
+      const salto = orden.length === 1 ? 360 : normalizeDegree(siguiente.lon - item.lon);
+      if (salto > mayor) { mayor = salto; arranque = (i + 1) % orden.length; }
+    });
+    const cadena = orden.slice(arranque).concat(orden.slice(0, arranque));
+
+    let acumulado = cadena[0].lon;
+    const verdaderos = cadena.map((item, i) => {
+      if (i > 0) acumulado += normalizeDegree(item.lon - cadena[i - 1].lon);
+      return acumulado;
+    });
+    let anterior = null;
+    const colocados = verdaderos.map(valor => {
+      const puesto = anterior === null ? valor : Math.max(valor, anterior + hueco);
+      anterior = puesto;
+      return puesto;
+    });
+
+    const empujon = colocados.map((valor, i) => valor - verdaderos[i]);
+    let desde = 0;
+    while (desde < empujon.length) {
+      if (empujon[desde] <= 0.001) { desde += 1; continue; }
+      let hasta = desde;
+      while (hasta + 1 < empujon.length && empujon[hasta + 1] > 0.001) hasta += 1;
+      const primero = Math.max(0, desde - 1);
+      let suma = 0;
+      for (let k = primero; k <= hasta; k += 1) suma += colocados[k] - verdaderos[k];
+      const media = suma / (hasta - primero + 1);
+      for (let k = primero; k <= hasta; k += 1) colocados[k] -= media;
+      desde = hasta + 1;
+    }
+
+    cadena.forEach((item, i) => {
+      reparto.set(item.index, { anillo, angulo: normalizeDegree(colocados[i]) });
+    });
+  });
+  return reparto;
+}
+
 function astroWheelAngle(chart, degree) {
   return normalizeDegree(Number(chart?.asc?.absolute || 0) - Number(degree || 0) + 270);
 }
@@ -7112,114 +7210,16 @@ function astroWheelHTML(chart) {
      Cuanto mas adentro esta un anillo menos sitio hay, asi que la
      separacion minima sale del propio radio y no de un numero fijo: un
      glifo ocupa un arco tanto mayor cuanto menor es el radio. */
-  /* Reparto de los glifos de planeta.
-
-     El anillo salia antes de la posicion en la lista, con un index % 4.
-     Eso no mira si dos planetas estan juntos en el cielo: dos que casi
-     coinciden podian caer en el mismo anillo y taparse, y dos separados
-     noventa grados iban a anillos distintos sin motivo. Con la carta del
-     11 de febrero de 2021, seis cuerpos en Acuario, salian nueve parejas
-     de glifos solapadas y el Sol justo encima de la Luna.
-
-     Ahora manda la cercania, en dos pasos.
-
-     Primero el anillo: se recorren en orden de longitud y cada uno baja al
-     primero donde no tenga a nadie demasiado cerca. Tres anillos, no mas,
-     porque lo que importa es cuanto se separan entre si: la banda tiene
-     unos 65 px y con tres caben a 23 px, justo un glifo. Con seis anillos
-     quedaban a diez pixeles y dos planetas al mismo angulo se seguian
-     pisando aunque estuvieran en anillos distintos.
-
-     Despues el abanico: dentro de cada anillo se abre el racimo hasta que
-     nadie quede a menos de lo que ocupa un glifo, y luego se recentra
-     sobre su propia media, para que el grupo no se vaya hacia un lado. La
-     posicion exacta sigue estando en la lista de posiciones, debajo de la
-     rueda; en el dibujo lo que importa es poder distinguirlos.
-
-     Cuantos grados ocupa un glifo depende del radio: mide unos 23 px y la
-     rueda unos 327, asi que a radio r tapa (23/327)*360/(2*PI*r) grados,
-     o sea 4,0/r. Se usa 4,6 para dejar aire. */
+  /* El reparto vive en repartirGlifosEnAnillos, que comparten esta rueda
+     y la del PDF. Un glifo mide unos 23 px y la rueda unos 318, asi que a
+     radio r tapa 4 grados dividido por r; se usa 4,6 para dejar aire. */
   const ANILLOS_DE_PLANETA = [-.335, -.265, -.195];
-  const separacionMinima = radio => 4.6 / Math.abs(radio || 1);
-  const enAnillo = ANILLOS_DE_PLANETA.map(() => []);
-  chart.planets
-    .map((planet, index) => ({ index, lon: normalizeDegree(planet.degree) }))
-    .filter(item => Number.isFinite(item.lon))
-    .sort((a, b) => a.lon - b.lon)
-    .forEach(item => {
-      let anillo = 0;
-      while (anillo < ANILLOS_DE_PLANETA.length - 1
-        && enAnillo[anillo].some(otro => Math.abs(signedDegreeDelta(otro.lon, item.lon)) < separacionMinima(ANILLOS_DE_PLANETA[anillo]))) {
-        anillo += 1;
-      }
-      enAnillo[anillo].push(item);
-    });
-
-  const anguloDibujado = new Map();
-  const anilloDelPlaneta = new Map();
-  enAnillo.forEach((grupo, anillo) => {
-    const hueco = separacionMinima(ANILLOS_DE_PLANETA[anillo]);
-    /* Se ordena por el hueco mas grande para empezar a repartir por donde
-       el circulo "se abre", y asi el abanico no cruza el corte de los 360
-       grados por en medio de un racimo. */
-    const orden = grupo.slice().sort((a, b) => a.lon - b.lon);
-    let arranque = 0;
-    let mayor = -1;
-    orden.forEach((item, i) => {
-      const siguiente = orden[(i + 1) % orden.length];
-      const salto = normalizeDegree(siguiente.lon - item.lon) || (orden.length === 1 ? 360 : 0);
-      if (salto > mayor) { mayor = salto; arranque = (i + 1) % orden.length; }
-    });
-    const cadena = orden.slice(arranque).concat(orden.slice(0, arranque));
-    /* Se desenrolla el circulo en una recta desde el primero de la cadena,
-       acumulando los saltos verdaderos. Asi cada glifo tiene su sitio real
-       en una escala creciente y se pueden comparar sin la vuelta de los
-       360 grados. */
-    let acumulado = cadena.length ? cadena[0].lon : 0;
-    const verdaderos = cadena.map((item, i) => {
-      if (i > 0) acumulado += normalizeDegree(item.lon - cadena[i - 1].lon);
-      return acumulado;
-    });
-    /* Cada uno va en su sitio verdadero, y solo se empuja al que quedaria
-       demasiado cerca del anterior. Antes el empujon se propagaba en
-       cadena: bastaba que dos se estorbasen para que todos los de detras
-       heredaran el corrimiento, y en la carta del stellium Marte acababa
-       23 grados fuera de sitio estando a 79 grados del racimo. */
-    let anterior = null;
-    const colocados = verdaderos.map(valor => {
-      const puesto = anterior === null ? valor : Math.max(valor, anterior + hueco);
-      anterior = puesto;
-      return puesto;
-    });
-    /* Recentrar, pero cada racimo por su cuenta. El abanico solo empuja
-       hacia adelante, asi que un grupo apretado se iria entero hacia un
-       lado; se le resta su corrimiento medio para que quede sobre su sitio.
-       Restarselo a todo el anillo, como se hacia al principio, arrastraba
-       a los que no estorban a nadie: en la carta del stellium, Marte
-       acababa 23 grados fuera de sitio estando a 79 del racimo. */
-    const empujon = colocados.map((valor, i) => valor - verdaderos[i]);
-    let desde = 0;
-    while (desde < empujon.length) {
-      if (empujon[desde] <= 0.001) { desde += 1; continue; }
-      let hasta = desde;
-      while (hasta + 1 < empujon.length && empujon[hasta + 1] > 0.001) hasta += 1;
-      /* El ancla del racimo es el de delante, que no se movio. */
-      const primero = Math.max(0, desde - 1);
-      let suma = 0;
-      for (let k = primero; k <= hasta; k += 1) suma += colocados[k] - verdaderos[k];
-      const media = suma / (hasta - primero + 1);
-      for (let k = primero; k <= hasta; k += 1) colocados[k] -= media;
-      desde = hasta + 1;
-    }
-    cadena.forEach((item, i) => {
-      anguloDibujado.set(item.index, normalizeDegree(colocados[i]));
-      anilloDelPlaneta.set(item.index, anillo);
-    });
-  });
+  const repartoDeGlifos = repartirGlifosEnAnillos(chart.planets, ANILLOS_DE_PLANETA, radio => 4.6 / Math.abs(radio || 1));
 
   const planets = chart.planets.map((planet, index) => {
-    const radius = ANILLOS_DE_PLANETA[anilloDelPlaneta.has(index) ? anilloDelPlaneta.get(index) : index % ANILLOS_DE_PLANETA.length];
-    const anguloDelGlifo = astroWheelAngle(chart, anguloDibujado.has(index) ? anguloDibujado.get(index) : planet.degree);
+    const puesto = repartoDeGlifos.get(index);
+    const radius = ANILLOS_DE_PLANETA[puesto ? puesto.anillo : index % ANILLOS_DE_PLANETA.length];
+    const anguloDelGlifo = astroWheelAngle(chart, puesto ? puesto.angulo : planet.degree);
     const planetLabel = `${planet.name} en ${planet.sign} ${planet.degreeLabel || ''}${planet.retrograde ? ' retrógrado' : ''}`.trim();
     return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${anguloDelGlifo}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${astroGlyph(planet.symbol)}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
   }).join('');
