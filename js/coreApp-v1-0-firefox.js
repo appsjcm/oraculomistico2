@@ -5700,7 +5700,7 @@ const ASTRO_HOUSES = ['Yo','Recursos','Palabra','Hogar','Creatividad','Rutina','
    lo que cabia esperar: Neptuno-Lilith, Lilith-Nodo, Saturno-Nodo y
    Neptuno-Pluton, que es un aspecto de toda una generacion y no
    distingue a nadie en particular. */
-const ASTRO_ORB_FACTOR = { sun:1, moon:1, node:0.6, chiron:0.6, lilith:0.6 };
+const ASTRO_ORB_FACTOR = { sun:1, moon:1, node:0.6, chiron:0.6, lilith:0.6, asc:0.8, mc:0.8 };
 function astroOrbFactor(id = '') {
   const factor = ASTRO_ORB_FACTOR[id];
   return Number.isFinite(factor) ? factor : 0.85;
@@ -6591,8 +6591,27 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
     }
   });
 
+  /* El Ascendente y el Medio Cielo no entraban en los aspectos, y en una
+     carta cuentan tanto como un planeta: "Luna conjuncion Ascendente" o
+     "Saturno cuadratura Medio Cielo" son de lo primero que se mira. Se
+     anaden como dos puntos mas, con orbe algo mas corto que el Sol o la
+     Luna pero mas largo que el de los puntos calculados.
+
+     No se aspectan entre si: el angulo entre Ascendente y Medio Cielo lo
+     fija la latitud y la hora, no es un encuentro entre dos cuerpos.
+     Tampoco hace falta meter el Descendente ni el Fondo del Cielo, que son
+     sus opuestos exactos: un aspecto al uno lo es al otro. */
+  const puntosDeAspecto = planets.slice();
+  if (Number.isFinite(asc?.absolute)) {
+    puntosDeAspecto.push({ id:'asc', name:t('asAscendant'), symbol:'AC', degree:asc.absolute, esEje:true });
+  }
+  if (Number.isFinite(mc?.absolute)) {
+    puntosDeAspecto.push({ id:'mc', name:t('asMidheaven'), symbol:'MC', degree:mc.absolute, esEje:true });
+  }
+
   const aspects = [];
-  planets.forEach((a, i) => planets.slice(i + 1).forEach(b => {
+  puntosDeAspecto.forEach((a, i) => puntosDeAspecto.slice(i + 1).forEach(b => {
+    if (a.esEje && b.esEje) return;
     const diff = Math.abs(a.degree - b.degree);
     const angle = Math.min(diff, 360 - diff);
     const aspect = ASTRO_ASPECTS.map(item => ({ ...item, delta:Math.abs(angle - item.angle) })).sort((x,y) => x.delta - y.delta)[0];
@@ -6614,6 +6633,21 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
     ? `Lugar, zona horaria, planetas, ascendente, Medio Cielo y casas ${astroHouseSystemLabel(sistemaUsado)}${cambioDeSistema} calculados con coordenadas locales`
     : 'Lugar manual: ascendente y casas aproximados; selecciona una ciudad de la lista para afinar';
   aspects.sort((a, b) => Number(a.orb) - Number(b.orb));
+  /* Los doce mas cerrados dejaban fuera siempre a los ejes: un aspecto al
+     Ascendente rara vez es de los mas exactos de la carta, y sin embargo
+     pesa mas que un sextil entre Neptuno y Pluton, que lo comparte media
+     generacion. Se reserva sitio para el aspecto mas cerrado de cada eje,
+     si lo tiene, y el resto se llena por orbe como hasta ahora. */
+  const nombresDeEje = [t('asAscendant'), t('asMidheaven')];
+  const reservados = nombresDeEje
+    .map(eje => aspects.find(item => item.a === eje || item.b === eje))
+    .filter(Boolean);
+  const mostrados = reservados.slice();
+  aspects.forEach(item => {
+    if (mostrados.length >= 12 || mostrados.includes(item)) return;
+    mostrados.push(item);
+  });
+  mostrados.sort((a, b) => Number(a.orb) - Number(b.orb));
   /* Se ensenan los doce mas cerrados para que la lectura no se haga
      interminable, pero hay que decir cuantos habia. Medido sobre 600
      cartas entre 1940 y 2026 con doce puntos, sin contar todavia Quiron:
@@ -6621,7 +6655,7 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
      de las cartas, 5,6 aspectos por carta. El resumen ensenaba ese doce
      como si fuera el total. */
   const aspectsFound = aspects.length;
-  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:aspects.slice(0, 12), aspectsFound, houseSystem, houseSystemUsed:sistemaUsado, engine:astroEngineLabel(), quality, timeZoneOffset, utcLabel, siderealDegree, siderealTimeLabel, preciseAngles };
+  return { name, date, time, place, sun, moon, asc, mc, planets, houses, aspects:mostrados, aspectsFound, houseSystem, houseSystemUsed:sistemaUsado, engine:astroEngineLabel(), quality, timeZoneOffset, utcLabel, siderealDegree, siderealTimeLabel, preciseAngles };
 }
 function formatAstroLocalFromMs(ms, timeZone = '') {
   const date = new Date(ms);
@@ -6734,7 +6768,11 @@ function astroAspectLegendHTML() {
 }
 function astroAspectWebHTML(chart) {
   const clipId = `astro-aspect-clip-${astroHash(`${chart.name || ''}|${chart.date || ''}|${chart.time || ''}`)}`;
+  /* Los ejes tambien forman aspectos, asi que la telarana tiene que poder
+     encontrarlos por nombre igual que a los planetas. */
   const byName = Object.fromEntries(chart.planets.map(planet => [planet.name, planet]));
+  if (Number.isFinite(chart?.asc?.absolute)) byName[t('asAscendant')] = { degree: chart.asc.absolute };
+  if (Number.isFinite(chart?.mc?.absolute)) byName[t('asMidheaven')] = { degree: chart.mc.absolute };
   const point = (degree, radius) => {
     const angle = degToRad(astroWheelAngle(chart, degree) - 90);
     return { x:50 + Math.cos(angle) * radius, y:50 + Math.sin(angle) * radius };
