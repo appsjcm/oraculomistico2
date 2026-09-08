@@ -504,6 +504,86 @@ function splitReadingText(text = '') {
   if (!compact.length && text) compact.push(String(text).split('\n').slice(0, 5).join(' · '));
   return { compact, long: long.length ? long.join('\n\n') : String(text || '') };
 }
+/* Simbolos astrologicos en el PDF.
+
+   La fuente estandar del PDF no los tiene: los glifos de planeta y de
+   signo caen fuera del latino occidental, asi que el filtro de texto los
+   descarta y por eso el informe escribia "SOL", "GEM", "QUI". Se veian
+   abreviaturas donde tenia que haber simbolos.
+
+   El navegador si sabe dibujarlos, que en pantalla salen. Asi que se
+   pintan en un lienzo y se meten en el PDF como imagen. Sale el mismo
+   simbolo que se ve en la app, y no hace falta incrustar ninguna fuente.
+
+   Se guarda cada uno una sola vez: jsPDF reutiliza la imagen si se le da
+   el mismo nombre, asi que trece planetas y doce signos no engordan el
+   documento por muchas veces que aparezcan.
+
+   Y antes de dar uno por bueno se comprueba que la fuente lo dibuja de
+   verdad: se compara con lo que sale al pedir un caracter que no existe
+   en ninguna fuente. Si coinciden, es el cuadradito de "no tengo este
+   glifo" y se devuelve nulo para que quien llama escriba la abreviatura
+   de siempre. */
+const FUENTE_DE_SIMBOLOS = '"Segoe UI Symbol", "Noto Sans Symbols 2", "Apple Symbols", "Arial Unicode MS", sans-serif';
+const glifosDePdf = new Map();
+let huellaDeGlifoAusente = null;
+
+function pintarGlifoEnLienzo(caracter, color, lado) {
+  const lienzo = document.createElement('canvas');
+  lienzo.width = lado;
+  lienzo.height = lado;
+  const ctx = lienzo.getContext('2d');
+  ctx.clearRect(0, 0, lado, lado);
+  ctx.font = `${Math.round(lado * 0.74)}px ${FUENTE_DE_SIMBOLOS}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText(caracter, lado / 2, lado * 0.54);
+  return lienzo;
+}
+
+function huellaDeLienzo(lienzo) {
+  const datos = lienzo.getContext('2d').getImageData(0, 0, lienzo.width, lienzo.height).data;
+  let suma = 0;
+  let pintados = 0;
+  for (let i = 3; i < datos.length; i += 4) {
+    if (datos[i] > 8) { pintados += 1; suma += i; }
+  }
+  return pintados ? `${pintados}:${suma}` : 'vacio';
+}
+
+function glifoParaPdf(caracter, color = '#2f2b45', lado = 72) {
+  const texto = String(caracter || '').trim();
+  if (!texto) return null;
+  const clave = `${texto}|${color}|${lado}`;
+  if (glifosDePdf.has(clave)) return glifosDePdf.get(clave);
+  let resultado = null;
+  try {
+    if (huellaDeGlifoAusente === null) {
+      /* Un caracter que no existe en ninguna fuente: lo que salga es el
+         dibujo de "glifo ausente" de este navegador. */
+      huellaDeGlifoAusente = huellaDeLienzo(pintarGlifoEnLienzo('\uFFFF', color, lado));
+    }
+    const lienzo = pintarGlifoEnLienzo(texto, color, lado);
+    const huella = huellaDeLienzo(lienzo);
+    if (huella !== 'vacio' && huella !== huellaDeGlifoAusente) {
+      resultado = { url: lienzo.toDataURL('image/png'), alias: `glifo-${clave}` };
+    }
+  } catch {}
+  glifosDePdf.set(clave, resultado);
+  return resultado;
+}
+
+/* Coloca un simbolo centrado en un punto del PDF. Devuelve si pudo. */
+function ponerGlifoEnPdf(doc, caracter, x, y, tamano, color) {
+  const glifo = glifoParaPdf(caracter, color);
+  if (!glifo) return false;
+  try {
+    doc.addImage(glifo.url, 'PNG', x - tamano / 2, y - tamano / 2, tamano, tamano, glifo.alias, 'FAST');
+    return true;
+  } catch { return false; }
+}
+
 function cleanPdfText(value = '') {
   return String(value || '')
     .replace(/[🌟✨🔮🃏🌙ᚱ🤖📄📋📤⭐🎙️⏹️🔊]/g, '')
@@ -604,9 +684,13 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
   });
   ASTRO_PDF_SIGNS.forEach((label, index) => {
     const p = toPoint(index * 30 + 15, signR);
+    const color = ASTRO_PDF_SIGN_COLORS[index] || gold;
+    const simbolo = ASTRO_SIGNS[index]?.symbol;
+    if (ponerGlifoEnPdf(doc, simbolo, p.x, p.y, 7.4, `rgb(${color.join(',')})`)) return;
+    /* Sin simbolo dibujable, la abreviatura de siempre. */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setTextColor(...(ASTRO_PDF_SIGN_COLORS[index] || gold));
+    doc.setTextColor(...color);
     doc.text(label, p.x, p.y + 2, { align:'center' });
   });
   if (chart.aspects?.length) {
@@ -648,10 +732,12 @@ function drawAstroPdfWheel(doc, chart, x, y, size, palette = {}, heading = 'Rued
     const radius = planetRadii[index % planetRadii.length];
     const p = toPoint(planet.degree, radius);
     const code = ASTRO_PDF_PLANETS[planet.id] || textoParaPdf(planet.name).slice(0, 3).toUpperCase();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(5.7);
-    doc.setTextColor(78, 78, 82);
-    doc.text(code, p.x, p.y + 1.7, { align:'center' });
+    if (!ponerGlifoEnPdf(doc, planet.symbol, p.x, p.y, 5.6, 'rgb(47,43,69)')) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(5.7);
+      doc.setTextColor(78, 78, 82);
+      doc.text(code, p.x, p.y + 1.7, { align:'center' });
+    }
     if (planet.retrograde) {
       doc.setFontSize(4.4);
       doc.text('R', p.x + 5.5, p.y - 1.8, { align:'center' });
@@ -1141,7 +1227,11 @@ async function exportAstroPDF(reading = lastReading) {
       index += take;
     }
   };
-  const addTable = (heading, headers, rows, widths) => {
+  /* Las tablas pueden llevar el simbolo de cada fila delante de la primera
+     celda: se pinta como imagen, porque la fuente del PDF no tiene glifos
+     astrologicos, y el texto se corre a la derecha para dejarle sitio. Si
+     el simbolo no se puede dibujar, la celda queda como estaba. */
+  const addTable = (heading, headers, rows, widths, simbolos = []) => {
     const cleanRows = rows.map(row => row.map(cell => cleanPdfText(cell))).filter(row => row.some(Boolean));
     if (!cleanRows.length) return;
     sectionTitle(heading);
@@ -1177,8 +1267,12 @@ async function exportAstroPDF(reading = lastReading) {
       doc.setFontSize(7.45);
       doc.setTextColor(...ink);
       let tx = margin + 3;
+      const simbolo = simbolos[index];
+      const conSimbolo = simbolo
+        ? ponerGlifoEnPdf(doc, simbolo, tx + 2.2, y + 4.4, 4.6, 'rgb(47,43,69)')
+        : false;
       cellLines.forEach((lines, i) => {
-        doc.text(lines, tx, y + 5.4);
+        doc.text(lines, i === 0 && conSimbolo ? tx + 6 : tx, y + 5.4);
         tx += colW[i];
       });
       y += rowH + 1.2;
@@ -1227,11 +1321,11 @@ async function exportAstroPDF(reading = lastReading) {
     ['Medio Cielo', `${chart.mc?.name || ''} ${chart.mc?.degreeLabel || ''}`, chart.mc?.keywords?.join(', ') || 'Direccion visible']
   ], [34, 58, 88]);
   addTable('Posiciones planetarias', ['Astro', 'Grado', 'Casa', 'Funcion'], chart.planets.map(planet => [
-    ASTRO_PDF_PLANETS[planet.id] || planet.name,
+    planet.name,
     `${planet.sign} ${planet.degreeLabel || `${planet.signDegree} grados`}${planet.retrograde ? ' Rx' : ''}`,
     planet.house ? String(planet.house) : '',
     planet.role || planet.element || ''
-  ]), [22, 56, 16, 86]);
+  ]), [30, 52, 14, 84], chart.planets.map(planet => planet.symbol));
   addTable('Casas', ['Casa', 'Cuspide', 'Area'], chart.houses.map(house => [
     `Casa ${house.number}`,
     `${house.sign} ${house.degreeLabel || `${house.degree} grados`}`,
