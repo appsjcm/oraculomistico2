@@ -381,6 +381,7 @@
           </div>
           <div class="om-bib-card-acciones">
             <button class="om-bib-escuchar" data-bib="escuchar" type="button">🔊 ${esc(tr('raListen'))}</button>
+            <button class="om-bib-escuchar" data-bib="parar-voz" type="button">■ ${esc(tr('stopVoice'))}</button>
             <button class="om-sheet-close" data-bib="cerrar-detalle" type="button" aria-label="${esc(tr('close'))}">✕</button>
           </div>
         </header>
@@ -391,9 +392,14 @@
     setTimeout(() => $('.om-sheet-close', modal)?.focus?.(), 60);
   }
 
+  function pararVozBiblioteca() {
+    try { window.OraculoVoz?.parar?.(); } catch {}
+  }
+
   function cerrarDetalle(repintar = true) {
     const modal = $('#omBibDetalleModal');
     if (!modal) { abierto = null; return; }
+    pararVozBiblioteca();
     clearZoomGesture();
     modal.classList.remove('abierto');
     setTimeout(() => { modal.hidden = true; modal.innerHTML = ''; }, 180);
@@ -439,6 +445,7 @@
   function cerrar() {
     const raiz = $('#omBiblioteca');
     if (!raiz) return;
+    pararVozBiblioteca();
     raiz.classList.remove('om-sheet-open');
     if (window.OraculoSheets?.refreshLock) window.OraculoSheets.refreshLock();
     else document.body.classList.remove('om-sheet-lock');
@@ -454,6 +461,7 @@
       ev.preventDefault();
       if (q === 'cerrar') return cerrar();
       if (q === 'cerrar-detalle') return cerrarDetalle();
+      if (q === 'parar-voz') { pararVozBiblioteca(); return; }
       if (q === 'zoom-in' || q === 'zoom-out' || q === 'zoom-reset') {
         const viewport = t.closest('.om-bib-media')?.querySelector('[data-bib-zoom-viewport]');
         const state = zoomState(viewport);
