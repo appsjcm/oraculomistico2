@@ -6962,13 +6962,147 @@ function astroWheelPointerEnd(e) {
 function astroWheelHTML(chart) {
   const signs = ASTRO_SIGNS.map((sign, index) => `<span class="astro-sign" style="--angle:${astroWheelAngle(chart, index * 30 + 15)}deg;--sign-color:${ASTRO_SIGN_COLORS[index] || '#bd3b75'}" aria-hidden="true">${astroGlyph(sign.symbol)}</span>`).join('');
   const houses = chart.houses.map(house => `<span class="astro-house-number" style="--angle:${astroWheelAngle(chart, house.cusp + 15)}deg" aria-hidden="true">${house.number}</span>`).join('');
+  /* El anillo de cada planeta salia de su posicion en la lista, con un
+     index % 4. Eso no mira si dos planetas estan juntos en el cielo: dos
+     que casi coinciden pueden caer en el mismo anillo y taparse, y dos
+     separados noventa grados van a anillos distintos sin motivo.
+
+     Se nota en cuanto hay un stellium. Medido con la carta del 11 de
+     febrero de 2021, seis cuerpos en Acuario: nueve parejas de glifos
+     solapadas, con centros a once pixeles cuando el glifo mide veinte.
+     Sol y Luna, uno encima del otro.
+
+     Ahora se recorren en orden de longitud y cada uno baja al primer
+     anillo donde no tenga a nadie demasiado cerca. Los que van sueltos se
+     quedan todos en el anillo de fuera, asi que la rueda ademas queda mas
+     ordenada que antes, con menos anillos usados.
+
+     Cuanto mas adentro esta un anillo menos sitio hay, asi que la
+     separacion minima sale del propio radio y no de un numero fijo: un
+     glifo ocupa un arco tanto mayor cuanto menor es el radio. */
+  /* Reparto de los glifos de planeta.
+
+     El anillo salia antes de la posicion en la lista, con un index % 4.
+     Eso no mira si dos planetas estan juntos en el cielo: dos que casi
+     coinciden podian caer en el mismo anillo y taparse, y dos separados
+     noventa grados iban a anillos distintos sin motivo. Con la carta del
+     11 de febrero de 2021, seis cuerpos en Acuario, salian nueve parejas
+     de glifos solapadas y el Sol justo encima de la Luna.
+
+     Ahora manda la cercania, en dos pasos.
+
+     Primero el anillo: se recorren en orden de longitud y cada uno baja al
+     primero donde no tenga a nadie demasiado cerca. Tres anillos, no mas,
+     porque lo que importa es cuanto se separan entre si: la banda tiene
+     unos 65 px y con tres caben a 23 px, justo un glifo. Con seis anillos
+     quedaban a diez pixeles y dos planetas al mismo angulo se seguian
+     pisando aunque estuvieran en anillos distintos.
+
+     Despues el abanico: dentro de cada anillo se abre el racimo hasta que
+     nadie quede a menos de lo que ocupa un glifo, y luego se recentra
+     sobre su propia media, para que el grupo no se vaya hacia un lado. La
+     posicion exacta sigue estando en la lista de posiciones, debajo de la
+     rueda; en el dibujo lo que importa es poder distinguirlos.
+
+     Cuantos grados ocupa un glifo depende del radio: mide unos 23 px y la
+     rueda unos 327, asi que a radio r tapa (23/327)*360/(2*PI*r) grados,
+     o sea 4,0/r. Se usa 4,6 para dejar aire. */
+  const ANILLOS_DE_PLANETA = [-.335, -.265, -.195];
+  const separacionMinima = radio => 4.6 / Math.abs(radio || 1);
+  const enAnillo = ANILLOS_DE_PLANETA.map(() => []);
+  chart.planets
+    .map((planet, index) => ({ index, lon: normalizeDegree(planet.degree) }))
+    .filter(item => Number.isFinite(item.lon))
+    .sort((a, b) => a.lon - b.lon)
+    .forEach(item => {
+      let anillo = 0;
+      while (anillo < ANILLOS_DE_PLANETA.length - 1
+        && enAnillo[anillo].some(otro => Math.abs(signedDegreeDelta(otro.lon, item.lon)) < separacionMinima(ANILLOS_DE_PLANETA[anillo]))) {
+        anillo += 1;
+      }
+      enAnillo[anillo].push(item);
+    });
+
+  const anguloDibujado = new Map();
+  const anilloDelPlaneta = new Map();
+  enAnillo.forEach((grupo, anillo) => {
+    const hueco = separacionMinima(ANILLOS_DE_PLANETA[anillo]);
+    /* Se ordena por el hueco mas grande para empezar a repartir por donde
+       el circulo "se abre", y asi el abanico no cruza el corte de los 360
+       grados por en medio de un racimo. */
+    const orden = grupo.slice().sort((a, b) => a.lon - b.lon);
+    let arranque = 0;
+    let mayor = -1;
+    orden.forEach((item, i) => {
+      const siguiente = orden[(i + 1) % orden.length];
+      const salto = normalizeDegree(siguiente.lon - item.lon) || (orden.length === 1 ? 360 : 0);
+      if (salto > mayor) { mayor = salto; arranque = (i + 1) % orden.length; }
+    });
+    const cadena = orden.slice(arranque).concat(orden.slice(0, arranque));
+    /* Se desenrolla el circulo en una recta desde el primero de la cadena,
+       acumulando los saltos verdaderos. Asi cada glifo tiene su sitio real
+       en una escala creciente y se pueden comparar sin la vuelta de los
+       360 grados. */
+    let acumulado = cadena.length ? cadena[0].lon : 0;
+    const verdaderos = cadena.map((item, i) => {
+      if (i > 0) acumulado += normalizeDegree(item.lon - cadena[i - 1].lon);
+      return acumulado;
+    });
+    /* Cada uno va en su sitio verdadero, y solo se empuja al que quedaria
+       demasiado cerca del anterior. Antes el empujon se propagaba en
+       cadena: bastaba que dos se estorbasen para que todos los de detras
+       heredaran el corrimiento, y en la carta del stellium Marte acababa
+       23 grados fuera de sitio estando a 79 grados del racimo. */
+    let anterior = null;
+    const colocados = verdaderos.map(valor => {
+      const puesto = anterior === null ? valor : Math.max(valor, anterior + hueco);
+      anterior = puesto;
+      return puesto;
+    });
+    /* Recentrar, pero cada racimo por su cuenta. El abanico solo empuja
+       hacia adelante, asi que un grupo apretado se iria entero hacia un
+       lado; se le resta su corrimiento medio para que quede sobre su sitio.
+       Restarselo a todo el anillo, como se hacia al principio, arrastraba
+       a los que no estorban a nadie: en la carta del stellium, Marte
+       acababa 23 grados fuera de sitio estando a 79 del racimo. */
+    const empujon = colocados.map((valor, i) => valor - verdaderos[i]);
+    let desde = 0;
+    while (desde < empujon.length) {
+      if (empujon[desde] <= 0.001) { desde += 1; continue; }
+      let hasta = desde;
+      while (hasta + 1 < empujon.length && empujon[hasta + 1] > 0.001) hasta += 1;
+      /* El ancla del racimo es el de delante, que no se movio. */
+      const primero = Math.max(0, desde - 1);
+      let suma = 0;
+      for (let k = primero; k <= hasta; k += 1) suma += colocados[k] - verdaderos[k];
+      const media = suma / (hasta - primero + 1);
+      for (let k = primero; k <= hasta; k += 1) colocados[k] -= media;
+      desde = hasta + 1;
+    }
+    cadena.forEach((item, i) => {
+      anguloDibujado.set(item.index, normalizeDegree(colocados[i]));
+      anilloDelPlaneta.set(item.index, anillo);
+    });
+  });
+
   const planets = chart.planets.map((planet, index) => {
-    const radius = [-.315, -.275, -.235, -.195][index % 4];
+    const radius = ANILLOS_DE_PLANETA[anilloDelPlaneta.has(index) ? anilloDelPlaneta.get(index) : index % ANILLOS_DE_PLANETA.length];
+    const anguloDelGlifo = astroWheelAngle(chart, anguloDibujado.has(index) ? anguloDibujado.get(index) : planet.degree);
     const planetLabel = `${planet.name} en ${planet.sign} ${planet.degreeLabel || ''}${planet.retrograde ? ' retrógrado' : ''}`.trim();
-    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${astroWheelAngle(chart, planet.degree)}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${astroGlyph(planet.symbol)}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
+    return `<span class="astro-planet-dot astro-planet-${index}" style="--angle:${anguloDelGlifo}deg; --radius:calc(var(--wheel-size) * ${radius})" title="${escapeHTML(planetLabel)}" aria-label="${escapeHTML(planetLabel)}">${astroGlyph(planet.symbol)}${planet.retrograde ? '<small>R</small>' : ''}</span>`;
   }).join('');
+  /* Una marca fina en el borde del anillo de signos, en el grado de verdad
+     de cada planeta. Hace falta porque el abanico corre los glifos para
+     que no se tapen, y en una conjuncion cerrada ese corrimiento llega a
+     treinta grados: sin la marca, la rueda pondria la Luna en otro signo
+     del que esta. Con ella, el glifo es solo la etiqueta y la posicion
+     exacta se sigue viendo. */
+  const marcas = chart.planets
+    .filter(planet => Number.isFinite(planet.degree))
+    .map(planet => `<span class="astro-planet-tick" style="--angle:${astroWheelAngle(chart, planet.degree)}deg" aria-hidden="true"></span>`)
+    .join('');
   const caption = `${chart.name || ''}, ${chart.date || ''}, ${chart.time || ''}${chart.place?.label ? ` · ${chart.place.label}` : ''}`;
-  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="full" aria-label="Ver rueda astral a pantalla completa">⛶</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p><p class="astro-wheel-hint">Pulsa ⛶ para ampliar. Al cerrar la rueda vuelves a esta lectura.</p>${astroAspectLegendHTML()}</div>`;
+  return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="full" aria-label="Ver rueda astral a pantalla completa">⛶</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${marcas}${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p><p class="astro-wheel-hint">Pulsa ⛶ para ampliar. Al cerrar la rueda vuelves a esta lectura.</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
   return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(planet.symbol)}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${planet.house ? `${escapeHTML(t('asHouseN', { n: planet.house }))} · ${escapeHTML(planet.houseLabel)} · ` : ''}${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;

@@ -1276,3 +1276,46 @@ html[data-appearance-mode="light"] .astro-aspect-overview small,
 html[data-appearance-mode="light"] .astro-aspect small {
   color: var(--om-ivory-3);
 }
+
+/* Los glifos de los planetas eran lo mas pequeno de la rueda -de 0,82 a
+   1,12 rem en movil- cuando los de los signos llegan a 1,95, y en gris
+   frente al color de los signos. Esta al reves de como conviene: el signo
+   es el fondo de escena y el planeta es el dato que se viene a leer. Se
+   suben a poco menos que los signos y se oscurecen un punto, que la rueda
+   es de papel claro y aguanta tinta. La erre de retrogrado se distingue
+   por color y no por tamano, que a ese cuerpo ya no le sobra sitio. */
+.astro-planet-dot {
+  width: clamp(24px, 6.2vw, 32px);
+  height: clamp(24px, 6.2vw, 32px);
+  margin: calc(clamp(24px, 6.2vw, 32px) / -2);
+  font-size: clamp(1.08rem, 4.4vw, 1.6rem);
+  color: #2f2b45;
+}
+.astro-planet-dot small { color: #a3324f; font-size: .58rem; }
+
+@media (max-width: 720px) {
+  .astro-planet-dot {
+    width: clamp(22px, 6vw, 28px);
+    height: clamp(22px, 6vw, 28px);
+    margin: calc(clamp(22px, 6vw, 28px) / -2);
+    font-size: clamp(1.02rem, 4.3vw, 1.36rem);
+  }
+}
+
+/* La marca del grado verdadero de cada planeta, en el borde interior del
+   anillo de signos. El glifo puede estar corrido para no taparse con otro;
+   esta rayita no se mueve nunca. */
+.astro-planet-tick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.5px;
+  height: calc(var(--wheel-size) * .036);
+  margin-left: -.75px;
+  background: #6f6a86;
+  border-radius: 1px;
+  transform-origin: 50% 0;
+  transform: rotate(var(--angle)) translateY(calc(var(--wheel-size) * -.358));
+  z-index: 2;
+  opacity: .85;
+}
