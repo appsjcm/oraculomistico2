@@ -46,6 +46,7 @@ let oracleProsodyTimer = null;
 let voiceWakeLock = null;
 let activeSpeech = { text: '', charIndex: 0, active: false, interrupted: false };
 let voiceSpeechSession = 0;
+let speechCancelTicket = 0;
 let voiceKeepAliveTimer = null;
 let voiceStartFallbackTimer = null;
 let remoteSpeechAudio = null;
@@ -2748,6 +2749,7 @@ function speakWithDevice(clean, options = {}) {
     showOracleVoiceAvatar(clean);
     startOracleLipSync(clean, prefs.rate);
     requestVoiceWakeLock();
+    speechCancelTicket += 1;
     const started = window.AndroidTTS.speak(clean, voice?.voiceURI || '', Number(prefs.rate || 0.92), Number(prefs.pitch || 1));
     if (started) {
       setFloatingVoiceStopVisible(true);
@@ -2856,6 +2858,7 @@ function speakWithDevice(clean, options = {}) {
     }, 900);
     try {
       window.speechSynthesis.resume?.();
+      speechCancelTicket += 1;
       window.speechSynthesis.speak(utter);
       /* La boca se pone en marcha aqui y no en onstart. Safari en iPhone no
          siempre lanza ese aviso -ni onboundary, ni a veces onend- y sin el
@@ -3019,6 +3022,7 @@ async function speakWithPuter(clean) {
     };
     audio.onended = () => { setFloatingVoiceStopVisible(false); remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
     audio.onerror = () => { setFloatingVoiceStopVisible(false); remoteSpeechAudio = null; releaseVoiceWakeLock(); hideOracleVoiceAvatar(); };
+    speechCancelTicket += 1;
     await audio.play();
     setFloatingVoiceStopVisible(true);
     return true;
@@ -3070,6 +3074,7 @@ function apuntarVoz(que, detalle = '') {
 
 function stopSpeech() {
   voiceSpeechSession += 1;
+  const cancelTicket = ++speechCancelTicket;
   clearSpeechTimers();
   setFloatingVoiceStopVisible(false);
   try { window.AndroidTTS?.stop?.(); } catch {}
@@ -3084,6 +3089,7 @@ function stopSpeech() {
     try { motor.cancel(); } catch {}
     let insistencias = 0;
     const insistir = () => {
+      if (cancelTicket !== speechCancelTicket) return;
       if (insistencias >= 5 || !motor.speaking) return;
       insistencias += 1;
       try { motor.cancel(); } catch {}
@@ -4681,7 +4687,7 @@ window.OraculoArcanos = {
 window.OraculoVoz = {
   hablar: (texto, opciones = {}) => speakText(String(texto || ''), { forzarVozDelAparato: true, ...opciones }),
   parar: stopSpeech,
-  get activa() { return Boolean(voiceSpeechSession || remoteSpeechAudio); }
+  get activa() { return Boolean(activeSpeech.active || window.speechSynthesis?.speaking || window.speechSynthesis?.pending || remoteSpeechAudio); }
 };
 
 window.OraculoSaber = {
