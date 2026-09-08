@@ -6582,28 +6582,53 @@ function solvePlacidusRightAscension(ramc = 0, latitude = 0, obliquity = 23.439,
   }[house];
   if (!config) return null;
   let ra = normalizeDegree(ramc + config.start);
-  for (let step = 0; step < 30; step += 1) {
+  /* Dos mil vueltas y no treinta. Lejos del polo esto converge en cuatro
+     o cinco pasos y da igual el tope; cerca del circulo polar converge
+     igual pero muy despacio. Medido entre 66,4 y 68 grados de latitud:
+     con treinta pasos, 920 de 2.040 cuspides se quedaban a medias -y se
+     devolvian igual, como si estuvieran resueltas, con hasta dos minutos
+     de arco de error-; con doscientos se quedan ocho, y con dos mil,
+     ninguna. Son unas pocas miles de operaciones por carta, que no se
+     notan. */
+  for (let step = 0; step < 2000; step += 1) {
     const argument = (config.upper ? -1 : 1) * sinDeg(ra) * tanDeg(obliquity) * tanDeg(latitude);
-    const arc = radToDeg(Math.acos(Math.max(-1, Math.min(1, argument))));
+    /* Fuera de [-1, 1] no hay arco: ese punto del zodiaco no sale ni se
+       pone a esa latitud, y la cuspide no existe. Antes se recortaba el
+       valor a 1 y se seguia, que devuelve una cuspide inventada con toda
+       la pinta de ser buena. Ahora se dice que no la hay. */
+    if (!Number.isFinite(argument) || Math.abs(argument) > 1) return null;
+    const arc = radToDeg(Math.acos(argument));
     const next = normalizeDegree(config.upper ? ramc + arc / config.factor : ramc + 180 - arc / config.factor);
     if (Math.abs(signedDegreeDelta(ra, next)) < 0.000001) return next;
     ra = next;
   }
-  return ra;
+  /* Sin converger no se devuelve nada: mas vale caer al reparto por
+     cuadrantes, que la carta dice cual usa, que dar por Placidus una
+     cuspide que no cumple su propia definicion. */
+  return null;
 }
 function calculatePlacidusHouses(asc, mc, date = '', time = '12:00', place = null) {
   if (!asc || !mc || !hasAstroCoordinates(place)) return null;
   const dateInfo = astroDayCount(date, time, place);
   if (!dateInfo) return null;
-  /* Placidus no tiene solucion pasado el circulo polar: hay casas que se
-     quedan sin cuspide. Antes se recortaba la latitud a 66 grados y se
-     devolvian unas cuspides calculadas para un sitio donde la persona no
-     nacio. Ahora se aparta y devuelve null, y calculateAstroHouses pasa
-     al reparto por cuadrantes, que si esta definido a cualquier latitud
-     porque solo triseca los arcos entre ascendente, fondo, descendente y
-     medio cielo. */
+  /* Placidus deja de tener solucion cuando alguna casa se queda sin
+     cuspide, y eso no depende solo de la latitud: depende tambien de la
+     hora sideral, o sea de que parte del zodiaco esta subiendo.
+
+     Antes se rechazaba en bloque por encima de 66 grados. Medido cuspide
+     a cuspide: hasta el circulo polar, 66,5 grados, hay solucion siempre
+     -y ahi esta Rovaniemi, con sesenta y cinco mil habitantes-; a 67
+     grados la tienen 49 de cada 180 momentos del dia, a 68 nueve, y de 70
+     en adelante ninguno. Con el corte en 66 se les daba el reparto por
+     cuadrantes a todos, incluida esa franja donde Placidus funciona
+     siempre y ese cuarto de las cartas de 67 grados.
+
+     Ahora se intenta y decide el calculo: si alguna cuspide no existe, se
+     devuelve null y calculateAstroHouses cae al reparto por cuadrantes,
+     como hasta ahora, y la carta lo dice. El unico limite que queda es
+     geometrico: en el polo mismo la tangente de la latitud se dispara. */
   const lat = latitudDeCarta(place);
-  if (Math.abs(lat) > 66) return null;
+  if (!Number.isFinite(lat) || Math.abs(lat) > 89.5) return null;
   const eps = trueObliquityDegree(dateInfo.t);
   const ramc = localSiderealDegree(date, time, place);
   const cusp = house => {
