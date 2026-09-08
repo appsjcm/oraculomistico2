@@ -5714,8 +5714,48 @@ function sinDeg(value) { return Math.sin(degToRad(value)); }
 function cosDeg(value) { return Math.cos(degToRad(value)); }
 function tanDeg(value) { return Math.tan(degToRad(value)); }
 function astroEngineLabel() { return t('asEngine'); }
+/* El motor astronomico son 114 KB que se descargaban siempre, al instalar
+   y en cada arranque, y no se toca ni una vez mientras la app se abre:
+   medido, cero llamadas en los primeros cuatro segundos. Solo hace falta
+   para la Luna, los Astros, la Mega tirada y el mensaje del dia.
+
+   Ahora se pide cuando se abre una de esas puertas. Es una sola puerta de
+   verdad -openModule-, mas la accion del mensaje del dia, y desde ahi todo
+   lo de abajo sigue siendo sincrono y no hay que tocar las diez llamadas
+   que calculan cartas. */
+let promesaDelMotorAstro = null;
+
+function cargarMotorAstronomico() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.Astronomy) return Promise.resolve(window.Astronomy);
+  if (!promesaDelMotorAstro) {
+    promesaDelMotorAstro = new Promise((cumplir) => {
+      const etiqueta = document.createElement('script');
+      etiqueta.src = rutaConVersion('assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js');
+      etiqueta.onload = () => cumplir(window.Astronomy || null);
+      /* Si no llega, se sigue: los calculos tienen su propio respaldo
+         aproximado. Se olvida la promesa para poder reintentar. */
+      etiqueta.onerror = () => { promesaDelMotorAstro = null; cumplir(null); };
+      document.head.appendChild(etiqueta);
+    });
+  }
+  return promesaDelMotorAstro;
+}
+
+/* Deja constancia si alguien pide el motor sin haberlo cargado. Los
+   calculos caen a su aproximacion sin decir nada, que es justo lo que no
+   se quiere: si aparece esta linea en el registro es que falta un await en
+   alguna puerta nueva. */
+let yaAvisadoDelMotorAusente = false;
+
 function astronomyEngine() {
-  return typeof window !== 'undefined' && window.Astronomy ? window.Astronomy : null;
+  if (typeof window === 'undefined') return null;
+  if (window.Astronomy) return window.Astronomy;
+  if (!yaAvisadoDelMotorAusente) {
+    yaAvisadoDelMotorAusente = true;
+    try { pushErrorLog('astro-motor', 'Se ha pedido el motor astronomico sin cargarlo: falta esperarlo en esa puerta', 'motor astronomico'); } catch {}
+  }
+  return null;
 }
 function astroHouseSystemLabel(system = 'whole') {
   if (system === 'placidus') return 'Placidus';
@@ -8149,7 +8189,7 @@ async function processChatMessage(text) {
   if (intent.kind === 'astros') { showAstros(); addChat('oracle','He abierto Astros. Completa nombre, fecha y hora de nacimiento para crear la carta astral o la tirada del día.'); return; }
   if (intent.kind === 'astroDaily') { showAstros(); addChat('oracle','He abierto la tirada astral del día. Si ya tienes tus datos guardados, pulsa “Tirada astral del día”.'); return; }
   if (intent.kind === 'daily') { daily(); addChat('oracle','He abierto tu mensaje del día en una lectura visual. También puedes pedirme: “hazlo aquí en el chat”.'); return; }
-  if (intent.kind === 'moon') { showLuna(); addChat('oracle','He abierto la lectura lunar. Si prefieres, escribe “hazlo aquí en el chat” y lo mantenemos privado.'); return; }
+  if (intent.kind === 'moon') { cargarMotorAstronomico().then(showLuna); addChat('oracle','He abierto la lectura lunar. Si prefieres, escribe “hazlo aquí en el chat” y lo mantenemos privado.'); return; }
   if (intent.kind === 'dream') return addChat('oracle','Cuéntame el sueño con todos los detalles que recuerdes. También puedes abrir el módulo Sueños si quieres guardar la interpretación.', `<div class="actions mt"><button class="btn compact" data-module="suenos">💭 Abrir Sueños</button></div>`);
   if (intent.kind === 'grabovoi') return handleChatGrabovoi(clean);
   if (followsLastReading && localStorage.getItem(LS.puter) !== 'true') {
@@ -8180,6 +8220,17 @@ ${clean}`, { prefix:followsLastReading ? readingPersonalPrefix(lastReading) : pe
     addChat('oracle', 'Puedo guiarte en modo simbólico. Para respuestas conversacionales con IA, conecta Puter IA. Mientras tanto puedes pedirme una tirada de tarot, una runa o tu mensaje del día.', `<div class="actions mt"><button class="btn compact" data-act="connect-ai">🤖 Conectar IA</button><button class="btn compact" data-chat-quick="hazme una tirada de tarot">🃏 Tarot</button><button class="btn compact" data-chat-quick="sácame una runa">ᚱ Runa</button></div>`);
   }
 }
+
+/* Acciones que acaban calculando con el motor astronomico. A casi todas
+   se llega despues de abrir su modulo, que ya lo espera, pero no siempre:
+   el chat abre lecturas directamente y una accion suelta llegaria sin
+   motor y con los calculos caidos a su aproximacion, en silencio. Se
+   cubren aqui, que es el mismo sitio para todas. */
+const ACCIONES_CON_ASTROS = [
+  'daily', 'moon-reading', 'astro-menu', 'astro-form-natal', 'astro-form-month',
+  'astro-form-solar', 'astro-chart', 'astro-month-reading', 'astro-daily',
+  'astro-solar-return'
+];
 
 function handleAction(action) {
   if (action?.startsWith('spread-')) return drawTarotSpread(action.replace('spread-', ''));
@@ -8342,9 +8393,18 @@ ${base}`;
     'clear-diary': () => { if(confirm('¿Vaciar la Biblioteca Mística?')){ storeSet(LS.diary,[]); showBiblioteca(); } },
     'open-chat': showChatRitual
   };
+  if (ACCIONES_CON_ASTROS.includes(action)) {
+    cargarMotorAstronomico().then(() => actionMap[action]?.());
+    return;
+  }
   actionMap[action]?.();
 }
-function openModule(module) {
+/* Los modulos que necesitan el motor astronomico. Los demas no lo tocan y
+   no tienen por que esperarlo. */
+const MODULOS_CON_ASTROS = ['luna', 'astros', 'mega'];
+
+async function openModule(module) {
+  if (MODULOS_CON_ASTROS.includes(module)) await cargarMotorAstronomico();
   const map = { map: showMap, mega: showMegaReading, tarot: showTarot, runas: showRunas, luna: showLuna, astros: showAstros, suenos: showSuenos, numerologia: showNumerologia, grabovoi: showGrabovoi, biblioteca: showBiblioteca, chat: showChatRitual, settings: showSettings };
   const run = map[module];
   if (!run) return;

@@ -1,13 +1,18 @@
-const CACHE_NAME = 'oraculo-v1-0-public-grabovoi-vacio-244';
+const CACHE_NAME = 'oraculo-v1-0-public-astro-bajo-demanda-245';
 /* Dos cosas salieron de esta lista porque casi nadie las usa y las pagaba
    todo el mundo al instalar: jsPDF, que son 356 KB y solo hace falta si
    exportas, y el manual en PDF, 165 KB. jsPDF ya se pedia solo cuando se
    necesita, pero seguia descargandose aqui igualmente, con lo que la
    carga bajo demanda no ahorraba nada.
 
+   Lo mismo con el motor astronomico, 114 KB que no se tocan al arrancar
+   -medido- y que solo hacen falta para la Luna, los Astros, la Mega tirada
+   y el mensaje del dia.
+
    No se pierde el uso sin conexion: el manejador de mas abajo guarda todo
    lo que se descarga, asi que a la segunda ya estan en la cache. Lo unico
-   que cambia es que la primera exportacion a PDF pide conexion. */
+   que cambia es que la primera exportacion a PDF, y la primera carta
+   astral, piden conexion. */
 const APP_SHELL = [
   './',
   './index.html',
@@ -26,7 +31,6 @@ const APP_SHELL = [
      titulos no cambien de aspecto al caer al respaldo. */
   './assets/vendor/fonts/fraunces-latin.woff2',
   './assets/vendor/fonts/fraunces-latin-ext.woff2',
-  './assets/vendor/astronomy-engine/2.1.19/astronomy.browser.min.js',
   './assets/vendor/astronomy-engine/2.1.19/LICENSE',
   /* La OFL pide expresamente que su texto acompane a la fuente, y la app
      funciona sin conexion: una licencia que no esta en la cache no
