@@ -1745,3 +1745,25 @@ body.theme-light .oracle-avatar-window.mood-warning .oracle-avatar-badge { color
 body.theme-light .oracle-avatar-window.mood-dream   .oracle-avatar-badge { color: #3a4a94; }
 body.theme-light .oracle-avatar-window.mood-power   .oracle-avatar-badge { color: #0f6340; }
 body.theme-light .oracle-avatar-window.mode-whisper .oracle-avatar-badge { color: #2b5691; }
+
+/* El aviso de busqueda sin resultados: tres piezas apiladas y centradas,
+   con aire alrededor, para que no parezca una linea suelta perdida. */
+.grabovoi-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 22px 14px;
+  text-align: center;
+}
+.grabovoi-vacio p { margin: 0; max-width: 34ch; }
+
+/* Un elemento con el atributo hidden tiene que desaparecer, siempre. El
+   navegador lo consigue con [hidden]{display:none}, pero cualquier regla
+   nuestra que ponga display gana por especificidad: la barra de "Mostrar
+   mas" de Grabovoi lleva la clase .actions, que es display:flex, y seguia
+   ocupando cien pixeles con cero resultados a la vista, ofreciendo mostrar
+   mas de nada.
+
+   Se arregla de raiz y no solo en esa barra, porque el mismo choque puede
+   repetirse en cualquier sitio donde se esconda algo con hidden. */
+[hidden] { display: none !important; }

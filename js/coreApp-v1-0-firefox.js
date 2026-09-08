@@ -7513,7 +7513,25 @@ function renderGrabChips() {
 }
 
 function renderGrabList(list) {
-  if (!list || !list.length) return `<p class="subtle">${escapeHTML(t('gbNoResults'))}</p>`;
+  /* Buscar y no encontrar nada dejaba un "Sin resultados." a secas en
+     medio de la pantalla, sin decir por que ni como salir. Y las mas de
+     las veces la razon es que quedaba puesta una categoria de una busqueda
+     anterior, cosa que no se ve si la fila de categorias esta desplazada.
+
+     Ahora se dice que se ha buscado, si habia categoria puesta se nombra,
+     y se ofrece el boton que lo deshace todo de un toque. */
+  if (!list || !list.length) {
+    const consulta = String(grabConsulta || '').trim();
+    const categoria = grabCategoria ? grabCatLabel(grabCategoria) : '';
+    const detalles = [];
+    if (consulta) detalles.push(t('gbNoResultsFor', { q: consulta }));
+    if (categoria) detalles.push(t('gbNoResultsCat', { c: categoria }));
+    return `<div class="grabovoi-vacio">
+      <p class="subtle">${escapeHTML(t('gbNoResults'))}${detalles.length ? ' ' + escapeHTML(detalles.join(' ')) : ''}</p>
+      <p class="subtle">${escapeHTML(t('gbNoResultsHint'))}</p>
+      ${(consulta || categoria) ? `<button class="btn compact" data-act="grab-reset" type="button">${escapeHTML(t('gbSeeAll'))}</button>` : ''}
+    </div>`;
+  }
   return list.map(e => {
     const idx = grabovoiEntries.indexOf(e);
     const marcada = grabSeleccion.has(idx);
@@ -8234,6 +8252,14 @@ function handleAction(action) {
     'factory-reset': factoryResetData,
     'save-guide': () => { const v=$('#guideName')?.value?.trim(); if(v) localStorage.setItem(LS.name,v); localStorage.setItem(LS.guide,'yes'); closeModal(); updateHome(); toast(t('tsGuideDone')); },
     'grab-clear': () => { grabSeleccion.clear(); refrescarGrabList(); },
+    'grab-reset': () => {
+      grabConsulta = '';
+      grabCategoria = '';
+      const campo = $('#grabSearch');
+      if (campo) campo.value = '';
+      refrescarGrabList();
+      campo?.focus();
+    },
     'grab-more': () => { grabVisibleLimit += GRAB_INCREMENT; refrescarGrabList(); },
     'grab-all': () => { grabVisibleLimit = Number.MAX_SAFE_INTEGER; refrescarGrabList(); },
     'grab-pdf': () => exportGrabovoiSheetPDF(),
