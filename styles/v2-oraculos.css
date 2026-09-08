@@ -861,6 +861,9 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
   padding: var(--om-s-4) var(--om-s-5);
   border-bottom: 1px solid var(--om-line-1);
 }
+.om-bib-card-head > div:first-child {
+  min-width: 0;
+}
 .om-bib-card-head span {
   display: block;
   margin-bottom: 4px;
@@ -899,28 +902,48 @@ body[data-om-orbe="hablando"] .om-orb-ring { opacity: .95; }
 
 @media (max-width: 720px) {
   .om-bib-card-modal {
-    align-items: end;
-    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    place-items: center;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
   }
   .om-bib-card-panel {
-    max-height: 94svh;
-    border-radius: 26px 26px 18px 18px;
+    width: min(100%, calc(100vw - 20px));
+    max-height: calc(100svh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border-radius: 24px;
   }
   .om-bib-card-head {
-    padding: var(--om-s-3) var(--om-s-4);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--om-s-3);
+    gap: var(--om-s-2);
+  }
+  .om-bib-card-head h3,
+  .om-bib-card-head span {
+    overflow-wrap: anywhere;
+  }
+  .om-bib-card-acciones {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .om-bib-card-acciones .om-sheet-close {
+    margin-left: auto;
+    flex: 0 0 auto;
   }
   .om-bib-card-body {
     padding: var(--om-s-3);
   }
   .om-bib-card-body .om-bib-hero {
     grid-template-columns: 1fr;
+    padding: var(--om-s-3);
+    overflow: hidden;
   }
   .om-bib-card-body .om-bib-lamina {
-    width: min(72%, 260px);
+    width: min(100%, 260px);
     max-width: 260px;
   }
   .om-bib-card-body .om-bib-zoom-viewport {
-    width: min(82vw, 280px);
+    width: min(100%, 280px);
+    max-width: calc(100vw - 70px);
   }
   .om-bib-card-body .om-bib-zoom-viewport .om-bib-lamina {
     width: 100%;
