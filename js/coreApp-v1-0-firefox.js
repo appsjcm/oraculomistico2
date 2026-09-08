@@ -2952,9 +2952,8 @@ async function speakText(text, { forzarVozDelAparato = false } = {}) {
   stopSpeech();
   const prefs = getVoicePrefs();
   /* La voz de IA se pide por la red y suena despues, o sea fuera del toque,
-     y iPhone no la deja arrancar sola. La del aparato si arranca en el
-     mismo toque, asi que la lectura automatica la usa siempre. Escuchar,
-     pulsado a mano, respeta la voz elegida. */
+     y iPhone no la deja arrancar sola. Para leer con avatar usamos la voz
+     del aparato cuando la accion viene del boton o de la lectura automatica. */
   const usePuter = !forzarVozDelAparato
     && (prefs.engine === 'puter' || (prefs.engine === 'auto' && localStorage.getItem(LS.puter) === 'true'));
   if (usePuter) {
@@ -4680,7 +4679,7 @@ window.OraculoArcanos = {
    hablar() se lleva tambien el avatar y el movimiento de boca, porque de
    eso ya se encarga speakText por dentro. */
 window.OraculoVoz = {
-  hablar: (texto) => speakText(String(texto || '')),
+  hablar: (texto, opciones = {}) => speakText(String(texto || ''), { forzarVozDelAparato: true, ...opciones }),
   parar: stopSpeech,
   get activa() { return Boolean(voiceSpeechSession || remoteSpeechAudio); }
 };
@@ -8282,13 +8281,13 @@ ${base}`;
         lastReading.ai = ai;
         /* La profundizacion llega despues de la lectura, asi que se lee
            aparte: aqui solo el texto nuevo, no todo otra vez. */
-        if (autoLecturaActiva()) speakText(ai);
+        if (autoLecturaActiva()) speakText(ai, { forzarVozDelAparato: true });
         setAIReadingPanel(`<h3>${escapeHTML(t('stInterpretacionIa'))}</h3><p>${escapeHTML(ai).replace(/\n/g,'<br>')}</p><div class="actions mt"><button class="btn compact" data-act="speak-ai" type="button">🔊 Leer IA</button><button class="btn compact" data-act="stop-voice" type="button">⏹️ Parar</button><button class="btn compact" data-act="copy-reading" type="button">📋 Copiar todo</button><button class="btn compact" data-act="pdf-reading" type="button">📄 Incluir IA en PDF</button></div>`, 'success');
       } else {
         setAIReadingPanel(`<h3>${escapeHTML(t('stIaNoDisponibleAhora'))}</h3><p>${escapeHTML(t('stLaLecturaSimbolicaSigueActivaPuedes'))}</p>`, 'warning');
       }
     },
-    'speak-reading': () => speakText(getReadingText()),
+    'speak-reading': () => speakText(getReadingText(), { forzarVozDelAparato: true }),
     'toggle-auto-read': () => {
       const encendida = !autoLecturaActiva();
       setVoicePrefs({ autoRead: encendida });
@@ -8300,7 +8299,7 @@ ${base}`;
       if (boton) boton.outerHTML = botonDeLecturaSola();
     },
     'download-reading-mp3': downloadReadingMP3,
-    'speak-ai': () => speakText(lastReading?.ai || ''),
+    'speak-ai': () => speakText(lastReading?.ai || '', { forzarVozDelAparato: true }),
     'stop-voice': stopSpeech,
     'test-voice': testVoiceSettings,
     'voice-library': showVoiceLibrary,
