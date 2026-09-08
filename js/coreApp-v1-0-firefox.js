@@ -607,7 +607,7 @@ const ASTRO_PDF_SIGNS = ['ARI','TAU','GEM','CAN','LEO','VIR','LIB','ESC','SAG','
    tierra en un gris calido, 4,87. */
 const ASTRO_SIGN_COLORS = ['#bd3b75','#7a6e64','#8a6a00','#4f6fa8','#bd3b75','#7a6e64','#8a6a00','#4f6fa8','#bd3b75','#7a6e64','#8a6a00','#4f6fa8'];
 const ASTRO_PDF_SIGN_COLORS = [[189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168], [189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168], [189, 59, 117], [122, 110, 100], [138, 106, 0], [79, 111, 168]];
-const ASTRO_PDF_PLANETS = { sun:'SOL', moon:'LUN', mercury:'MER', venus:'VEN', mars:'MAR', jupiter:'JUP', saturn:'SAT', uranus:'URA', neptune:'NEP', pluto:'PLU', node:'NOD', chiron:'QUI', lilith:'LIL' };
+const ASTRO_PDF_PLANETS = { sun:'SOL', moon:'LUN', mercury:'MER', venus:'VEN', mars:'MAR', jupiter:'JUP', saturn:'SAT', uranus:'URA', neptune:'NEP', pluto:'PLU', node:'NOD', chiron:'QUI', lilith:'LIL', fortune:'FOR' };
 const ASTRO_PDF_ASPECTS = {
   'Conjunción': { code:'CONJ', color:[74, 113, 184] },
   'Sextil': { code:'SEXT', color:[59, 151, 132] },
@@ -5897,6 +5897,27 @@ function casaDelGrado(cuspides, grado) {
   return null;
 }
 
+/* La Parte de la Fortuna, el punto arabe de toda la vida.
+
+   No sale del cielo: se construye con tres cosas que la carta ya tiene, el
+   ascendente, el Sol y la Luna. Mide donde cae la Luna respecto del Sol,
+   llevado al horizonte de quien nace.
+
+   Se calcula de dos maneras segun la carta sea de dia o de noche, que es
+   lo correcto y no un adorno: de dia se suma la Luna y se resta el Sol, y
+   de noche al reves. Usar la formula diurna siempre, que es lo que hacen
+   algunos programas por comodidad, deja la Fortuna en el punto opuesto en
+   la mitad de las cartas.
+
+   Es de dia cuando el Sol esta sobre el horizonte, o sea de la casa 7 a la
+   12. Eso ya se sabe: cada cuerpo lleva su casa desde que se reparten. */
+function parteDeLaFortuna(ascAbsoluto, sol, luna, esDeDia) {
+  if (![ascAbsoluto, sol, luna].every(Number.isFinite)) return null;
+  return normalizeDegree(esDeDia
+    ? ascAbsoluto + luna - sol
+    : ascAbsoluto + sol - luna);
+}
+
 function astroHouseSystemLabel(system = 'whole') {
   if (system === 'placidus') return 'Placidus';
   if (system === 'quadrant') return 'Cuadrantes locales aproximados';
@@ -6746,13 +6767,45 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
   /* Se les pone la casa aqui, con las cuspides ya calculadas, para que la
      lleven consigo a la rueda, a los paneles, al PDF y a la lectura. */
   const cuspides = houses.map(h => h.cusp);
+  const casaDe = grado => casaDelGrado(cuspides, grado);
   planets.forEach(planet => {
-    const numero = casaDelGrado(cuspides, planet.degree);
+    const numero = casaDe(planet.degree);
     if (numero) {
       planet.house = numero;
       planet.houseLabel = ASTRO_HOUSES[numero - 1] || '';
     }
   });
+
+  /* La Parte de la Fortuna se calcula despues de repartir las casas,
+     porque necesita saber si el Sol esta sobre el horizonte. Se suma a la
+     lista de cuerpos para que llegue sola a la rueda, a los paneles y al
+     PDF, y se marca como derivada: no forma aspectos, que los suyos ya los
+     dicen el Sol, la Luna y el ascendente, de los que sale. */
+  const solDeLaCarta = planets.find(item => item.id === 'sun');
+  const lunaDeLaCarta = planets.find(item => item.id === 'moon');
+  const esDeDia = Number(solDeLaCarta?.house) >= 7;
+  const gradoFortuna = parteDeLaFortuna(asc?.absolute, solDeLaCarta?.degree, lunaDeLaCarta?.degree, esDeDia);
+  if (Number.isFinite(gradoFortuna)) {
+    const signoFortuna = zodiacFromDegree(gradoFortuna);
+    const casaFortuna = casaDe(gradoFortuna);
+    planets.push({
+      id:'fortune',
+      name:t('asFortune'),
+      symbol:'⊗',
+      role:t('asFortuneRole'),
+      derivado:true,
+      degree:gradoFortuna,
+      retrograde:false,
+      sign:signoFortuna.name,
+      signSymbol:signoFortuna.symbol,
+      signDegree:signoFortuna.degree,
+      signMinute:signoFortuna.minute,
+      element:signoFortuna.element,
+      degreeLabel:signoFortuna.degreeLabel,
+      house:casaFortuna || undefined,
+      houseLabel:casaFortuna ? (ASTRO_HOUSES[casaFortuna - 1] || '') : ''
+    });
+  }
 
   /* El Ascendente y el Medio Cielo no entraban en los aspectos, y en una
      carta cuentan tanto como un planeta: "Luna conjuncion Ascendente" o
@@ -6764,7 +6817,7 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
      fija la latitud y la hora, no es un encuentro entre dos cuerpos.
      Tampoco hace falta meter el Descendente ni el Fondo del Cielo, que son
      sus opuestos exactos: un aspecto al uno lo es al otro. */
-  const puntosDeAspecto = planets.slice();
+  const puntosDeAspecto = planets.filter(item => !item.derivado);
   if (Number.isFinite(asc?.absolute)) {
     puntosDeAspecto.push({ id:'asc', name:t('asAscendant'), symbol:'AC', degree:asc.absolute, esEje:true });
   }
