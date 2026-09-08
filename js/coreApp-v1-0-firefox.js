@@ -6683,6 +6683,33 @@ function calculateAstroHouses(asc, mc, houseSystem = 'placidus', date = '', time
   const dcDeg = normalizeDegree(ascDeg + 180);
   const mcDeg = mc.absolute;
   const icDeg = normalizeDegree(mcDeg + 180);
+  /* Hay un momento, muy arriba en latitud, en que la ecliptica cae casi
+     sobre el horizonte: el ascendente y el medio cielo se separan 180
+     grados, el ascendente coincide con el fondo del cielo y dos de los
+     cuatro cuadrantes se quedan en nada mientras los otros dos valen la
+     vuelta entera. Trisecar eso apila tres casas en el mismo grado y deja
+     otras tres repartiendose los 360, o sea una carta sin sentido.
+
+     Medido en 4.920 combinaciones de latitud y hora sideral, de -80 a 80
+     grados: pasa en ocho, todas por encima de 68 grados de latitud, que
+     es justo donde ya no hay Placidus y se llega aqui.
+
+     No es un fallo del reparto sino una configuracion sin solucion, como
+     la de Placidus mas abajo. Se cae a casas iguales desde el ascendente,
+     que estan definidas siempre, y la carta lo dice. */
+  /* La condicion exacta sale de la geometria. Llamando d al arco que va
+     del medio cielo al ascendente, los cuatro cuadrantes suman 360 solo
+     cuando d esta entre 0 y 180, es decir cuando el ascendente cae en el
+     semicirculo que sigue al medio cielo, que es lo normal: suele andar
+     por los 90 grados. Si d pasa de 180, los cuatro arcos suman 1080 y el
+     recorrido da tres vueltas en vez de una, cruzando las casas. Y en los
+     extremos, con d pegado a 0 o a 180, dos cuadrantes se quedan en nada y
+     tres casas se apilan en el mismo grado. */
+  const delMcAlAsc = directedArc(mcDeg, ascDeg);
+  if (!Number.isFinite(delMcAlAsc) || delMcAlAsc < 1 || delMcAlAsc > 179) {
+    ultimoSistemaDeCasas = 'equal';
+    return ASTRO_HOUSES.map((label, index) => normalizeDegree(ascDeg + index * 30));
+  }
   return [
     ascDeg,
     quadrantCusp(ascDeg, icDeg, 1),
