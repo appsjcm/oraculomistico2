@@ -1226,11 +1226,12 @@ async function exportAstroPDF(reading = lastReading) {
     ['Ascendente', `${chart.asc?.name || ''} ${chart.asc?.degreeLabel || ''}`, chart.asc?.keywords?.join(', ') || 'Entrada'],
     ['Medio Cielo', `${chart.mc?.name || ''} ${chart.mc?.degreeLabel || ''}`, chart.mc?.keywords?.join(', ') || 'Direccion visible']
   ], [34, 58, 88]);
-  addTable('Posiciones planetarias', ['Astro', 'Grado', 'Funcion'], chart.planets.map(planet => [
+  addTable('Posiciones planetarias', ['Astro', 'Grado', 'Casa', 'Funcion'], chart.planets.map(planet => [
     ASTRO_PDF_PLANETS[planet.id] || planet.name,
     `${planet.sign} ${planet.degreeLabel || `${planet.signDegree} grados`}${planet.retrograde ? ' Rx' : ''}`,
+    planet.house ? String(planet.house) : '',
     planet.role || planet.element || ''
-  ]), [25, 62, 93]);
+  ]), [22, 56, 16, 86]);
   addTable('Casas', ['Casa', 'Cuspide', 'Area'], chart.houses.map(house => [
     `Casa ${house.number}`,
     `${house.sign} ${house.degreeLabel || `${house.degree} grados`}`,
@@ -5757,6 +5758,34 @@ function astronomyEngine() {
   }
   return null;
 }
+/* En que casa cae un grado del zodiaco.
+
+   La carta ya calculaba las doce cuspides y la posicion de cada planeta,
+   pero nunca las juntaba: se leia "Sol en Geminis" y, aparte, "Casa 9
+   empieza en Tauro", y quedaba en manos de quien mira hacer la cuenta.
+   En una carta natal la casa dice tanto como el signo.
+
+   No vale dividir por treinta grados: salvo en el sistema de signo
+   entero, las casas son desiguales -en Placidus, a latitudes altas, una
+   casa puede medir cinco grados y la siguiente cincuenta-. Hay que
+   recorrer las cuspides y ver en que tramo cae, contando siempre hacia
+   adelante para que la vuelta de los 360 grados no rompa el reparto: el
+   tramo que cruza el cero no es "de 350 a 10 grados", que daria vacio,
+   sino "desde 350, veinte grados de ancho". */
+function casaDelGrado(cuspides, grado) {
+  if (!Array.isArray(cuspides) || cuspides.length !== 12) return null;
+  const punto = normalizeDegree(grado);
+  if (!Number.isFinite(punto)) return null;
+  for (let i = 0; i < 12; i += 1) {
+    const desde = normalizeDegree(cuspides[i]);
+    const hasta = normalizeDegree(cuspides[(i + 1) % 12]);
+    if (!Number.isFinite(desde) || !Number.isFinite(hasta)) return null;
+    const ancho = normalizeDegree(hasta - desde) || 360;
+    if (normalizeDegree(punto - desde) < ancho) return i + 1;
+  }
+  return null;
+}
+
 function astroHouseSystemLabel(system = 'whole') {
   if (system === 'placidus') return 'Placidus';
   if (system === 'quadrant') return 'Cuadrantes locales aproximados';
@@ -6551,6 +6580,17 @@ function calculateAstroProfile(name = '', date = '', time = '', place = null, op
     const sign = zodiacFromDegree(cusp);
     return { number:index + 1, label, sign:sign.name, symbol:sign.symbol, element:sign.element, cusp, degree:sign.degree, minute:sign.minute, second:sign.second, degreeLabel:sign.degreeLabel };
   });
+  /* Se les pone la casa aqui, con las cuspides ya calculadas, para que la
+     lleven consigo a la rueda, a los paneles, al PDF y a la lectura. */
+  const cuspides = houses.map(h => h.cusp);
+  planets.forEach(planet => {
+    const numero = casaDelGrado(cuspides, planet.degree);
+    if (numero) {
+      planet.house = numero;
+      planet.houseLabel = ASTRO_HOUSES[numero - 1] || '';
+    }
+  });
+
   const aspects = [];
   planets.forEach((a, i) => planets.slice(i + 1).forEach(b => {
     const diff = Math.abs(a.degree - b.degree);
@@ -6931,7 +6971,7 @@ function astroWheelHTML(chart) {
   return `<div class="astro-wheel-wrap astro-wheel-paper"><div class="astro-wheel-tools" aria-label="Zoom de la rueda astral"><button type="button" data-astro-zoom="out" aria-label="Reducir rueda astral">−</button><span data-astro-zoom-status aria-live="polite">100%</span><button type="button" data-astro-zoom="reset" aria-label="Restablecer rueda astral">⟲</button><button type="button" data-astro-zoom="full" aria-label="Ver rueda astral a pantalla completa">⛶</button><button type="button" data-astro-zoom="in" aria-label="Ampliar rueda astral">+</button></div><div class="astro-wheel-viewport" data-astro-wheel-viewport tabindex="0" aria-label="Rueda astral ampliable. Usa los botones de zoom, doble toque para ampliar y arrastra para mover."><div class="astro-wheel-zoom-target"><div class="astro-wheel" role="img" aria-label="${escapeHTML(t('asWheelAlt', { name: chart.name }))}"><div class="astro-zodiac">${signs}</div>${houses}${astroAspectWebHTML(chart)}<span class="astro-axis-label astro-axis-ac" aria-hidden="true">AC</span><span class="astro-axis-label astro-axis-dc" aria-hidden="true">DC</span><span class="astro-axis-label astro-axis-mc" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true">MC</span><span class="astro-axis-label astro-axis-ic" style="--angle:${astroWheelAngle(chart, chart.mc.absolute + 180)}deg" aria-hidden="true">IC</span><span class="astro-asc-line" aria-hidden="true"></span><span class="astro-dc-line" aria-hidden="true"></span><span class="astro-mc-line" style="--angle:${astroWheelAngle(chart, chart.mc.absolute)}deg" aria-hidden="true"></span>${planets}</div></div></div><p class="astro-wheel-caption">${escapeHTML(caption)}</p><p class="astro-wheel-hint">Pulsa ⛶ para ampliar. Al cerrar la rueda vuelves a esta lectura.</p>${astroAspectLegendHTML()}</div>`;
 }
 function astroPositionsHTML(chart) {
-  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(planet.symbol)}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;
+  return `<div class="astro-panel-list astro-positions-list">${chart.planets.map(planet => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(planet.symbol)}</span><span><strong>${escapeHTML(planet.name)} en ${escapeHTML(planet.sign)} ${escapeHTML(planet.degreeLabel || `${planet.signDegree}°`)}${planet.retrograde ? ' Rx' : ''}</strong><small>${planet.house ? `${escapeHTML(t('asHouseN', { n: planet.house }))} · ${escapeHTML(planet.houseLabel)} · ` : ''}${escapeHTML(planet.role)} · ${escapeHTML(planet.element)}</small></span><small>${escapeHTML(Number(planet.degree || 0).toFixed(4))}°</small></article>`).join('')}</div>`;
 }
 function astroHousesHTML(chart) {
   return `<div class="astro-panel-list">${chart.houses.map(house => `<article class="astro-chip"><span class="astro-symbol" aria-hidden="true">${astroGlyph(house.symbol)}</span><span><strong>Casa ${house.number} · ${escapeHTML(house.label)}</strong><small>${escapeHTML(house.sign)} · ${escapeHTML(house.element)} · ${escapeHTML(house.degreeLabel || `${house.degree}°`)}</small></span></article>`).join('')}</div>`;
@@ -6973,7 +7013,7 @@ Medio Cielo en ${chart.mc.symbol} ${chart.mc.name}: el propósito visible toma e
 Elemento dominante: ${element}. Consejo: ${astroAdviceForElement(element)}.
 
 Posiciones:
-${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}${p.house ? ` · ${t('asHouseN', { n: p.house })}` : ''}`).join('\n')}
 
 Aspectos principales:
 ${aspects}
@@ -7012,7 +7052,7 @@ Medio Cielo de revolución en ${chart.mc.name}; la zona visible del año se tiñ
 Elemento dominante del año: ${element}. Consejo: ${astroAdviceForElement(element)}.
 
 Posiciones de la revolución:
-${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}`).join('\n')}
+${chart.planets.map(p => `${p.symbol} ${p.name}: ${p.degreeLabel || `${p.signDegree}°`} ${p.sign}${p.retrograde ? ' Rx' : ''}${p.house ? ` · ${t('asHouseN', { n: p.house })}` : ''}`).join('\n')}
 
 Aspectos principales:
 ${aspects}
